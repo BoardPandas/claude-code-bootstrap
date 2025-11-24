@@ -1,0 +1,6 @@
+{
+  "hooks": {
+    "userPromptSubmit": ".claude/hooks/user-prompt-submit.ts",
+    "stop": ".claude/hooks/stop.sh"
+  }
+}

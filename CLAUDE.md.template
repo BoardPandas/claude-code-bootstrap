@@ -1,0 +1,200 @@
+# {{PROJECT_NAME}} - Claude Code Configuration
+
+> **This is a template file**. Replace placeholders like {{PROJECT_NAME}}, {{TECH_STACK}}, etc. with your actual values.
+
+## 🎯 Project Overview
+
+**Project Name**: {{PROJECT_NAME}}
+**Description**: {{PROJECT_DESCRIPTION}}
+**Tech Stack**: {{TECH_STACK}}
+
+## 📋 Tech Stack
+
+### Backend
+- **Language**: {{BACKEND_LANGUAGE}} (e.g., Node.js, Python, Go, Ruby)
+- **Framework**: {{BACKEND_FRAMEWORK}} (e.g., Express, FastAPI, Gin, Rails)
+- **Database**: {{DATABASE}} (e.g., PostgreSQL, MySQL, MongoDB)
+- **Cache**: {{CACHE}} (e.g., Redis, Memcached, or None)
+
+### Frontend
+- **Framework**: {{FRONTEND_FRAMEWORK}} (e.g., Next.js, React, Vue, Angular)
+- **UI Library**: {{UI_LIBRARY}} (e.g., Material UI, Tailwind, Bootstrap)
+- **State Management**: {{STATE_MANAGEMENT}} (e.g., Simple/built-in, Redux, Zustand)
+
+## 🚨 Development Principles
+
+### Non-Negotiable Rules
+
+1. **Simple > Complex** - Start simple, extract when patterns emerge
+2. **YAGNI until you need it** - Don't build for hypothetical futures
+3. **Rule of Three** - Wait for 3rd duplicate before extracting
+4. **TDD Required** - Write tests first, then implement
+5. **Production Quality** - Error handling, logging, validation are mandatory
+
+### Preferred Patterns
+
+- Simple functions with error handling
+- Direct database queries (until 3+ implementations need abstraction)
+- Environment variables for config
+- Defensive coding (validation, error handling, retries)
+- Logging with context
+
+### Patterns to Avoid (Unless Justified)
+
+- Factory patterns (unless 5+ implementations)
+- Dependency injection frameworks (unless team >5 developers)
+- Abstract base classes (unless 3+ concrete implementations)
+- Service layers with repositories (direct queries + transactions are fine)
+- Premature abstraction
+
+## 🎯 Development Workflow
+
+### ALWAYS Start with Planning
+
+1. **Plan first, code second** - Use planning mode for complex features
+2. **Create dev docs** - Use `/dev-docs` for large tasks
+3. **Update periodically** - Use `/dev-docs-update` before context gets stale
+
+### Before Committing
+
+1. Run `/build-and-fix` to catch errors
+2. Verify no broken functionality
+3. Update dev docs if working on large task
+
+### Quality Standards
+
+- Use Test-Driven Development (TDD) for all coding tasks
+- Write tests first, then implement functionality
+- Ensure all tests pass before considering feature complete
+- No fallbacks, mock data, or temporary fixes
+- Don't break current working features
+- All implementations must be production-ready and robust
+
+## 🗂️ Project Structure
+
+```
+{{PROJECT_ROOT}}/
+├── {{SOURCE_DIR}}/           # Source code
+│   ├── {{ROUTES_DIR}}/       # API routes (if applicable)
+│   ├── {{COMPONENTS_DIR}}/   # Components (if applicable)
+│   └── {{UTILS_DIR}}/        # Utilities
+├── {{TEST_DIR}}/             # Tests
+├── {{CONFIG_DIR}}/           # Configuration
+├── .claude/                  # Claude Code configuration
+│   ├── skills/               # Auto-activating guidelines
+│   ├── agents/               # Specialized AI workers
+│   ├── commands/             # Custom slash commands
+│   ├── hooks/                # Automation scripts
+│   └── dev-docs/             # Task documentation
+└── README.md
+```
+
+## 🔧 Custom Commands
+
+Use these slash commands for common workflows:
+
+- `/dev-docs [task name]` - Create strategic implementation plan
+- `/dev-docs-update` - Update docs before context compaction
+- `/build-and-fix` - Run build and systematically fix all errors
+- `/code-review` - Review code architecture and best practices
+- `/test-api [endpoint]` - Test API endpoints (if applicable)
+
+## 🤖 Custom Agents
+
+Available specialized agents:
+
+- `strategic-plan-architect` - Create detailed implementation plans
+- `build-error-resolver` - Systematically fix build errors
+- `code-architecture-reviewer` - Review for best practices
+- `production-principles-enforcer` - Ensure code follows production principles
+
+## 📝 Project-Specific Conventions
+
+### Naming Conventions
+
+{{NAMING_CONVENTIONS}}
+(Example: camelCase for variables, PascalCase for components, kebab-case for files)
+
+### File Organization
+
+{{FILE_ORGANIZATION}}
+(Example: One feature per file, max 500 lines, use progressive disclosure)
+
+### Code Style
+
+{{CODE_STYLE}}
+(Example: Functions over classes, direct over abstracted, comments for complex logic)
+
+### Environment Variables
+
+Development: `{{ENV_FILE_DEV}}` (e.g., `.env.local`, `.env.development`)
+Production: `{{ENV_FILE_PROD}}` (e.g., `.env`, `.env.production`)
+Never commit real secrets
+
+## 🎨 Design System (if applicable)
+
+{{DESIGN_SYSTEM_NOTES}}
+(Example: Follow Material UI theme, use design tokens, ensure WCAG AA accessibility)
+
+## 🚀 Deployment
+
+{{DEPLOYMENT_INFO}}
+(Example: Docker-based, AWS ECS, manual server, etc.)
+
+## ⚠️ Common Pitfalls to Avoid
+
+1. **Over-engineering** - Don't use enterprise patterns prematurely
+2. **Premature abstraction** - Wait for 3rd duplicate (Rule of Three)
+3. **Missing production requirements** - Always add error handling, logging, validation
+4. **Building for millions** - Build for your actual scale first
+
+## 🎯 Decision Framework
+
+Before any architectural decision, ask:
+
+1. **Is this simple and production-ready?** (Error handling, logging, validation present?)
+2. **Will our current scale break this?** (If no, ship it)
+3. **Can another dev maintain this in 6 months?** (If no, simplify or document)
+4. **Is abstraction justified?** (3+ duplicates OR pattern criteria met?)
+
+## 📚 Project-Specific Documentation
+
+{{ADDITIONAL_DOCS}}
+(Links to project-specific docs, API specs, architecture diagrams, etc.)
+
+## 🔄 Workflow Reminders
+
+### When Starting a Task
+
+1. Review development principles above
+2. Ask: "What's the simplest way to make this work reliably?"
+3. Plan with `/dev-docs` if complex (3+ steps)
+4. Verify with user if multiple approaches exist
+
+### During Implementation
+
+1. Keep it simple - wait for 3rd duplicate before abstracting
+2. Add error handling, logging, validation
+3. Use config for secrets, hardcode for constants
+4. Ship working, reliable code
+
+### Before Finishing
+
+1. Run `/build-and-fix` to verify no errors
+2. Manual smoke test if possible
+3. Verify error handling is present
+4. Update `/dev-docs` if applicable
+5. Ask yourself: "Is this simple + reliable? Did I over-engineer?"
+
+## 💡 Mantras
+
+- "Simple + Reliable beats Complex + Perfect"
+- "Abstract after 3rd duplicate, not before"
+- "Make it work, make it right, make it fast - IN THAT ORDER"
+- "Scale when you hit limits, not before"
+
+---
+
+**Remember**: Keep it simple, reliable, and maintainable.
+
+**When in doubt**: Simple + reliable is better than complex + perfect. Ship it.
