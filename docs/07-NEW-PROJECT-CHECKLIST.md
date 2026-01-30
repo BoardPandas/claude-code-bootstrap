@@ -1,6 +1,6 @@
 # New Project Initialization Checklist
 
-Step-by-step guide to bootstrap a new project with all lessons learned from Wellforce Platform.
+Step-by-step guide to bootstrap a new project with battle-tested best practices.
 
 ## Pre-Flight Check
 
@@ -24,7 +24,7 @@ mkdir -p test
 
 ### Step 2: Copy Claude Code Configuration
 
-From wellforce-platform or templates:
+From claude-code-bootstrap or templates:
 
 ```bash
 # Core config
@@ -502,8 +502,8 @@ After initial setup:
 
 ## Support
 
-- Read the full documentation in `test/` folder
-- Review Wellforce Platform as reference
+- Read the full documentation in `docs/` folder
+- Review the template repository as reference
 - Ask team members who've used the system
 - Iterate and improve based on learnings
 

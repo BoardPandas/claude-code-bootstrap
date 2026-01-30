@@ -70,9 +70,9 @@ Format: `[PREFIX][####]`
 | TIC | /tickets | Active |
 | TID | /tickets/[ticketId] | Active |
 | REP | /reports | Active |
-| PLN | /persona-lens | Active (Staff only) |
-| PER | /persona-lens/[orgId] | Active (Staff only) |
-| PUP | /persona-lens/[orgId]/users/[userKey] | Active (Staff only) |
+| PLN | /analytics | Active (Staff only) |
+| PER | /analytics/[orgId] | Active (Staff only) |
+| PUP | /analytics/[orgId]/users/[userKey] | Active (Staff only) |
 | UMG | /user-management | Active (Staff only) |
 | SET | /settings | Active |
 | MAG | /auth/magic-link | Active |

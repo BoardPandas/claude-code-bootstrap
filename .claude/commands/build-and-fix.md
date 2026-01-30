@@ -10,7 +10,7 @@ Run the build process and systematically fix all TypeScript/compilation errors.
 
 ### Step 1: Run Build
 ```bash
-cd wellforce-platform
+cd your-project
 npm run build
 ```
 

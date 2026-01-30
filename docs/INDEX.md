@@ -395,15 +395,15 @@ cp .claude-template/skill-rules.json ./.claude/
 ### Getting Help
 
 1. **Read the docs** - Most questions answered here
-2. **Check wellforce-platform** - Real working example
+2. **Check this template repository** - Real working example
 3. **Experiment** - System is forgiving
 4. **Iterate** - Customize for your needs
 
 ### Staying Updated
 
-This is a snapshot from November 2025. To get updates:
+This is a battle-tested template. To get updates:
 
-1. Check wellforce-platform for latest
+1. Check the template repository for latest
 2. Community shares improvements
 3. Your learnings improve the system
 

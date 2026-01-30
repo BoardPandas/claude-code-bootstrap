@@ -74,7 +74,7 @@ Battle-tested on real production applications. Framework-agnostic. Copy and cust
 
 ```bash
 # Clone this repository
-git clone https://github.com/wellforce-brandon/claude-code-bootstrap.git
+git clone https://github.com/your-username/claude-code-bootstrap.git
 
 # Copy to your project
 cp -r claude-code-bootstrap/.claude /path/to/your/project/

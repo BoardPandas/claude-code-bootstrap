@@ -4,7 +4,7 @@ Expert guidance for developing with OpenAI APIs (GPT-4, GPT-5, ChatGPT, Embeddin
 
 ## Current OpenAI Models & Capabilities
 
-### GPT-5 Mini (Responses API) - RECOMMENDED for Wellforce
+### GPT-5 Mini (Responses API) - RECOMMENDED
 - **Model**: `gpt-5-mini`
 - **API**: Responses API (not Chat Completions)
 - **Key Feature**: Reasoning controls + verbosity controls
@@ -66,7 +66,7 @@ const response = await openai.chat.completions.create({
 - `medium` - Balanced responses (explanations, standard analysis)
 - `high` - Detailed, comprehensive responses (documentation, deep analysis)
 
-### Common Use Cases for Wellforce
+### Common Use Cases
 
 ```typescript
 // 1. TICKET SUBJECT GENERATION

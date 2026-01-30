@@ -548,7 +548,7 @@ const subjects = await Promise.all(
 );
 ```
 
-## Real-World Wellforce Examples
+## Real-World Examples
 
 ### Ticket Subject Generation
 ```typescript

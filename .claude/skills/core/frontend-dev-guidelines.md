@@ -122,7 +122,7 @@ class TicketListContainer extends React.Component<TicketListProps> {
 ```typescript
 // lib/api.ts - Simple API client
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.wellforceit.com';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.your-domain.com';
 
 export async function fetchTickets() {
   const response = await fetch(`${API_BASE}/api/v1/tickets`, {
@@ -405,7 +405,7 @@ NEXT_PUBLIC_API_URL=http://localhost:3002
 NEXT_PUBLIC_CLIENT_ID=org_35849015040147
 
 # .env.production (for production)
-NEXT_PUBLIC_API_URL=https://api.wellforceit.com
+NEXT_PUBLIC_API_URL=https://api.your-domain.com
 NEXT_PUBLIC_CLIENT_ID=org_35849015040147
 ```
 

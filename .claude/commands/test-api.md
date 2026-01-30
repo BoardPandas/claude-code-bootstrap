@@ -26,7 +26,7 @@ Create realistic test data:
 const testPayload = {
   agentId: "org_35849015040147-agent-test",
   subject: "Test ticket",
-  userEmail: "test@wellforceit.com",
+  userEmail: "test@example.com",
   priority: "medium",
   systemInfo: {
     hostname: "TEST-MACHINE",
@@ -42,10 +42,10 @@ const testPayload = {
 #### Using curl:
 ```bash
 # Basic GET request
-curl -X GET "https://api.wellforceit.com/api/v1/health"
+curl -X GET "https://api.your-domain.com/api/v1/health"
 
 # POST with authentication
-curl -X POST "https://api.wellforceit.com/api/v1/agents/tickets" \
+curl -X POST "https://api.your-domain.com/api/v1/agents/tickets" \
   -H "Content-Type: application/json" \
   -H "X-Client-ID: org_35849015040147" \
   -H "Authorization: Bearer $API_KEY" \
@@ -64,7 +64,7 @@ const axios = require('axios');
 async function testEndpoint() {
   try {
     const response = await axios.post(
-      'https://api.wellforceit.com/api/v1/agents/tickets',
+      'https://api.your-domain.com/api/v1/agents/tickets',
       {
         agentId: "test-agent",
         subject: "Test ticket",
@@ -144,7 +144,7 @@ Check:
 ## API Test Results
 
 ### Endpoint: POST /api/v1/agents/tickets
-**Base URL**: https://api.wellforceit.com
+**Base URL**: https://api.your-domain.com
 **Authentication**: Required/Not Required
 **Rate Limit**: [if applicable]
 

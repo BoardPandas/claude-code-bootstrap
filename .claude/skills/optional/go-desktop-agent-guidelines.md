@@ -1,6 +1,6 @@
 # Go Desktop Agent Development Guidelines
 
-Guidelines for developing the Wellforce Desktop Agent in Go with Wails v2.
+Guidelines for developing desktop agents in Go with Wails v2.
 
 ## Tech Stack
 
@@ -365,14 +365,14 @@ func (s *ScreenshotService) captureScreenshot() error {
 
 ```go
 // config/build_overrides.go
-//go:build client_wellforce_internal
+//go:build client_your_client
 
 package config
 
 const (
-    DefaultClientID   = "wellforce-internal"
-    DefaultClientName = "Wellforce Internal"
-    DefaultAPIKey     = "wf_internal_key_xxx"
+    DefaultClientID   = "your-client-id"
+    DefaultClientName = "Your Client Name"
+    DefaultAPIKey     = "your_api_key_xxx"
 )
 ```
 
@@ -399,14 +399,14 @@ func Load() *Config {
         ClientID:   DefaultClientID,
         ClientName: DefaultClientName,
         APIKey:     DefaultAPIKey,
-        APIURL:     "https://api.wellforceit.com",
+        APIURL:     "https://api.your-domain.com",
     }
 
     // Environment variable overrides
-    if key := os.Getenv("WELLFORCE_API_KEY"); key != "" {
+    if key := os.Getenv("YOUR_API_KEY"); key != "" {
         cfg.APIKey = key
     }
-    if id := os.Getenv("WELLFORCE_CLIENT_ID"); id != "" {
+    if id := os.Getenv("YOUR_CLIENT_ID"); id != "" {
         cfg.ClientID = id
     }
 
@@ -510,18 +510,18 @@ func TestWindowsUpdater(t *testing.T) {
 
 ```batch
 @echo off
-REM build-wellforce-internal.bat
+REM build-your-client.bat
 
-set AGENT_VERSION=1.1.8
+set AGENT_VERSION=1.0.0
 set BUILD_HASH=%1
 if "%BUILD_HASH%"=="" set BUILD_HASH=dev
 
-echo Building Wellforce Internal Agent v%AGENT_VERSION%...
+echo Building Your Client Agent v%AGENT_VERSION%...
 
 REM Build systray (no console window)
-go build -tags "client_wellforce_internal" ^
+go build -tags "client_your_client" ^
   -ldflags "-H=windowsgui -w -s -X main.BuildVersion=%AGENT_VERSION% -X main.BuildHash=%BUILD_HASH%" ^
-  -o dist\wellforce-internal\wellforce-agent-wellforce-internal.exe ^
+  -o dist\your-client\your-agent.exe ^
   .\cmd\systray
 
 if errorlevel 1 (
@@ -531,9 +531,9 @@ if errorlevel 1 (
 
 REM Build Wails window
 cd ..
-wails build -tags "client_wellforce_internal" ^
+wails build -tags "client_your_client" ^
   -ldflags "-w -s -X main.BuildVersion=%AGENT_VERSION% -X main.BuildHash=%BUILD_HASH%" ^
-  -o "wellforce-window-wellforce-internal.exe"
+  -o "your-client-window.exe"
 
 if errorlevel 1 (
     echo Wails build failed!

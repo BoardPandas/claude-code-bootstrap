@@ -467,7 +467,7 @@ if (require.main === module) {
 See migration guide: [Migration](./resources/old-skill/migration.md)
 ```
 
-## Examples from Wellforce
+## Examples
 
 ### Good Skill Structure
 ```markdown

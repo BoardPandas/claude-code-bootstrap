@@ -1,6 +1,6 @@
 # Backend Development Guidelines
 
-Guidelines for backend API development on the Wellforce Platform.
+Guidelines for backend API development.
 
 ## Tech Stack
 

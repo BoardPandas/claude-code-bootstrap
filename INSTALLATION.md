@@ -14,7 +14,7 @@ Step-by-step instructions for setting up Claude Code Bootstrap in your project.
 
 ```bash
 # 1. Clone this template repository
-git clone https://github.com/wellforce-brandon/claude-code-bootstrap.git
+git clone https://github.com/your-username/claude-code-bootstrap.git
 
 # 2. Navigate to your project
 cd /path/to/your/project

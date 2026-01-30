@@ -553,7 +553,6 @@ node scripts/custom-validation.js
 
 ## Resources
 
-- Wellforce Platform: Full working example
 - Claude Code Docs: Official documentation
 - Reddit Post: "Claude Code is a Beast"
 

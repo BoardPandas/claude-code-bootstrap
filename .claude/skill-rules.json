@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
-  "description": "Skill auto-activation rules for Wellforce Platform",
+  "description": "Skill auto-activation rules for your project",
 
   "backend-dev-guidelines": {
     "type": "domain",
@@ -89,7 +89,7 @@
     "type": "quality",
     "enforcement": "suggest",
     "priority": "critical",
-    "description": "SupportForge design system - colors, typography, spacing, accessibility (WCAG AA), and theme support",
+    "description": "Design system - colors, typography, spacing, accessibility (WCAG AA), and theme support",
     "promptTriggers": {
       "keywords": [
         "ui",
