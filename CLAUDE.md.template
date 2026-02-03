@@ -20,7 +20,7 @@ When initializing new projects, use the latest stable versions:
 ```json
 {
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=24.0.0"
   },
   "dependencies": {
     "next": "^16.0.0",
@@ -29,7 +29,7 @@ When initializing new projects, use the latest stable versions:
   },
   "devDependencies": {
     "typescript": "^5.7.0",
-    "@types/node": "^22.0.0",
+    "@types/node": "^24.0.0",
     "@types/react": "^19.0.0",
     "tailwindcss": "^4.0.0",
     "eslint": "^9.0.0",
@@ -39,7 +39,7 @@ When initializing new projects, use the latest stable versions:
 ```
 
 **Key Version Notes:**
-- **Node.js 22+**: LTS with native TypeScript support, improved performance
+- **Node.js 24+**: LTS with native TypeScript support, improved performance
 - **Next.js 16+**: Latest stable, React 19 support, Turbopack default
 - **React 19+**: Server Components, Actions, improved hydration
 - **TypeScript 5.7+**: Better inference, decorator metadata
