@@ -1,3 +1,8 @@
+---
+name: production-principles
+description: Production-ready development principles balancing simplicity with reliability for 10-100 MSP scale
+---
+
 # Production Development Principles
 
 **CRITICAL**: This project is in PRODUCTION BETA serving multiple MSPs.

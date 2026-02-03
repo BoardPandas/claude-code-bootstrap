@@ -1,6 +1,11 @@
 ---
+name: test-api
 description: Test API endpoints with authentication and validation
 argument-hint: [endpoint path or description]
+allowed-tools:
+  - Read
+  - Bash
+  - Glob
 ---
 
 # Test API - Endpoint Testing Command

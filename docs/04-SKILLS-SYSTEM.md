@@ -2,6 +2,34 @@
 
 How to create and use domain-specific skills that Claude Code automatically suggests based on context.
 
+## Modern Skill Format (2025)
+
+All skills now use YAML frontmatter for metadata:
+
+```markdown
+---
+name: backend-dev-guidelines
+description: Node.js/Express/PostgreSQL patterns with MVP principles
+---
+
+# Backend Development Guidelines
+...
+```
+
+### Available Frontmatter Fields
+
+| Field | Description |
+|-------|-------------|
+| `name` | Unique identifier for the skill |
+| `description` | Brief description shown when skill activates |
+| `context` | Set to `fork` to run skill in isolated context |
+| `disable-model-invocation` | Set to `true` for workflow skills |
+| `allowed-tools` | YAML list of tools this skill can use |
+
+### Hot Reload
+
+Skills now hot-reload automatically. Changes in `.claude/skills/` are immediately available without restarting Claude Code.
+
 ## What Are Skills?
 
 Skills are markdown files containing guidelines for specific domains (backend, frontend, testing, etc.) that:

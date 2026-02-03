@@ -15,9 +15,21 @@ Without automation:
 
 Hooks run automatically during Claude Code sessions:
 - **Before processing**: Analyze prompt, suggest skills
+- **After tool use**: Inject context, block dangerous operations
 - **After response**: Format code, check build, detect errors
+- **On setup**: Initialize repository, run health checks
 
 Result: "No mess left behind"
+
+## Hook Types (2025)
+
+| Hook | When It Runs | Use Case |
+|------|--------------|----------|
+| `userPromptSubmit` | Before Claude processes prompt | Skill auto-activation |
+| `PreToolUse` | Before each tool executes | Context injection, safety checks |
+| `PostToolUse` | After each tool executes | Validation, cleanup |
+| `stop` | After Claude finishes responding | Format code, check build |
+| `Setup` | On `--init` or `--maintenance` flags | Repo initialization |
 
 ## Available Hooks
 

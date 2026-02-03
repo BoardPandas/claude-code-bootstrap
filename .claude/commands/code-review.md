@@ -1,5 +1,10 @@
 ---
+name: code-review
 description: Perform architecture review focused on production principles and best practices
+allowed-tools:
+  - Read
+  - Glob
+  - Grep
 ---
 
 # Code Review - Architecture & Best Practices

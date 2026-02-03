@@ -1,6 +1,12 @@
 ---
+name: dev-docs
 description: Create strategic implementation plan (3 files: plan, context, tasks)
 argument-hint: [task description]
+allowed-tools:
+  - Read
+  - Write
+  - Glob
+  - Grep
 ---
 
 # Dev Docs - Strategic Planning Command

@@ -1,6 +1,33 @@
 {
+  "$schema": "https://code.claude.com/settings-schema.json",
+
   "hooks": {
     "userPromptSubmit": ".claude/hooks/user-prompt-submit.ts",
-    "stop": ".claude/hooks/stop.sh"
+    "stop": ".claude/hooks/stop.sh",
+    "Setup": ".claude/hooks/setup.ts",
+    "PreToolUse": ".claude/hooks/pre-tool-use.ts"
+  },
+
+  "permissions": {
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Bash(npm *)",
+      "Bash(npx *)",
+      "Bash(git *)",
+      "Bash(node *)",
+      "Bash(go *)",
+      "Bash(cargo *)",
+      "Bash(python *)",
+      "Bash(pip *)"
+    ],
+    "deny": []
+  },
+
+  "settings": {
+    "plansDirectory": ".claude/plans",
+    "respectGitignore": true,
+    "showTurnDuration": false
   }
 }

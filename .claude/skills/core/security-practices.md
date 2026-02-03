@@ -1,3 +1,8 @@
+---
+name: security-practices
+description: Universal security principles including authentication, input validation, SQL injection prevention, and secrets management
+---
+
 # Security Practices
 
 Universal security principles for building production-ready applications. Apply these practices regardless of your tech stack.

@@ -1,3 +1,8 @@
+---
+name: prompt-engineering-expert
+description: Prompt engineering patterns and best practices for GPT-4, GPT-5, Claude, and other AI models
+---
+
 # Prompt Engineering Expert
 
 Expert guidance for crafting effective prompts for AI models (GPT-4, GPT-5, Claude, etc.).

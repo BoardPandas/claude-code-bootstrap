@@ -1,3 +1,8 @@
+---
+name: skill-developer
+description: Meta-skill for creating high-quality Claude Code skills with progressive disclosure, auto-activation rules, and proper structure
+---
+
 # Skill Developer
 
 Meta-skill for creating high-quality Claude Code skills with progressive disclosure and auto-activation.

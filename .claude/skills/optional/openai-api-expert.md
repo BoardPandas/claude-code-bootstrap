@@ -1,3 +1,8 @@
+---
+name: openai-api-expert
+description: OpenAI API integration patterns for GPT-5 Mini Responses API, reasoning controls, and proper parameter usage
+---
+
 # OpenAI API Expert
 
 Expert guidance for developing with OpenAI APIs (GPT-4, GPT-5, ChatGPT, Embeddings, Assistants).

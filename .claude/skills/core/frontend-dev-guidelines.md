@@ -1,3 +1,8 @@
+---
+name: frontend-dev-guidelines
+description: Next.js/React 19/Material UI v7 development patterns with simple state management and MVP principles
+---
+
 # Frontend Development Guidelines
 
 Guidelines for dashboard development with Next.js, React, and Material UI.

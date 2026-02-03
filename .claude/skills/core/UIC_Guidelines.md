@@ -1,3 +1,8 @@
+---
+name: uic-guidelines
+description: Universal ID Convention system for unique, trackable UI element identifiers (data-uic attributes)
+---
+
 # UIC (Universal ID Convention) Guidelines
 
 **CRITICAL**: This project uses a Universal ID Convention (UIC) system for tracking all UI elements. Every interactive element must have a unique `data-uic` attribute for testability, debugging, and analytics.

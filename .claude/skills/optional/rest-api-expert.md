@@ -1,3 +1,8 @@
+---
+name: rest-api-expert
+description: REST API design patterns with Express/Node.js including URL structure, response formats, and error handling
+---
+
 # REST API Expert
 
 Expert guidance for designing and building RESTful APIs with Express/Node.js, following MVP principles.

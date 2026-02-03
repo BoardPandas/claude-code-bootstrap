@@ -1,3 +1,8 @@
+---
+name: tdd-workflow
+description: Test-Driven Development workflow with Red-Green-Refactor cycle and practical testing patterns
+---
+
 # Test-Driven Development (TDD) Workflow
 
 Test-Driven Development is **REQUIRED** for all coding tasks on this project.

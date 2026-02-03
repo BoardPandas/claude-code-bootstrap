@@ -1,3 +1,8 @@
+---
+name: go-desktop-agent-guidelines
+description: Go/Wails v2 desktop agent development with dual executable architecture and cross-platform building
+---
+
 # Go Desktop Agent Development Guidelines
 
 Guidelines for developing desktop agents in Go with Wails v2.

@@ -1,5 +1,12 @@
 ---
+name: build-and-fix
 description: Run build and systematically fix all TypeScript/compilation errors
+allowed-tools:
+  - Read
+  - Edit
+  - Bash
+  - Glob
+  - Grep
 ---
 
 # Build and Fix - Comprehensive Error Resolution

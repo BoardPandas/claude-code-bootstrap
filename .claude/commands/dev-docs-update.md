@@ -1,6 +1,11 @@
 ---
+name: dev-docs-update
 description: Update dev-docs with current progress and learnings
 argument-hint: [task name]
+allowed-tools:
+  - Read
+  - Edit
+  - Glob
 ---
 
 # Dev Docs Update - Context Refresh Command

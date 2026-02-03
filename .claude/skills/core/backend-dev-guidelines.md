@@ -1,3 +1,8 @@
+---
+name: backend-dev-guidelines
+description: Node.js/Express/PostgreSQL development patterns with direct SQL, MVP principles, and multi-tenancy
+---
+
 # Backend Development Guidelines
 
 Guidelines for backend API development.
