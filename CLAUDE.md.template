@@ -23,29 +23,29 @@ When initializing new projects, use the latest stable versions:
     "node": ">=24.0.0"
   },
   "dependencies": {
-    "next": "^16.0.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "next": "^16.1.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
   },
   "devDependencies": {
-    "typescript": "^5.7.0",
+    "typescript": "^5.9.0",
     "@types/node": "^24.0.0",
-    "@types/react": "^19.0.0",
-    "tailwindcss": "^4.0.0",
-    "eslint": "^9.0.0",
-    "vitest": "^2.1.0"
+    "@types/react": "^19.2.0",
+    "tailwindcss": "^4.1.0",
+    "eslint": "^9.18.0",
+    "vitest": "^4.0.0"
   }
 }
 ```
 
 **Key Version Notes:**
 - **Node.js 24+**: LTS with native TypeScript support, improved performance
-- **Next.js 16+**: Latest stable, React 19 support, Turbopack default
-- **React 19+**: Server Components, Actions, improved hydration
-- **TypeScript 5.7+**: Better inference, decorator metadata
-- **Tailwind CSS 4+**: New engine, CSS-first configuration
-- **ESLint 9+**: Flat config format (eslint.config.js)
-- **Vitest 2+**: Fast, native ESM, TypeScript support
+- **Next.js 16.1+**: Build Adapters API, Cache Components, View Transitions
+- **React 19.2+**: Server Components, Actions, View Transitions, useEffectEvent
+- **TypeScript 5.9+**: Current stable (6.0 bridge release coming, 7.0 native/Go-based)
+- **Tailwind CSS 4.1+**: 5x faster builds, CSS-first config, @import "tailwindcss"
+- **ESLint 9+**: Flat config format (eslint.config.js), requires Node 18.18+
+- **Vitest 4.0+**: Stable Browser Mode, Visual Regression testing, Playwright Traces
 
 ## Development Principles
 
