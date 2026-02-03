@@ -13,12 +13,47 @@ See @package.json for available npm commands.
 - **Frontend**: {{FRONTEND_FRAMEWORK}} / {{UI_LIBRARY}}
 - **Testing**: {{TEST_FRAMEWORK}}
 
+## Recommended Package Versions (2025)
+
+When initializing new projects, use the latest stable versions:
+
+```json
+{
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "dependencies": {
+    "next": "^16.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "tailwindcss": "^4.0.0",
+    "eslint": "^9.0.0",
+    "vitest": "^2.1.0"
+  }
+}
+```
+
+**Key Version Notes:**
+- **Node.js 22+**: LTS with native TypeScript support, improved performance
+- **Next.js 16+**: Latest stable, React 19 support, Turbopack default
+- **React 19+**: Server Components, Actions, improved hydration
+- **TypeScript 5.7+**: Better inference, decorator metadata
+- **Tailwind CSS 4+**: New engine, CSS-first configuration
+- **ESLint 9+**: Flat config format (eslint.config.js)
+- **Vitest 2+**: Fast, native ESM, TypeScript support
+
 ## Development Principles
 
 1. **Simple > Complex** - Start simple, extract when patterns emerge (Rule of Three)
 2. **YAGNI** - Don't build for hypothetical futures
 3. **TDD Required** - Write tests first, then implement
 4. **Production Quality** - Error handling, logging, validation are mandatory
+5. **200 Lines Max** - Extract functions/components when exceeding 200 lines
 
 ## Key Commands
 
@@ -34,6 +69,32 @@ See @package.json for available npm commands.
 
 # Type Check
 {{TYPECHECK_COMMAND}}
+```
+
+### Common Command Patterns
+
+```bash
+# Next.js / React projects
+npm run dev          # Start dev server (localhost:3000)
+npm run build        # Production build
+npm run start        # Start production server
+npm run lint         # ESLint check
+npm run test         # Run Vitest/Jest tests
+npm run test:watch   # Tests in watch mode
+npm run typecheck    # tsc --noEmit
+
+# Node.js API projects
+npm run dev          # nodemon or tsx watch
+npm run build        # tsc or esbuild
+npm run start        # node dist/index.js
+npm run test         # vitest or jest
+npm run db:migrate   # Run database migrations
+npm run db:seed      # Seed development data
+
+# Monorepo (Turborepo)
+npm run dev          # turbo run dev
+npm run build        # turbo run build
+npm run test         # turbo run test
 ```
 
 ## Custom Slash Commands
@@ -52,6 +113,23 @@ See @package.json for available npm commands.
 
 Development: `{{ENV_FILE_DEV}}`
 Never commit real secrets.
+
+### Example .env.local structure:
+```bash
+# Database
+DATABASE_URL=postgresql://user:pass@localhost:5432/mydb
+
+# Authentication
+JWT_SECRET=your-secret-key-min-32-chars
+NEXTAUTH_SECRET=your-nextauth-secret
+
+# External APIs
+OPENAI_API_KEY=sk-...
+STRIPE_SECRET_KEY=sk_test_...
+
+# App Config
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
 
 ---
 

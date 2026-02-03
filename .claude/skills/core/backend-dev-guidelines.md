@@ -406,7 +406,7 @@ router.get('/admin/users', requireAuth, async (req, res) => {
 - [ ] Input validation present
 - [ ] Error handling included
 - [ ] No hardcoded secrets
-- [ ] Code under 50 lines per feature (guideline)
+- [ ] Code under 200 lines per feature (guideline)
 - [ ] Can explain to junior dev in 30 seconds
 
 ## Common Mistakes to Avoid

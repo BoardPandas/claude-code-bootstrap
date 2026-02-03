@@ -64,14 +64,14 @@ Review the recently modified code for adherence to project standards.
 - [ ] Caching for expensive operations (>500ms)
 - [ ] Remember: optimize for 100 MSPs, not millions
 
-#### 6. Testing (TDD Requirement)
+#### 7. Testing (TDD Requirement)
 - [ ] Tests written BEFORE implementation
 - [ ] Core functionality is tested
 - [ ] Edge cases covered
 - [ ] Tests are simple and focused
 - [ ] No complex test frameworks or mocking
 
-#### 7. UI/UX Design System Compliance (Frontend Only)
+#### 8. UI/UX Design System Compliance (Frontend Only)
 **If reviewing frontend code, check:**
 - [ ] Using design tokens (NOT hardcoded colors: `#FF6B4A`, `bg-blue-600`)
 - [ ] Using semantic tokens (`bg-primary`, `text-foreground`, `border-border`)

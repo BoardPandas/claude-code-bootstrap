@@ -206,7 +206,7 @@ NEW_CONFIG_VAR=default_value  # Purpose: [why needed]
 ## Code Quality
 - [ ] No banned patterns used
 - [ ] Following preferred patterns
-- [ ] Code is under 50 lines per feature (guideline)
+- [ ] Code is under 200 lines per feature (guideline)
 - [ ] Can explain to junior dev in 30 seconds
 - [ ] No premature optimization
 

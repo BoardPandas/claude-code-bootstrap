@@ -76,7 +76,7 @@ Review code for:
 - [ ] Copy-paste over DRY (for MVP)
 
 #### Complexity Check
-- [ ] Each feature under 50 lines (guideline)
+- [ ] Each feature under 200 lines (guideline)
 - [ ] Can explain to junior dev in 30 seconds
 - [ ] No more than 3 files for a feature
 - [ ] No hypothetical future features
