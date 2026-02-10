@@ -39,7 +39,7 @@ Result: "No mess left behind"
 
 **Purpose**: Analyze context and inject skill suggestions
 
-**File**: `.claude/hooks/user-prompt-submit.ts`
+**File**: `.claude/hooks/user-prompt-submit.js`
 
 **What It Does**:
 1. Reads your prompt
@@ -136,7 +136,7 @@ echo "🔍 Post-response checks..."
 
 # 1. Track modified files
 echo "📝 Tracking changes..."
-node "$HOOKS_DIR/utils/file-tracker.ts"
+node "$HOOKS_DIR/utils/file-tracker.js"
 
 # 2. Auto-format changed files
 echo "✨ Formatting code..."
@@ -148,11 +148,11 @@ fi
 
 # 3. Run build check
 echo "🏗️  Checking build..."
-node "$HOOKS_DIR/utils/build-checker.ts"
+node "$HOOKS_DIR/utils/build-checker.js"
 
 # 4. Check for error patterns
 echo "🔎 Checking for common errors..."
-node "$HOOKS_DIR/utils/error-pattern-checker.ts"
+node "$HOOKS_DIR/utils/error-pattern-checker.js"
 
 echo "✅ Checks complete!"
 ```
@@ -174,7 +174,7 @@ echo 🔍 Post-response checks...
 
 :: 1. Track modified files
 echo 📝 Tracking changes...
-node "%HOOKS_DIR%\utils\file-tracker.ts"
+node "%HOOKS_DIR%\utils\file-tracker.js"
 
 :: 2. Auto-format
 echo ✨ Formatting code...
@@ -187,18 +187,18 @@ for /f %%i in ('git diff --name-only --diff-filter=ACMR') do (
 
 :: 3. Build check
 echo 🏗️  Checking build...
-node "%HOOKS_DIR%\utils\build-checker.ts"
+node "%HOOKS_DIR%\utils\build-checker.js"
 
 :: 4. Error patterns
 echo 🔎 Checking for common errors...
-node "%HOOKS_DIR%\utils\error-pattern-checker.ts"
+node "%HOOKS_DIR%\utils\error-pattern-checker.js"
 
 echo ✅ Checks complete!
 ```
 
 ## Hook Utilities
 
-### file-tracker.ts
+### file-tracker.js
 
 **Purpose**: Log which files were modified
 
@@ -246,148 +246,38 @@ function trackChanges() {
 trackChanges();
 ```
 
-### build-checker.ts
+### build-checker.js
 
-**Purpose**: Run TypeScript build and report errors
+**Purpose**: Auto-detect project type and run appropriate build/type check
 
-```typescript
-import { execSync } from 'child_process';
+The build checker detects your project type by looking for config files:
+- `package.json` with `typecheck` or `build` script -> runs `npm run typecheck` or `npm run build`
+- `tsconfig.json` -> runs `npx tsc --noEmit`
+- `pyproject.toml` -> runs `mypy`
+- `go.mod` -> runs `go build ./...`
+- `Cargo.toml` -> runs `cargo check`
 
-function checkBuild() {
-  console.log('Running TypeScript build check...');
+No configuration needed -- it adapts to your stack automatically.
 
-  try {
-    // Run tsc --noEmit (type check without emitting files)
-    execSync('npx tsc --noEmit', {
-      stdio: 'inherit',
-      cwd: process.cwd()
-    });
+### error-pattern-checker.js
 
-    console.log('✅ Build check passed!');
-    return true;
-  } catch (error) {
-    console.error('❌ Build check failed!');
-    console.error('Run `/build-and-fix` to fix errors');
-    return false;
-  }
-}
+**Purpose**: Detect common error patterns across multiple languages
 
-checkBuild();
-```
+Scans recently changed files for patterns like:
+- **TypeScript/JavaScript**: unhandled async calls, missing error handling, console.log in production code
+- **Python**: bare `except:` clauses, missing exception handling
+- **Go**: unchecked error returns
 
-### error-pattern-checker.ts
-
-**Purpose**: Detect common error patterns
-
-```typescript
-import fs from 'fs';
-import { glob } from 'glob';
-
-interface ErrorPattern {
-  file: string;
-  line: number;
-  pattern: string;
-  message: string;
-  severity: 'error' | 'warning' | 'info';
-}
-
-const PATTERNS = [
-  {
-    regex: /await\s+(?!.*catch).*pool\.query/g,
-    message: 'Database query without error handling',
-    severity: 'error' as const
-  },
-  {
-    regex: /req\.body\.(?!.*validation)/g,
-    message: 'Unvalidated request body access',
-    severity: 'warning' as const
-  },
-  {
-    regex: /console\.log\(/g,
-    message: 'Console.log in code (use logger)',
-    severity: 'info' as const
-  },
-  {
-    regex: /data-uic=""/g,
-    message: 'Empty UIC attribute',
-    severity: 'warning' as const
-  }
-];
-
-function checkErrorPatterns() {
-  const files = glob.sync('src/**/*.{ts,tsx}');
-  const errors: ErrorPattern[] = [];
-
-  files.forEach(file => {
-    const content = fs.readFileSync(file, 'utf-8');
-    const lines = content.split('\n');
-
-    lines.forEach((line, index) => {
-      PATTERNS.forEach(pattern => {
-        if (pattern.regex.test(line)) {
-          errors.push({
-            file,
-            line: index + 1,
-            pattern: pattern.regex.source,
-            message: pattern.message,
-            severity: pattern.severity
-          });
-        }
-      });
-    });
-  });
-
-  // Report findings
-  if (errors.length === 0) {
-    console.log('✅ No error patterns detected');
-    return;
-  }
-
-  const critical = errors.filter(e => e.severity === 'error');
-  const warnings = errors.filter(e => e.severity === 'warning');
-
-  if (critical.length > 0) {
-    console.error(`\n❌ ${critical.length} critical issues:`);
-    critical.forEach(e =>
-      console.error(`  ${e.file}:${e.line} - ${e.message}`)
-    );
-  }
-
-  if (warnings.length > 0) {
-    console.warn(`\n⚠️  ${warnings.length} warnings:`);
-    warnings.forEach(e =>
-      console.warn(`  ${e.file}:${e.line} - ${e.message}`)
-    );
-  }
-}
-
-checkErrorPatterns();
-```
+The checker auto-detects file types and applies language-appropriate patterns.
 
 ## Setup
 
-### 1. Install Dependencies
+### 1. Copy Hook Files
+
+Hooks are included in the `.claude/hooks/` directory when you copy the bootstrap. No additional dependencies needed -- hooks are plain JavaScript (Node.js).
 
 ```bash
-npm install --save-dev \
-  typescript \
-  prettier \
-  @types/node \
-  glob
-```
-
-### 2. Create Hook Files
-
-```bash
-mkdir -p .claude/hooks/utils
-
-# Copy hook files
-cp hooks/user-prompt-submit.ts .claude/hooks/
-cp hooks/stop.sh .claude/hooks/
-cp hooks/stop.bat .claude/hooks/
-cp hooks/utils/*.ts .claude/hooks/utils/
-
-# Make executable
+# Make stop hook executable (Linux/Mac)
 chmod +x .claude/hooks/stop.sh
 ```
 
@@ -396,7 +286,7 @@ chmod +x .claude/hooks/stop.sh
 ```json
 {
   "hooks": {
-    "userPromptSubmit": ".claude/hooks/user-prompt-submit.ts",
+    "userPromptSubmit": ".claude/hooks/user-prompt-submit.js",
     "stop": ".claude/hooks/stop.sh"
   }
 }
@@ -406,7 +296,7 @@ For Windows:
 ```json
 {
   "hooks": {
-    "userPromptSubmit": ".claude/hooks/user-prompt-submit.ts",
+    "userPromptSubmit": ".claude/hooks/user-prompt-submit.js",
     "stop": ".claude/hooks/stop.bat"
   }
 }
@@ -416,7 +306,7 @@ For Windows:
 
 ```bash
 # Test userPromptSubmit
-echo "Create an API endpoint" | node .claude/hooks/user-prompt-submit.ts
+echo "Create an API endpoint" | node .claude/hooks/user-prompt-submit.js
 
 # Test stop hook
 ./.claude/hooks/stop.sh
@@ -511,7 +401,7 @@ Only run expensive checks on certain files:
 # Only run build check if TypeScript files changed
 if git diff --name-only | grep -q '\.tsx\?$'; then
   echo "🏗️  Running build check..."
-  node "$HOOKS_DIR/utils/build-checker.ts"
+  node "$HOOKS_DIR/utils/build-checker.js"
 fi
 ```
 
@@ -521,8 +411,8 @@ Run multiple checks in parallel:
 
 ```bash
 # Run checks in background
-node "$HOOKS_DIR/utils/build-checker.ts" &
-node "$HOOKS_DIR/utils/error-pattern-checker.ts" &
+node "$HOOKS_DIR/utils/build-checker.js" &
+node "$HOOKS_DIR/utils/error-pattern-checker.js" &
 
 # Wait for all to complete
 wait
@@ -591,7 +481,7 @@ jobs:
         run: npx tsc --noEmit
 
       - name: Error patterns
-        run: node .claude/hooks/utils/error-pattern-checker.ts
+        run: node .claude/hooks/utils/error-pattern-checker.js
 ```
 
 ## Troubleshooting

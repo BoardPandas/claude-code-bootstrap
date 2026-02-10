@@ -28,16 +28,10 @@ cp -r /path/to/claude-code-bootstrap/docs ./
 # 5. Copy and customize CLAUDE.md
 cp /path/to/claude-code-bootstrap/CLAUDE.md.template ./.claude/CLAUDE.md
 
-# 6. Edit .claude/CLAUDE.md and replace placeholders:
-#    - {{PROJECT_NAME}}
-#    - {{TECH_STACK}}
-#    - {{BACKEND_LANGUAGE}}
-#    - etc.
-
-# 7. Copy and rename settings template
+# 6. Copy and rename settings template
 cp .claude/settings.local.json.template .claude/settings.local.json
 
-# 8. Make hooks executable (Linux/Mac)
+# 7. Make hooks executable (Linux/Mac)
 chmod +x .claude/hooks/stop.sh
 ```
 
@@ -45,20 +39,16 @@ chmod +x .claude/hooks/stop.sh
 
 1. **Download ZIP**
    - Go to GitHub repository
-   - Click "Code" → "Download ZIP"
+   - Click "Code" -> "Download ZIP"
    - Extract to temporary location
 
 2. **Copy to Your Project**
    ```bash
-   # Copy .claude folder
    cp -r /path/to/extracted/claude-code-bootstrap/.claude /path/to/your/project/
-
-   # Copy docs (optional)
    cp -r /path/to/extracted/claude-code-bootstrap/docs /path/to/your/project/
    ```
 
-3. **Customize**
-   - Follow steps 5-8 from Method 1 above
+3. **Customize** - Follow steps 5-7 from Method 1 above
 
 ### Method 3: GitHub Template (If Available)
 
@@ -69,51 +59,43 @@ chmod +x .claude/hooks/stop.sh
 
 ## Post-Installation Configuration
 
-### 1. Customize CLAUDE.md
+### 1. Configure Your Stack
+
+Run `/setup-stack` in Claude Code to interactively configure your project. This will:
+- Ask which tech stack you're using
+- Enable the relevant stack pack files from `skills/stacks/`
+- Enable any optional skills you need
+- Update skill activation rules
+
+**Or configure manually:**
+
+The `skills/stacks/` directory contains stack-specific example files. Keep the ones matching your project and remove the rest:
+
+| Your Stack | Keep These Files |
+|---|---|
+| Node.js + Express | `node-express.md`, `tdd-jest.md` |
+| React + Next.js | `react-nextjs.md` |
+| Python + FastAPI | `python-fastapi.md`, `tdd-pytest.md` |
+| Go + Gin | `go-gin.md`, `tdd-go.md` |
+
+Core skills in `skills/core/` are universal and work with any stack.
+
+### 2. Customize CLAUDE.md
 
 Open `.claude/CLAUDE.md` and replace all placeholders:
 
-```markdown
-# Replace these placeholders:
-{{PROJECT_NAME}}          → Your actual project name
-{{PROJECT_DESCRIPTION}}   → Brief description
-{{TECH_STACK}}           → Your tech stack summary
-{{BACKEND_LANGUAGE}}     → Node.js, Python, Go, Ruby, etc.
-{{BACKEND_FRAMEWORK}}    → Express, FastAPI, Gin, Rails, etc.
-{{DATABASE}}             → PostgreSQL, MySQL, MongoDB, etc.
-{{FRONTEND_FRAMEWORK}}   → Next.js, React, Vue, Angular, etc.
-{{UI_LIBRARY}}           → Material UI, Tailwind, Bootstrap, etc.
-{{NAMING_CONVENTIONS}}   → Your naming rules
-{{FILE_ORGANIZATION}}    → Your file structure rules
 ```
-
-### 2. Customize Skills for Your Stack
-
-#### For Python Projects
-
-Edit `.claude/skills/core/backend-dev-guidelines.md`:
-- Update examples to use FastAPI/Django patterns
-- Replace `pool.query` with `asyncpg` or `psycopg2` examples
-- Update error handling for Python
-
-Edit `.claude/skills/core/tdd-workflow.md`:
-- Replace Jest examples with pytest examples
-
-#### For Go Projects
-
-Use `.claude/skills/optional/go-desktop-agent-guidelines.md` as reference.
-
-Edit `.claude/skills/core/backend-dev-guidelines.md`:
-- Update examples to use Go patterns
-- Use `database/sql` instead of pool.query
-- Follow Go conventions
-
-#### For Ruby Projects
-
-Edit `.claude/skills/core/backend-dev-guidelines.md`:
-- Update examples to use Rails patterns
-- Use ActiveRecord examples
-- Follow Rails conventions
+{{PROJECT_NAME}}          -> Your actual project name
+{{PROJECT_DESCRIPTION}}   -> Brief description
+{{TECH_STACK}}            -> Your tech stack summary
+{{BACKEND_LANGUAGE}}      -> Node.js, Python, Go, Ruby, etc.
+{{BACKEND_FRAMEWORK}}     -> Express, FastAPI, Gin, Rails, etc.
+{{DATABASE}}              -> PostgreSQL, MySQL, MongoDB, etc.
+{{FRONTEND_FRAMEWORK}}    -> Next.js, React, Vue, Angular, etc.
+{{UI_LIBRARY}}            -> Material UI, Tailwind, Bootstrap, etc.
+{{NAMING_CONVENTIONS}}    -> Your naming rules
+{{FILE_ORGANIZATION}}     -> Your file structure rules
+```
 
 ### 3. Update skill-rules.json (Optional)
 
@@ -126,7 +108,7 @@ Edit `.claude/skill-rules.json` to add project-specific triggers:
       "keywords": [
         "backend",
         "api",
-        "your-framework-name"  // Add your framework
+        "your-framework-name"
       ]
     }
   }
@@ -152,19 +134,20 @@ claude-code
 
 ### Check File Structure
 
-```bash
+```
 your-project/
 ├── .claude/
-│   ├── agents/              # ✅ 4 agent files
+│   ├── agents/              # 4 agent files
 │   ├── skills/
-│   │   ├── core/           # ✅ 7 core skills
-│   │   └── optional/       # ✅ 4 optional skills
-│   ├── commands/           # ✅ 5 command files
-│   ├── hooks/              # ✅ Hook files + utils/
-│   ├── CLAUDE.md           # ✅ Customized (not .template)
-│   ├── settings.local.json # ✅ (not .template)
-│   └── skill-rules.json    # ✅
-└── docs/                   # ✅ (optional) 10 documentation files
+│   │   ├── core/            # 6 universal skills
+│   │   ├── stacks/          # Stack-specific examples
+│   │   └── optional/        # Domain-specific skills
+│   ├── commands/            # Command files
+│   ├── hooks/               # Hook files + utils/
+│   ├── CLAUDE.md            # Customized (not .template)
+│   ├── settings.local.json  # (not .template)
+│   └── skill-rules.json
+└── docs/                    # (optional) documentation files
 ```
 
 ### Verify Hooks are Executable
@@ -185,7 +168,7 @@ chmod +x .claude/hooks/stop.sh
    - Should suggest: `backend-dev-guidelines`
 
 2. **Test Frontend Skill**
-   - Type: "Create a new React component"
+   - Type: "Create a new component"
    - Should suggest: `frontend-dev-guidelines`
 
 3. **Test Security Skill**
@@ -229,38 +212,16 @@ chmod +x .claude/hooks/stop.sh
 3. Type `/` to see available commands
 4. Verify command file format is correct
 
-### Wrong Tech Stack Examples
-
-**Problem**: Skills show Node.js but I use Python
-
-**Solutions**:
-1. Customize skill files in `.claude/skills/core/`
-2. Update code examples for your stack
-3. See "Stack Adapters" in each skill file
-4. Check `docs/01-CLAUDE-CODE-SETUP.md` for examples
-
 ## Next Steps
 
-1. **Read Quick Start**
-   - `docs/00-QUICK-START.md`
-
-2. **See Full Example**
-   - `docs/10-COMPLETE-EXAMPLE.md`
-
-3. **Build First Feature**
-   - Use `/dev-docs` to plan
-   - Let skills guide you
-   - Watch the magic happen!
-
-4. **Customize Further**
-   - Add project-specific skills
-   - Create custom agents
-   - Tailor to your workflow
+1. **Read Quick Start** - `docs/00-QUICK-START.md`
+2. **See Full Example** - `docs/10-COMPLETE-EXAMPLE.md`
+3. **Build First Feature** - Use `/dev-docs` to plan, let skills guide you
+4. **Customize Further** - Add project-specific skills, create custom agents
 
 ## Support
 
 - **Documentation**: See `docs/` folder
-- **Questions**: Check `docs/INDEX.md` for navigation
 - **Issues**: Report on GitHub repository
 
 ---
@@ -268,5 +229,3 @@ chmod +x .claude/hooks/stop.sh
 **Installation Time**: 15-30 minutes
 **First Value**: Immediate (next feature you build)
 **ROI**: 10x within first week
-
-Happy shipping! 🚀

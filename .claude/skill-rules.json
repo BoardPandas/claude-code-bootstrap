@@ -1,44 +1,48 @@
 {
-  "$schema": "https://json-schema.org/draft-07/schema#",
-  "description": "Skill auto-activation rules for your project",
-
   "backend-dev-guidelines": {
     "type": "domain",
     "enforcement": "suggest",
     "priority": "high",
-    "description": "Guidelines for backend API development with Express, PostgreSQL, and TypeScript",
+    "description": "Universal guidelines for backend API development",
     "promptTriggers": {
       "keywords": [
         "backend",
         "api",
         "endpoint",
         "route",
+        "handler",
         "controller",
         "database",
         "postgres",
+        "mysql",
         "sql",
         "query",
-        "express",
-        "server"
+        "server",
+        "middleware"
       ],
       "intentPatterns": [
-        "(create|add|build|implement).*(route|endpoint|api|controller)",
+        "(create|add|build|implement).*(route|endpoint|api|handler|controller)",
         "(fix|debug|resolve).*(backend|api|server|endpoint)",
-        "(database|db|postgres|sql).*(query|table|schema)",
+        "(database|db|postgres|mysql|sql).*(query|table|schema)",
         "(add|create).*(table|column|migration)"
       ]
     },
     "fileTriggers": {
       "pathPatterns": [
-        "src/**/*.ts",
-        "src/routes/**/*.ts",
+        "src/**/*.{ts,js,py,go,rb,rs,java,cs}",
+        "**/routes/**/*",
+        "**/handlers/**/*",
+        "**/api/**/*",
         "database/**/*.sql"
       ],
       "contentPatterns": [
         "app\\.(get|post|put|delete|patch)",
         "router\\.",
-        "pool\\.query",
-        "async.*req.*res"
+        "@app\\.(get|post|put|delete|patch)",
+        "func.*Handler",
+        "http\\.HandleFunc",
+        "async.*req.*res",
+        "def (get|post|put|delete|patch)"
       ]
     }
   },
@@ -47,115 +51,43 @@
     "type": "domain",
     "enforcement": "suggest",
     "priority": "high",
-    "description": "Guidelines for Next.js dashboard development with React and Material UI",
+    "description": "Universal guidelines for frontend/UI development",
     "promptTriggers": {
       "keywords": [
         "frontend",
-        "dashboard",
-        "react",
         "component",
-        "next",
-        "nextjs",
+        "page",
         "ui",
         "interface",
-        "page",
-        "material ui",
-        "mui"
+        "layout",
+        "form",
+        "dashboard"
       ],
       "intentPatterns": [
-        "(create|add|build).*(component|page|ui|interface)",
+        "(create|add|build).*(component|page|ui|interface|view)",
         "(style|design|layout)",
-        "(fix|debug).*(frontend|dashboard|ui|component)",
-        "material.?ui"
+        "(fix|debug).*(frontend|dashboard|ui|component)"
       ]
     },
     "fileTriggers": {
       "pathPatterns": [
-        "dashboard/**/*.tsx",
-        "dashboard/**/*.ts",
-        "dashboard/**/*.jsx",
-        "dashboard/src/**/*"
+        "**/*.{tsx,jsx,vue,svelte}",
+        "**/components/**/*",
+        "**/pages/**/*",
+        "**/views/**/*",
+        "**/app/**/*.{tsx,jsx}"
       ],
       "contentPatterns": [
         "import.*from ['\"]react['\"]",
         "export default function",
         "useState|useEffect|useContext",
-        "from ['\"]@mui"
+        "<template>",
+        "<script setup>"
       ]
     }
   },
 
-  "design-principles": {
-    "type": "quality",
-    "enforcement": "suggest",
-    "priority": "critical",
-    "description": "Design system - colors, typography, spacing, accessibility (WCAG AA), and theme support",
-    "promptTriggers": {
-      "keywords": [
-        "ui",
-        "design",
-        "component",
-        "button",
-        "form",
-        "input",
-        "card",
-        "modal",
-        "dialog",
-        "badge",
-        "table",
-        "navigation",
-        "layout",
-        "style",
-        "css",
-        "theme",
-        "color",
-        "spacing",
-        "font",
-        "typography",
-        "accessibility",
-        "responsive",
-        "mobile",
-        "desktop agent gui",
-        "wails frontend"
-      ],
-      "intentPatterns": [
-        "(create|add|build|update).*(component|ui|button|form|card|modal|badge)",
-        "(style|design|layout).*(component|page|ui)",
-        "(color|spacing|font|typography)",
-        "(dark mode|theme|light mode|high contrast)",
-        "(accessibility|wcag|aria|keyboard)",
-        "(responsive|mobile|tablet|desktop)",
-        "desktop.?agent.*(ui|gui|frontend)"
-      ]
-    },
-    "fileTriggers": {
-      "pathPatterns": [
-        "dashboard/**/*.tsx",
-        "dashboard/**/*.jsx",
-        "dashboard/**/*.css",
-        "dashboard/src/components/**/*",
-        "dashboard/src/app/**/*",
-        "desktop_agent/frontend/**/*",
-        "desktop_agent/**/*ui*.go",
-        "desktop_agent/**/*webview*.go"
-      ],
-      "contentPatterns": [
-        "style=\\{",
-        "className=",
-        "background.*color",
-        "padding|margin",
-        "fontSize|fontFamily|fontWeight",
-        "rounded-|px-|py-|gap-|text-",
-        "theme\\.",
-        "aria-",
-        "focus:",
-        "hover:",
-        "transition"
-      ]
-    }
-  },
-
-  "mvp-principles": {
+  "production-principles": {
     "type": "quality",
     "enforcement": "suggest",
     "priority": "critical",
@@ -163,18 +95,15 @@
     "promptTriggers": {
       "keywords": [
         "architecture",
-        "design",
-        "pattern",
-        "abstraction",
         "refactor",
-        "service",
+        "abstraction",
+        "service layer",
         "factory",
-        "interface",
-        "abstract",
-        "framework"
+        "repository pattern",
+        "over-engineering"
       ],
       "intentPatterns": [
-        "(create|add|implement).*(service|factory|repository|interface)",
+        "(create|add|implement).*(service|factory|repository)",
         "(refactor|redesign|restructure)",
         "(abstract|generalize)",
         "dependency.?injection",
@@ -183,14 +112,12 @@
     },
     "fileTriggers": {
       "pathPatterns": [
-        "**/*.ts",
-        "**/*.tsx"
+        "src/**/*.{ts,js,py,go,rb,rs,java,cs}"
       ],
       "contentPatterns": [
         "class.*Service",
         "class.*Factory",
         "class.*Repository",
-        "interface.*Service",
         "abstract class"
       ]
     }
@@ -206,7 +133,6 @@
         "test",
         "testing",
         "tdd",
-        "jest",
         "spec",
         "unit test",
         "integration test"
@@ -219,180 +145,23 @@
     },
     "fileTriggers": {
       "pathPatterns": [
-        "**/*.test.ts",
-        "**/*.spec.ts",
-        "test/**/*.ts"
+        "**/*.test.{ts,js,tsx,jsx}",
+        "**/*.spec.{ts,js,tsx,jsx}",
+        "**/test/**/*",
+        "**/tests/**/*",
+        "**/*_test.go",
+        "**/test_*.py",
+        "**/*_test.py"
       ],
       "contentPatterns": [
         "describe\\(",
         "it\\(",
         "test\\(",
-        "expect\\("
-      ]
-    }
-  },
-
-  "go-desktop-agent-guidelines": {
-    "type": "domain",
-    "enforcement": "suggest",
-    "priority": "high",
-    "description": "Go desktop agent development guidelines with Wails v2, error handling, and platform-specific code",
-    "promptTriggers": {
-      "keywords": [
-        "desktop",
-        "agent",
-        "wails",
-        "golang",
-        "go",
-        "systray",
-        "gui",
-        "msi",
-        "dmg",
-        "windows",
-        "macos",
-        "goroutine",
-        "channel",
-        "context",
-        "webview"
-      ],
-      "intentPatterns": [
-        "(desktop|agent).*(build|compile|package|develop)",
-        "(msi|dmg).*(build|create|package)",
-        "wails",
-        "(windows|macos).*(agent|desktop)",
-        "(go|golang).*(function|package|struct)",
-        "(error|panic).*(handling)",
-        "platform.?specific"
-      ]
-    },
-    "fileTriggers": {
-      "pathPatterns": [
-        "desktop_agent/**/*.go",
-        "desktop_agent/**/*.sh",
-        "desktop_agent/**/*.bat",
-        "desktop_agent/cmd/**/*",
-        "desktop_agent/internal/**/*"
-      ],
-      "contentPatterns": [
-        "package main",
-        "package (agent|screenshot|sysinfo|ui|config)",
-        "import.*wails",
-        "func main\\(\\)",
-        "func.*\\(.*\\).*error",
-        "//go:build (windows|darwin|linux)",
-        "context\\.Context",
-        "type.*struct"
-      ]
-    }
-  },
-
-  "database-operations": {
-    "type": "domain",
-    "enforcement": "suggest",
-    "priority": "high",
-    "description": "Database schema design and SQL operations",
-    "promptTriggers": {
-      "keywords": [
-        "database",
-        "schema",
-        "migration",
-        "postgres",
-        "postgresql",
-        "sql",
-        "table",
-        "column",
-        "index",
-        "query"
-      ],
-      "intentPatterns": [
-        "(create|alter|drop).*(table|column|index)",
-        "(database|db).*(schema|migration)",
-        "sql.*(query|statement)"
-      ]
-    },
-    "fileTriggers": {
-      "pathPatterns": [
-        "database/**/*.sql",
-        "database/**/*.ts"
-      ],
-      "contentPatterns": [
-        "CREATE TABLE",
-        "ALTER TABLE",
-        "CREATE INDEX",
-        "pool\\.query"
-      ]
-    }
-  },
-
-  "ai-integration": {
-    "type": "domain",
-    "enforcement": "suggest",
-    "priority": "medium",
-    "description": "OpenAI GPT-5 integration and AI features",
-    "promptTriggers": {
-      "keywords": [
-        "ai",
-        "openai",
-        "gpt",
-        "gpt-5",
-        "llm",
-        "prompt",
-        "analysis",
-        "summary",
-        "persona"
-      ],
-      "intentPatterns": [
-        "(ai|openai|gpt).*(integration|feature|analysis)",
-        "(ticket|content).*(analysis|summary)",
-        "persona.*lens"
-      ]
-    },
-    "fileTriggers": {
-      "pathPatterns": [
-        "src/**/*ai*.ts",
-        "src/**/*openai*.ts"
-      ],
-      "contentPatterns": [
-        "import.*openai",
-        "gpt-5-mini",
-        "reasoning.effort",
-        "text.verbosity"
-      ]
-    }
-  },
-
-  "docker-deployment": {
-    "type": "domain",
-    "enforcement": "suggest",
-    "priority": "medium",
-    "description": "Docker deployment and container management",
-    "promptTriggers": {
-      "keywords": [
-        "docker",
-        "container",
-        "deployment",
-        "deploy",
-        "production",
-        "compose"
-      ],
-      "intentPatterns": [
-        "docker.*(build|deploy|compose)",
-        "(deploy|deployment).*(production|server)",
-        "container"
-      ]
-    },
-    "fileTriggers": {
-      "pathPatterns": [
-        "docker-compose*.yml",
-        "Dockerfile*",
-        ".dockerignore"
-      ],
-      "contentPatterns": [
-        "FROM",
-        "RUN",
-        "CMD",
-        "EXPOSE",
-        "version:"
+        "expect\\(",
+        "def test_",
+        "func Test",
+        "assert",
+        "pytest"
       ]
     }
   },
@@ -423,139 +192,16 @@
     },
     "fileTriggers": {
       "pathPatterns": [
-        "src/**/*auth*.ts",
-        "src/**/*security*.ts",
-        "src/middleware/**/*.ts"
+        "**/*auth*.{ts,js,py,go,rb}",
+        "**/*security*.{ts,js,py,go,rb}",
+        "**/middleware/**/*"
       ],
       "contentPatterns": [
         "jwt\\.",
-        "bcrypt\\.",
+        "bcrypt",
         "Authorization.*Bearer",
-        "authenticate"
-      ]
-    }
-  },
-
-  "openai-api-expert": {
-    "type": "domain",
-    "enforcement": "suggest",
-    "priority": "high",
-    "description": "OpenAI API development with GPT-5 Mini Responses API, reasoning controls, and best practices",
-    "promptTriggers": {
-      "keywords": [
-        "openai",
-        "gpt",
-        "gpt-5",
-        "gpt-4",
-        "chatgpt",
-        "ai",
-        "llm",
-        "prompt",
-        "reasoning",
-        "verbosity",
-        "embeddings",
-        "completions"
-      ],
-      "intentPatterns": [
-        "(openai|gpt).*(api|integration|call)",
-        "(generate|analyze|summarize).*(ai|gpt|openai)",
-        "reasoning.*(effort|control)",
-        "text.*(verbosity)",
-        "(prompt|prompting).*(engineer|design)"
-      ]
-    },
-    "fileTriggers": {
-      "pathPatterns": [
-        "src/**/*ai*.ts",
-        "src/**/*openai*.ts",
-        "src/**/*gpt*.ts"
-      ],
-      "contentPatterns": [
-        "import.*openai",
-        "openai\\.chat\\.completions",
-        "gpt-5-mini",
-        "gpt-4",
-        "reasoning.*effort",
-        "text.*verbosity"
-      ]
-    }
-  },
-
-  "rest-api-expert": {
-    "type": "domain",
-    "enforcement": "suggest",
-    "priority": "high",
-    "description": "REST API design, Express routing, validation, authentication, and best practices",
-    "promptTriggers": {
-      "keywords": [
-        "rest",
-        "rest api",
-        "restful",
-        "api design",
-        "http methods",
-        "status codes",
-        "validation",
-        "pagination",
-        "filtering",
-        "cors"
-      ],
-      "intentPatterns": [
-        "(rest|restful).*(api|design|endpoint)",
-        "(http|api).*(method|verb|status)",
-        "(validate|validation).*(input|request|body)",
-        "(paginate|pagination|filter|sort)"
-      ]
-    },
-    "fileTriggers": {
-      "pathPatterns": [
-        "src/routes/**/*.ts",
-        "src/**/*route*.ts",
-        "src/**/*api*.ts"
-      ],
-      "contentPatterns": [
-        "app\\.(get|post|put|delete|patch)",
-        "router\\.(get|post|put|delete)",
-        "res\\.status\\(",
-        "req\\.(body|params|query)"
-      ]
-    }
-  },
-
-  "prompt-engineering-expert": {
-    "type": "domain",
-    "enforcement": "suggest",
-    "priority": "medium",
-    "description": "AI prompt engineering best practices, templates, and optimization techniques",
-    "promptTriggers": {
-      "keywords": [
-        "prompt",
-        "prompting",
-        "prompt engineering",
-        "system prompt",
-        "user prompt",
-        "few-shot",
-        "chain of thought",
-        "prompt template"
-      ],
-      "intentPatterns": [
-        "(prompt|prompting).*(engineer|design|write|create)",
-        "(system|user).?prompt",
-        "few.?shot",
-        "chain.?of.?thought",
-        "(improve|optimize|refine).*(prompt)"
-      ]
-    },
-    "fileTriggers": {
-      "pathPatterns": [
-        "src/**/*prompt*.ts",
-        "src/**/*ai*.ts"
-      ],
-      "contentPatterns": [
-        "const.*PROMPT",
-        "systemPrompt",
-        "userPrompt",
-        "role.*system",
-        "messages.*\\["
+        "authenticate",
+        "password_hash"
       ]
     }
   },
@@ -564,15 +210,14 @@
     "type": "quality",
     "enforcement": "suggest",
     "priority": "low",
-    "description": "Guide for creating and maintaining Claude Code skills with progressive disclosure",
+    "description": "Guide for creating and maintaining Claude Code skills",
     "promptTriggers": {
       "keywords": [
         "create skill",
         "new skill",
         "skill development",
         "skill-rules",
-        "auto-activation",
-        "progressive disclosure"
+        "auto-activation"
       ],
       "intentPatterns": [
         "(create|add|build|write).*(skill|claude.*skill)",
@@ -591,67 +236,6 @@
         "## Core Principles",
         "promptTriggers",
         "fileTriggers"
-      ]
-    }
-  },
-
-  "UIC_Guidelines": {
-    "type": "quality",
-    "enforcement": "suggest",
-    "priority": "critical",
-    "description": "Universal ID Convention (UIC) system - unique data-uic attributes for all UI elements, canonical components, and validation",
-    "promptTriggers": {
-      "keywords": [
-        "uic",
-        "data-uic",
-        "universal id",
-        "ui element",
-        "component",
-        "button",
-        "input",
-        "form",
-        "div",
-        "table",
-        "tabs",
-        "StandardTabs",
-        "StandardTable",
-        "ui:enforce",
-        "master list",
-        "element id",
-        "tracking",
-        "testability"
-      ],
-      "intentPatterns": [
-        "(create|add|build).*(ui|component|element|button|input|form|table|tabs)",
-        "(data-uic|uic)",
-        "(StandardTabs|StandardTable|TableContainer)",
-        "(tabs|table).*(component|pattern)",
-        "ui:enforce",
-        "(master.*list|uic.*list)",
-        "(validate|validation).*(ui|uic)"
-      ]
-    },
-    "fileTriggers": {
-      "pathPatterns": [
-        "dashboard/**/*.tsx",
-        "dashboard/**/*.jsx",
-        "dashboard/src/components/**/*",
-        "dashboard/src/app/**/*",
-        "desktop_agent/frontend/**/*",
-        "docs/UI_CONVENTIONS.md",
-        "docs/UIC_MASTER_LIST.md"
-      ],
-      "contentPatterns": [
-        "data-uic=",
-        "StandardTabs",
-        "StandardTable",
-        "TableContainer",
-        "<table",
-        "<TabsList",
-        "UMGTAB0001",
-        "UMGCNT0004",
-        "SHRTAB0001",
-        "SHRTBL0001"
       ]
     }
   }

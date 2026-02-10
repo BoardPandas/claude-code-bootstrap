@@ -31,7 +31,7 @@ Review code for:
 - Hard-coded > Configured (for MVP)
 
 ### Red Flags (High Priority)
-🚨 **STOP immediately if found**:
+**STOP immediately if found**:
 - Factory patterns
 - Dependency injection containers
 - Abstract base classes
@@ -42,7 +42,7 @@ Review code for:
 - "Future-proofing" code
 
 ### Green Flags (Good Practices)
-✅ **Praise and encourage**:
+**Praise and encourage**:
 - Simple functions
 - Direct database queries
 - Inline logic
@@ -68,7 +68,7 @@ Review code for:
 
 #### Preferred Patterns
 - [ ] Simple, focused functions
-- [ ] Direct SQL queries (no ORM)
+- [ ] Direct database queries (minimal ORM abstraction)
 - [ ] Minimal abstraction layers
 - [ ] Hard-coded values where appropriate
 - [ ] Single file for related functionality
@@ -108,9 +108,8 @@ Review code for:
 - [ ] But kept simple (no complex error hierarchies)
 
 #### Database
-- [ ] Parameterized queries (SQL injection protection)
+- [ ] Injection-protected queries (parameterized queries or safe ORM usage)
 - [ ] No N+1 query problems
-- [ ] Direct queries (no ORM)
 - [ ] Connection pooling used
 - [ ] Transactions where needed (but simple)
 
@@ -118,7 +117,7 @@ Review code for:
 
 #### Must Have (Even for MVP)
 - [ ] No hardcoded secrets in code
-- [ ] Parameterized database queries
+- [ ] Injection-protected database queries
 - [ ] Basic input validation
 - [ ] Authentication on protected routes
 - [ ] HTTPS enforced
@@ -133,14 +132,14 @@ Review code for:
 ### 5. Performance (Reality Check)
 
 #### Check For
-- [ ] No obvious O(n²) loops
+- [ ] No obvious O(n^2) loops
 - [ ] No N+1 database queries
 - [ ] No unnecessary API calls in loops
 - [ ] Reasonable batch sizes
 
 #### Don't Worry About
-- Advanced caching (we have 0 users)
-- Query optimization (until we see slowness)
+- Advanced caching (until you have real traffic)
+- Query optimization (until you see slowness)
 - Load balancing
 - Horizontal scaling
 - Connection pooling beyond basics
@@ -165,19 +164,19 @@ Review code for:
 For each file reviewed:
 
 ```markdown
-### File: [path/to/file.ts]
+### File: [path/to/file]
 
 **Purpose**: [What this file does]
 **Lines of Code**: [X lines]
 **Complexity**: [Simple / Moderate / Complex]
 
-#### ✅ Good Practices
+#### Good Practices
 1. [Specific example with line number]
    - Why it's good: [Explanation]
 
 2. [Another example]
 
-#### ⚠️ Concerns
+#### Concerns
 1. **[Issue Type]** (Priority: [High/Medium/Low])
    - **Location**: [line number or function name]
    - **Current**: [What it does now]
@@ -185,7 +184,7 @@ For each file reviewed:
    - **Suggestion**: [Simple fix]
    - **Reasoning**: [Why this matters]
 
-#### 🚨 MVP Violations
+#### MVP Violations
 1. **[Violation]** (Priority: CRITICAL)
    - **Location**: [line number]
    - **Pattern Used**: [What enterprise pattern was used]
@@ -193,10 +192,10 @@ For each file reviewed:
    - **Refactor To**: [Simpler MVP approach]
    - **Effort**: [Time to fix]
 
-#### 📝 Technical Debt (Acceptable)
+#### Technical Debt (Acceptable)
 1. [Shortcut taken]
    - **Reason**: [Why it's okay for MVP]
-   - **Revisit When**: [1000+ users, performance issues, etc.]
+   - **Revisit When**: [Trigger condition, e.g., performance issues, 3rd duplicate, etc.]
 ```
 
 ### Step 3: Test Coverage Review
@@ -225,20 +224,20 @@ For each file reviewed:
 ```markdown
 ## Security Assessment
 
-### ✅ Security Basics Met
+### Security Basics Met
 - [x] No hardcoded secrets
-- [x] SQL injection protected
+- [x] Injection protected
 - [x] Input validation present
 - [x] Authentication enforced
 
-### ⚠️ Security Concerns
+### Security Concerns
 1. **[Issue]** (Severity: [High/Medium/Low])
    - **Location**: [file:line]
    - **Risk**: [What could happen]
    - **Fix**: [How to address]
    - **Priority**: [Fix now vs later]
 
-### 📋 Security Debt (Acceptable for MVP)
+### Security Debt (Acceptable for MVP)
 - [Deferred security feature]
   - **Risk**: Low (because: [reason])
   - **When to Add**: [After X users/revenue]
@@ -249,26 +248,26 @@ For each file reviewed:
 ```markdown
 ## Recommendations
 
-### 🚨 Must Fix (Before Deploy)
+### Must Fix (Before Deploy)
 1. **[Critical issue]**
    - **Why**: [Security/Breaking/Data Loss]
    - **Fix**: [Specific solution]
    - **Effort**: [Time estimate]
 
-### ⚠️ Should Fix (This Week)
+### Should Fix (This Week)
 1. **[Important issue]**
    - **Why**: [Quality/Maintainability]
    - **Fix**: [Specific solution]
    - **Effort**: [Time estimate]
 
-### 💡 Could Simplify (Quick Wins)
+### Could Simplify (Quick Wins)
 1. **[Over-engineered code]**
    - **Current**: [What it does]
    - **Simpler**: [MVP approach]
    - **Benefit**: [Less complexity]
    - **Effort**: [Time estimate]
 
-### 📝 Technical Debt (Document & Accept)
+### Technical Debt (Document & Accept)
 1. **[Acceptable shortcut]**
    - **What**: [What was done]
    - **Why it's okay**: [MVP reasoning]
@@ -280,7 +279,7 @@ For each file reviewed:
 ### Be Pragmatic
 - **Context matters**: We're building a prototype
 - **Speed matters**: Working now > Perfect later
-- **Users matter**: 0 users = different priorities
+- **Users matter**: Focus on the users you actually have
 - **Cash matters**: Development time costs money
 
 ### Focus Energy On
@@ -303,49 +302,21 @@ For each file reviewed:
 - "What's the hackiest way to make this work?"
 - "Are we building for hypothetical futures?"
 
-## Example Reviews
-
-### ❌ Bad Review (Too Prescriptive)
-```markdown
-The code should use a factory pattern to instantiate the service.
-Variable names should follow the company style guide.
-Add comprehensive JSDoc comments to all functions.
-Implement proper error handling hierarchy.
-```
-
-### ✅ Good Review (MVP-Aligned)
-```markdown
-🚨 MVP Violation: Service layer with repository pattern (lines 45-120)
-- **Issue**: Adds 75 lines of abstraction for simple CRUD
-- **Simpler**: Direct SQL queries in route handler
-- **Benefit**: 1 file instead of 3, obvious data flow
-- **Effort**: 20 minutes to refactor
-
-⚠️ Missing Tests: New endpoint not tested
-- **Location**: POST /agents/register
-- **Add**: Basic integration test hitting endpoint
-- **Why**: TDD requirement, even for MVP
-
-✅ Good: Simple function for ticket creation (line 23)
-- Direct SQL, clear logic, inline validation
-- This is exactly the MVP approach we want
-```
-
 ## Metrics to Track
 
 ### Good Indicators
-- ✅ Lines of code decreasing
-- ✅ Number of files consolidating
-- ✅ Test coverage improving
-- ✅ Build staying green
-- ✅ Features shipping quickly
+- Lines of code decreasing
+- Number of files consolidating
+- Test coverage improving
+- Build staying green
+- Features shipping quickly
 
 ### Bad Indicators
-- 🚨 Abstraction layers increasing
-- 🚨 "Framework" or "system" being built
-- 🚨 More time refactoring than shipping
-- 🚨 Complex type hierarchies appearing
-- 🚨 Features taking longer than estimated
+- Abstraction layers increasing
+- "Framework" or "system" being built
+- More time refactoring than shipping
+- Complex type hierarchies appearing
+- Features taking longer than estimated
 
 ## Final Checklist
 

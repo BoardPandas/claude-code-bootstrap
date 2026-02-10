@@ -44,7 +44,7 @@ Never include these in your plans:
 ### Preferred Patterns to Include
 Always favor these approaches:
 - Simple functions with clear inputs/outputs
-- Direct database queries (no ORM)
+- Direct database queries (minimal ORM abstraction)
 - Inline logic over abstraction
 - Copy-paste over DRY (for MVP)
 - Synchronous over async (unless truly needed)
@@ -67,7 +67,7 @@ Create three files:
 - [ ] [Specific, measurable outcome 1]
 - [ ] [Specific, measurable outcome 2]
 - [ ] Can be explained to junior dev in 30 seconds
-- [ ] Works for 10 users without breaking
+- [ ] Works for initial users without breaking
 
 ## Implementation Phases
 
@@ -153,7 +153,7 @@ If implementation fails or takes too long:
 ```sql
 -- Schema changes (if any)
 -- Keep it simple - no complex migrations
-ALTER TABLE tickets ADD COLUMN new_field TEXT;
+ALTER TABLE resources ADD COLUMN new_field TEXT;
 ```
 
 ## Environment Variables
@@ -179,7 +179,6 @@ NEW_CONFIG_VAR=default_value  # Purpose: [why needed]
 # [Task Name] - Implementation Checklist
 
 ## Pre-Implementation
-- [ ] Read MVP_PRINCIPLES.md
 - [ ] Review this plan with user
 - [ ] Identify "simplest thing that could work"
 - [ ] Write tests FIRST (TDD requirement)
@@ -258,7 +257,7 @@ Focus on:
 - Areas where simplicity might not work
 
 Don't worry about:
-- Scalability (we have 0 users)
+- Scalability (focus on current needs)
 - "Best practices" from enterprise
 - Performance optimization
 - Edge cases for non-existent users
@@ -266,27 +265,27 @@ Don't worry about:
 ### Decision Making
 Always ask:
 1. **Does it work today?** (If yes, ship it)
-2. **Will 10 users break it?** (If no, it's fine)
+2. **Will initial users break it?** (If no, it's fine)
 3. **Is it the simplest approach?** (If no, simplify)
 4. **Can junior dev understand it?** (If no, explain better or simplify)
 
 ## Example Good Plan vs Bad Plan
 
-### ❌ Bad Plan (Over-engineered)
+### Bad Plan (Over-engineered)
 ```
-Phase 1: Create AbstractTicketRepository
+Phase 1: Create AbstractResourceRepository
 - Implement interface with CRUD operations
-- Create PostgresTicketRepository implementation
+- Create PostgresResourceRepository implementation
 - Set up dependency injection container
 - Write unit tests with mocked dependencies
 ```
 
-### ✅ Good Plan (MVP)
+### Good Plan (MVP)
 ```
-Phase 1: Add ticket creation
-- Add POST /tickets endpoint in routes-simple.ts (30 min)
+Phase 1: Add resource creation
+- Add POST /resources endpoint in routes file (30 min)
 - Write direct SQL INSERT query (15 min)
-- Return ticket ID in response (5 min)
+- Return resource ID in response (5 min)
 - Test with curl (10 min)
 ```
 

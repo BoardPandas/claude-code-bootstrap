@@ -2,10 +2,8 @@
   "$schema": "https://code.claude.com/settings-schema.json",
 
   "hooks": {
-    "userPromptSubmit": ".claude/hooks/user-prompt-submit.ts",
-    "stop": ".claude/hooks/stop.sh",
-    "Setup": ".claude/hooks/setup.ts",
-    "PreToolUse": ".claude/hooks/pre-tool-use.ts"
+    "userPromptSubmit": ".claude/hooks/user-prompt-submit.js",
+    "stop": ".claude/hooks/stop.sh"
   },
 
   "permissions": {

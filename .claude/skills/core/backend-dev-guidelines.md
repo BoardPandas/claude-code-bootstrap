@@ -1,446 +1,129 @@
 ---
 name: backend-dev-guidelines
-description: Node.js/Express/PostgreSQL development patterns with direct SQL, MVP principles, and multi-tenancy
+description: Universal backend API development principles with direct SQL, MVP mindset, and multi-tenancy
 ---
 
 # Backend Development Guidelines
 
-Guidelines for backend API development.
+Universal principles for backend API development — applicable to any language and framework.
 
-## Tech Stack
-
-- **Runtime**: Node.js
-- **Framework**: Express
-- **Language**: TypeScript (keep it simple)
-- **Database**: PostgreSQL with direct queries
-- **Cache**: Redis
-- **AI**: OpenAI GPT-5 Mini (Responses API)
+> For stack-specific code examples, see the relevant file in `.claude/skills/stacks/` (e.g., `node-express.md`, `python-fastapi.md`, `go-gin.md`).
 
 ## MVP Principles (Most Important!)
 
 ### Always Follow
 - **Simple functions** over classes
-- **Direct SQL queries** (NO ORM)
+- **Direct database queries** over ORMs (for MVP — extract a data layer after 3+ patterns emerge)
 - **Inline logic** over abstraction
-- **Hard-code first**, extract later
-- **One file** for related functionality
-- **Synchronous** over async (unless needed)
+- **Hard-code first**, extract when patterns emerge (Rule of Three)
+- **One file** for related functionality until it gets unwieldy
+- **Synchronous** over async (unless performance requires it)
 
-### Never Use
-- Service layers or repositories
-- Factory patterns
-- Dependency injection
-- Abstract classes
+### Never Use (Unless Justified)
+- Service layers or repositories (for MVP)
+- Factory patterns (unless 5+ implementations)
+- Dependency injection frameworks (unless team >5 devs)
+- Abstract base classes (unless 3+ concrete implementations)
 - Complex type hierarchies
-- ORMs (use direct SQL)
+- ORMs (use direct parameterized queries)
 
-## File Structure
+## Route / Handler Structure
 
-```
-src/
-├── routes-simple.ts       # Main API routes (keep consolidated)
-├── server-simple.ts       # Server entry point
-├── routes/               # Individual route handlers (if needed)
-│   ├── agents.ts
-│   ├── clients.ts
-│   └── tickets.ts
-├── middleware/           # Simple middleware functions
-└── database/
-    └── connection.ts     # Connection pool setup
-```
+Keep route handlers simple and self-contained:
 
-## Database Queries (Direct SQL)
+1. **Validate input** at the top of the handler (early return on invalid)
+2. **Execute the query** or business logic
+3. **Return the result** with appropriate status codes
+4. **Catch errors** and return user-friendly messages
 
-### ✅ CORRECT - Direct Queries
-```typescript
-// Simple parameterized query
-app.post('/tickets', async (req, res) => {
-  const { subject, email, priority } = req.body;
+Avoid splitting a single request across service layers, repositories, and DTOs. A handler that validates, queries, and responds in one place is easier to read, test, and debug.
 
-  // Validation (inline and simple)
-  if (!subject) return res.status(400).json({ error: 'Subject required' });
-  if (!email?.includes('@')) return res.status(400).json({ error: 'Invalid email' });
+## Database Queries
 
-  try {
-    // Direct SQL query with parameterization (prevents SQL injection)
-    const result = await pool.query(
-      `INSERT INTO tickets (subject, requester_email, priority, status, created_at)
-       VALUES ($1, $2, $3, 'pending', NOW())
-       RETURNING *`,
-      [subject, email, priority || 'medium']
-    );
+### Direct Parameterized Queries
+- Always use parameterized queries (prevents SQL injection)
+- Write SQL directly — it's readable and debuggable
+- Use transactions for multi-step operations
+- Add indexes for columns you query frequently
 
-    res.status(201).json({
-      success: true,
-      ticket: result.rows[0]
-    });
-  } catch (error) {
-    console.error('Ticket creation error:', error);
-    res.status(500).json({ error: 'Failed to create ticket' });
-  }
-});
-```
+### When to Consider an ORM
+- After you have 3+ repeated query patterns that would benefit from abstraction
+- When your team has standardized on one and everyone knows it
+- Never at the start of a new project
 
-### ❌ WRONG - ORM or Repository Pattern
-```typescript
-// DON'T DO THIS - Too complex for MVP
-class TicketRepository {
-  async create(data: CreateTicketDto): Promise<Ticket> {
-    // ... abstraction we don't need
-  }
-}
-```
+## Input Validation
 
-## Route Structure
-
-### Simple Route Handler Pattern
-```typescript
-// routes-simple.ts or routes/feature.ts
-
-import { Router } from 'express';
-import { Pool } from 'pg';
-
-const router = Router();
-
-// GET endpoint
-router.get('/tickets', async (req, res) => {
-  try {
-    const result = await pool.query(
-      'SELECT * FROM tickets ORDER BY created_at DESC LIMIT 100'
-    );
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching tickets:', error);
-    res.status(500).json({ error: 'Failed to fetch tickets' });
-  }
-});
-
-// POST endpoint
-router.post('/tickets', async (req, res) => {
-  const { subject, email } = req.body;
-
-  // Simple validation
-  if (!subject) return res.status(400).json({ error: 'Subject required' });
-
-  try {
-    const result = await pool.query(
-      'INSERT INTO tickets (subject, requester_email) VALUES ($1, $2) RETURNING *',
-      [subject, email]
-    );
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating ticket:', error);
-    res.status(500).json({ error: 'Failed to create ticket' });
-  }
-});
-
-export default router;
-```
-
-## Multi-Tenancy
-
-### Client ID Header Pattern
-```typescript
-// Extract client ID from header, query, or agentId
-function getClientId(req): string {
-  // 1. Check header
-  if (req.headers['x-client-id']) {
-    return req.headers['x-client-id'] as string;
-  }
-
-  // 2. Check query param
-  if (req.query.clientId) {
-    return req.query.clientId as string;
-  }
-
-  // 3. Extract from agentId (format: org_XXXXX-agent-YYYYY)
-  if (req.body.agentId?.startsWith('org_')) {
-    const match = req.body.agentId.match(/^(org_\d+)/);
-    if (match) return match[1];
-  }
-
-  // 4. Default fallback
-  return 'default';
-}
-
-// Use in route
-router.post('/tickets', async (req, res) => {
-  const clientId = getClientId(req);
-
-  const result = await pool.query(
-    'INSERT INTO tickets (client_id, subject) VALUES ($1, $2) RETURNING *',
-    [clientId, req.body.subject]
-  );
-
-  res.json(result.rows[0]);
-});
-```
+- Validate at the handler level (inline, not in separate validation layers)
+- Use early return pattern — reject bad input before doing any work
+- Keep validation simple: required fields, format checks, allowed values
+- Use your framework's built-in validation if it has one (e.g., Pydantic, Gin binding tags)
+- Don't pull in complex validation libraries for MVP
 
 ## Error Handling
 
-### Simple Pattern (MVP)
-```typescript
-// Try-catch with clear error messages
-app.post('/endpoint', async (req, res) => {
-  try {
-    // Business logic here
-    const result = await doSomething();
-    res.json(result);
-  } catch (error) {
-    console.error('Error description:', error);
-    res.status(500).json({
-      error: 'User-friendly error message',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
-  }
-});
-```
+Every handler should:
+1. Wrap external calls (database, APIs) in error handling
+2. Log errors with context (what operation failed, relevant IDs)
+3. Return user-friendly error messages (never expose stack traces or SQL in production)
+4. Use appropriate HTTP status codes (400 for bad input, 401/403 for auth, 500 for server errors)
 
-### Input Validation (Inline)
-```typescript
-// Validate at start of handler
-app.post('/tickets', async (req, res) => {
-  const { subject, email, priority } = req.body;
+## Multi-Tenancy (If Applicable)
 
-  // Simple validation - early return pattern
-  if (!subject) {
-    return res.status(400).json({ error: 'Subject is required' });
-  }
-
-  if (!email?.includes('@')) {
-    return res.status(400).json({ error: 'Valid email required' });
-  }
-
-  if (priority && !['low', 'medium', 'high', 'urgent'].includes(priority)) {
-    return res.status(400).json({ error: 'Invalid priority' });
-  }
-
-  // Continue with logic...
-});
-```
-
-## AI Integration (OpenAI GPT-5)
-
-### Correct Configuration
-```typescript
-import OpenAI from 'openai';
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-// Use GPT-5 Mini with Responses API
-async function generateTicketSummary(ticketData: any) {
-  const response = await openai.chat.completions.create({
-    model: 'gpt-5-mini',
-    messages: [
-      {
-        role: 'system',
-        content: 'You are a technical support analyst. Analyze tickets concisely.'
-      },
-      {
-        role: 'user',
-        content: `Analyze this ticket: ${ticketData.subject}\n${ticketData.description}`
-      }
-    ],
-    // GPT-5 specific parameters
-    reasoning: {
-      effort: 'medium' // minimal, low, medium, high
-    },
-    text: {
-      verbosity: 'high' // low, medium, high
-    },
-    max_output_tokens: 2000,
-    // DO NOT use these (GPT-5 rejects them):
-    // temperature: 0.7,  // ❌ Don't use
-    // top_p: 1.0,        // ❌ Don't use
-  });
-
-  return response.choices[0].message.content;
-}
-```
-
-### Important AI Notes
-- Default to `gpt-5-mini` for all workflows
-- Use Responses API with `reasoning.effort` and `text.verbosity`
-- **NEVER** pass `temperature`, `top_p`, or `logprobs` (GPT-5 rejects them)
-- Keep prompts simple and direct
-- Hard-code model and settings (don't over-configure)
-
-## Testing (TDD Required)
-
-### Write Tests First
-```typescript
-// test/routes/tickets.test.ts
-import request from 'supertest';
-import app from '../src/server-simple';
-
-describe('POST /api/v1/agents/tickets', () => {
-  it('should create a ticket with valid data', async () => {
-    const response = await request(app)
-      .post('/api/v1/agents/tickets')
-      .send({
-        agentId: 'test-agent',
-        subject: 'Test ticket',
-        userEmail: 'test@example.com',
-        priority: 'medium'
-      });
-
-    expect(response.status).toBe(201);
-    expect(response.body.success).toBe(true);
-    expect(response.body.ticketId).toBeDefined();
-  });
-
-  it('should reject ticket without subject', async () => {
-    const response = await request(app)
-      .post('/api/v1/agents/tickets')
-      .send({
-        agentId: 'test-agent',
-        userEmail: 'test@example.com'
-      });
-
-    expect(response.status).toBe(400);
-    expect(response.body.error).toContain('subject');
-  });
-});
-```
-
-### Keep Tests Simple
-- Test happy path first
-- Test error cases
-- Don't mock everything (use real DB for integration tests)
-- Focus on behavior, not implementation
+If your app serves multiple tenants:
+- Extract tenant ID from request headers, query params, or auth token
+- Filter all queries by tenant ID
+- Keep the extraction logic in one place (a helper function or middleware)
 
 ## Common Patterns
 
-### Pagination (Simple)
-```typescript
-router.get('/tickets', async (req, res) => {
-  const limit = parseInt(req.query.limit as string) || 20;
-  const offset = parseInt(req.query.offset as string) || 0;
+### Pagination
+- Accept `limit` and `offset` (or `page` and `page_size`) as query parameters
+- Set sensible defaults (e.g., limit=20)
+- Return pagination metadata with results
 
-  const result = await pool.query(
-    'SELECT * FROM tickets ORDER BY created_at DESC LIMIT $1 OFFSET $2',
-    [limit, offset]
-  );
+### Background Jobs
+- Start simple: polling loop that checks for pending work
+- Don't introduce a job queue framework until you have proven the need
+- Log job processing results
 
-  res.json({
-    tickets: result.rows,
-    limit,
-    offset,
-    total: result.rowCount
-  });
-});
-```
-
-### Background Jobs (Simple Polling)
-```typescript
-// Simple background processor
-async function processQueue() {
-  while (true) {
-    const jobs = await pool.query(
-      `SELECT * FROM build_jobs
-       WHERE status = 'queued'
-       ORDER BY created_at ASC
-       LIMIT 5`
-    );
-
-    for (const job of jobs.rows) {
-      await processJob(job);
-    }
-
-    // Poll every 2 minutes
-    await new Promise(resolve => setTimeout(resolve, 120000));
-  }
-}
-
-// Start on server boot
-processQueue().catch(console.error);
-```
+### Authentication
+- Use JWT or session-based auth (whichever your framework supports natively)
+- Store secrets in environment variables
+- Add auth middleware to protected routes
+- Re-authenticate for destructive operations
 
 ## Security (MVP Basics)
 
 ### Required
-- [ ] Parameterized queries (prevent SQL injection)
-- [ ] Environment variables for secrets
-- [ ] Basic input validation
-- [ ] HTTPS in production
-- [ ] JWT for authentication (if needed)
+- Parameterized queries (prevent SQL injection)
+- Environment variables for all secrets
+- Basic input validation on all endpoints
+- HTTPS in production
+- Authentication on protected routes
 
-### Nice to Have (Defer for MVP)
+### Defer for MVP
 - Advanced rate limiting
-- Complex authorization
+- Complex authorization schemes
 - Input sanitization libraries
-- CSRF protection
-
-### Example Auth Middleware
-```typescript
-// Simple JWT check
-function requireAuth(req, res, next) {
-  const token = req.headers.authorization?.replace('Bearer ', '');
-
-  if (!token) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
-    next();
-  } catch (error) {
-    res.status(401).json({ error: 'Invalid token' });
-  }
-}
-
-// Use on protected routes
-router.get('/admin/users', requireAuth, async (req, res) => {
-  // ... admin logic
-});
-```
+- CSRF protection (unless using cookie-based sessions)
 
 ## Checklist Before Committing
 
 - [ ] Following MVP principles (no service layers, repositories, etc.)
-- [ ] Using direct SQL queries (no ORM)
+- [ ] Using direct parameterized queries (no ORM)
 - [ ] Tests written first (TDD)
 - [ ] Input validation present
-- [ ] Error handling included
+- [ ] Error handling on all external calls
 - [ ] No hardcoded secrets
-- [ ] Code under 200 lines per feature (guideline)
-- [ ] Can explain to junior dev in 30 seconds
+- [ ] Handler is readable and self-contained
+- [ ] Can explain to another dev in 30 seconds
 
 ## Common Mistakes to Avoid
 
-### ❌ Over-Engineering
-```typescript
-// Don't create service layers
-class TicketService {
-  constructor(private repo: TicketRepository) {}
-  async create(dto: CreateTicketDto): Promise<Ticket> { ... }
-}
-```
-
-### ❌ Complex Validation Libraries
-```typescript
-// Don't use complex validation
-import { validate } from 'class-validator';
-class CreateTicketDto { ... }
-```
-
-### ❌ ORMs
-```typescript
-// Don't use ORMs
-import { Entity, Column } from 'typeorm';
-@Entity()
-class Ticket { ... }
-```
-
-### ✅ Keep It Simple
-```typescript
-// Just validate inline and query directly
-if (!req.body.subject) return res.status(400).json({ error: 'Subject required' });
-const result = await pool.query('INSERT INTO tickets...', [values]);
-```
+- **Over-engineering**: Don't create service/repository layers for MVP
+- **Complex validation libraries**: Validate inline or with framework builtins
+- **ORMs at project start**: Direct queries are simpler and more transparent
+- **Abstracting too early**: Wait for the 3rd duplicate before extracting
 
 ## Remember
 
@@ -448,6 +131,6 @@ const result = await pool.query('INSERT INTO tickets...', [values]);
 - **Working > Perfect** (ship it)
 - **Direct > Abstracted** (inline logic)
 - **TDD** (write tests first)
-- **MVP mindset** (we have 0 users)
+- **MVP mindset** (build for your actual scale, not hypothetical millions)
 
 When in doubt, ask: "What's the simplest thing that could possibly work?"

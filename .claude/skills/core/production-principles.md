@@ -5,11 +5,9 @@ description: Production-ready development principles balancing simplicity with r
 
 # Production Development Principles
 
-**CRITICAL**: This project is in PRODUCTION BETA serving multiple MSPs.
+These are universal production development principles for any project.
 
 > **Philosophy**: Simple, scalable, maintainable. Not MVP shortcuts, not enterprise bloat.
-
-See `/docs/DEVELOPMENT_PRINCIPLES.md` for full reference. This skill provides quick reminders.
 
 ## Golden Rules (ALWAYS Follow)
 
@@ -23,9 +21,9 @@ See `/docs/DEVELOPMENT_PRINCIPLES.md` for full reference. This skill provides qu
 
 ## Reality Check (Where We Are)
 
-- **10-100 MSPs**: Optimize for this scale, not millions
+- **your current customer base**: Optimize for this scale, not millions
 - **Production beta**: Real customers, but still learning
-- **Multi-tenant**: Each MSP has unique needs
+- **Multi-tenant**: Each customer has unique needs
 - **Speed + Reliability**: Ship fast, but don't break things
 - **Technical debt payback**: Fix issues that impact customers NOW
 
@@ -62,7 +60,7 @@ These patterns add complexity. Only use if you meet the criteria:
 - Logging and monitoring (errors, performance, business metrics)
 - Inline code when <3 uses, extract when 3+ uses (Rule of Three)
 - Database migrations (not raw SQL changes)
-- Basic caching (Redis) when queries are measured as slow (>500ms)
+- Basic caching when queries are measured as slow (>500ms)
 - Polling with smart intervals (not webhooks unless push is required)
 - Functions up to 200 lines (extract at 200, not 50)
 
@@ -72,7 +70,7 @@ These patterns add complexity. Only use if you meet the criteria:
 
 1. **Error Handling**
    - All external calls wrapped in try/catch
-   - Errors logged with context (user, MSP, operation)
+   - Errors logged with context (user, customer, operation)
    - User-friendly error messages
    - Retry logic for transient failures (network, rate limits)
 
@@ -86,7 +84,7 @@ These patterns add complexity. Only use if you meet the criteria:
    - Log all errors with stack traces
    - Log slow operations (>2s)
    - Monitor API response times
-   - Track business metrics (tickets created, AI usage)
+   - Track business metrics relevant to your product
 
 4. **Security**
    - Never log secrets/API keys (use last 4 chars only)
@@ -94,9 +92,9 @@ These patterns add complexity. Only use if you meet the criteria:
    - Rate limiting on public endpoints
    - Keep dependencies updated (monthly review)
 
-5. **Multi-tenancy**
-   - Every query includes ClientID filter
-   - Test with multiple MSPs
+5. **Multi-tenancy** (if applicable)
+   - Every query includes tenant ID filter
+   - Test with multiple tenants
    - No cross-tenant data leaks
 
 ### ⚖️ Production vs Speed Balance
@@ -123,7 +121,7 @@ Before ANY architectural decision, ask:
 - **If yes**: Proceed
 - **If no**: What's missing? (error handling, validation, logging)
 
-### Question 2: Will 100 MSPs break this?
+### Question 2: Will 100 customers break this?
 - **If no**: Ship it
 - **If yes**: What's the bottleneck? Add specific fix (caching, indexing, pagination)
 
@@ -133,8 +131,8 @@ Before ANY architectural decision, ask:
 
 ### Question 4: What's the blast radius if this fails?
 - **One user**: Ship it, fix if it breaks
-- **One MSP**: Add error handling + logging
-- **All MSPs**: Add retry logic, monitoring, fallbacks
+- **One customer**: Add error handling + logging
+- **All customers**: Add retry logic, monitoring, fallbacks
 
 ## When to Add Abstraction (NEW)
 
@@ -150,52 +148,22 @@ Extract to function/class when:
 ### Extraction Examples
 
 #### ✅ Good Abstractions (Justified)
-```typescript
-// Extract after 3rd duplicate
-function validateMSPUser(email: string, mspId: string) {
-  if (!email?.includes('@')) throw new Error('Invalid email');
-  if (!mspId) throw new Error('MSP ID required');
-  // More validation...
-}
 
-// Extract complex business logic (>200 lines)
-class TicketRouter {
-  route(ticket: Ticket): string {
-    // 200+ lines of conditional logic
-    // Multiple MSPs have custom routing rules
-  }
-}
-
-// Extract when 3+ implementations exist
-interface NotificationProvider {
-  send(message: string): Promise<void>;
-}
-// EmailProvider, SlackProvider, TeamsProvider (3 implementations = justified)
-```
+- **Extract after 3rd duplicate**: A validation function used by 3+ handlers
+- **Extract complex business logic**: When a single function exceeds 200 lines with conditional logic
+- **Extract when 3+ implementations exist**: e.g., EmailProvider, SlackProvider, TeamsProvider — three implementations justify an interface
 
 #### ❌ Still Over-Engineering
-```typescript
-// Don't do this (we have <100 MSPs, only 1 implementation):
-class AbstractTicketFactory {
-  abstract create(): ITicket;
-}
 
-// Don't do this (direct queries work fine, only 1 database):
-class GenericRepository<T> {
-  async findByQuery(query: QueryBuilder): Promise<T[]>
-}
-
-// Don't do this (env vars are enough):
-class ConfigurationManager {
-  loadFromMultipleSources(): Configuration
-}
-```
+- **Abstract factories** when you only have 1 implementation
+- **Generic repository patterns** when direct queries work fine
+- **Configuration managers** when environment variables are enough
 
 ## Simplicity Checkpoints (Updated)
 
 ### Before Starting
 - [ ] Is this the simplest RELIABLE approach?
-- [ ] Do we need this for 10-100 MSPs (not 10,000)?
+- [ ] Do we need this for your current customer base (not 10,000)?
 - [ ] Can this be 1-5 files?
 - [ ] Is error handling included?
 - [ ] Is this easily testable?
@@ -211,7 +179,7 @@ class ConfigurationManager {
 - [ ] Does this handle failures gracefully?
 - [ ] Are errors logged with context?
 - [ ] Is complex logic tested (unit tests)?
-- [ ] Can I deploy this without breaking existing MSPs?
+- [ ] Can I deploy this without breaking existing customers?
 
 ## Scaling Triggers (When to Refactor)
 
@@ -230,13 +198,12 @@ class ConfigurationManager {
    - Onboarding new dev takes >1 week
 
 3. **Scale** (customer impact)
-   - Supporting 100+ MSPs (current: 10-100)
-   - >10,000 tickets/day (current: <1,000)
-   - >100 simultaneous desktop agents (current: <50)
-   - Database >100GB (current: <10GB)
+   - Customer count exceeding what your current architecture handles
+   - Request volume exceeding what your database/server can handle
+   - Database size requiring optimization or sharding
 
 4. **Customer complaints** (real problems)
-   - Specific feature requested by 5+ MSPs
+   - Specific feature requested by 5+ customers
    - Same issue reported 3+ times
    - Security concern raised by customer
    - Competitor has feature we don't
@@ -277,32 +244,30 @@ Use enterprise patterns **ONLY when you meet ALL criteria**:
 
 ## The Prime Directive (Updated)
 
-> **Build the simplest reliable thing that works for 10-100 MSPs. Then ship it.**
+> **Build the simplest reliable thing that works for your current customer base. Then ship it.**
 
 If you find yourself:
 - Creating >10 files for a feature
 - Writing >200 lines without extracting
-- Thinking about "1000+ MSP scalability"
+- Thinking about "1000+ customer scalability"
 - Adding abstraction before 3rd use
 - Building generic frameworks
 
 **STOP and ask**:
 
-> **"What's the simplest RELIABLE way to make this work for 100 MSPs?"**
+> **"What's the simplest RELIABLE way to make this work for 100 customers?"**
 
 ## Remember
 
 You're not building for:
-- ❌ 1 million users (you have <1,000)
-- ❌ 1000 MSPs (you have 10-100)
-- ❌ Fortune 500 enterprise (you're a startup)
-- ❌ Infinite scale (you need finite scale)
+- ❌ Millions of users (unless you actually have them)
+- ❌ Fortune 500 enterprise (unless you are one)
+- ❌ Infinite scale (you need finite, measured scale)
 
 You're building for:
-- ✅ 10-100 MSPs (current reality)
-- ✅ 10-50 concurrent users per MSP
-- ✅ Fast iteration based on feedback
-- ✅ Reliable service (you have paying customers)
-- ✅ Maintainable codebase (you might hire soon)
+- ✅ Your actual current user/customer count
+- ✅ Fast iteration based on real feedback
+- ✅ Reliable service for paying customers
+- ✅ Maintainable codebase that your team can work on
 
 **Ship working, reliable code. Ship it fast. Iterate based on customer feedback.**

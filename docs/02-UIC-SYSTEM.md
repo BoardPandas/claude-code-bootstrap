@@ -1,5 +1,7 @@
 # Universal ID Convention (UIC) System
 
+> **Optional**: This system is most useful for projects with web UI components. If your project is a CLI tool, library, or backend-only service, you can skip this.
+
 A systematic approach to naming every component in your application for instant debugging and clarity.
 
 ## The Problem

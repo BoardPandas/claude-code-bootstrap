@@ -1,6 +1,6 @@
 ---
 name: build-and-fix
-description: Run build and systematically fix all TypeScript/compilation errors
+description: Run build and systematically fix all compilation/type errors
 allowed-tools:
   - Read
   - Edit
@@ -11,28 +11,39 @@ allowed-tools:
 
 # Build and Fix - Comprehensive Error Resolution
 
-Run the build process and systematically fix all TypeScript/compilation errors.
+Run the build process and systematically fix all compilation errors.
 
 ## Instructions
 
-### Step 1: Run Build
+### Step 1: Detect and Run Build
+
+Detect the project's build system and run the appropriate command:
+
 ```bash
-cd your-project
-npm run build
+# Detect and run the correct build command for this project:
+# - Node/TypeScript: npm run build / npm run typecheck / npx tsc --noEmit
+# - Python: mypy . / python -m py_compile / ruff check .
+# - Go: go build ./... / go vet ./...
+# - Rust: cargo check / cargo build
+# - Java/Kotlin: ./gradlew build / mvn compile
+# - C#/.NET: dotnet build
+# - Other: check Makefile, package.json, build.gradle, Cargo.toml, etc.
 ```
+
+Check CLAUDE.md for project-specific build commands.
 
 ### Step 2: Analyze Errors
 - Capture all error output
 - Group errors by type and file
-- Prioritize errors (syntax > type > lint)
+- Prioritize errors (syntax > imports > types/compilation > lint)
 - Identify root causes vs symptoms
 
 ### Step 3: Fix Systematically
 Work through errors in this order:
 
 1. **Syntax Errors** - Fix immediately, these block everything
-2. **Import/Module Errors** - Resolve missing or incorrect imports
-3. **Type Errors** - Fix type mismatches, missing properties
+2. **Import/Module Errors** - Resolve missing or incorrect imports/dependencies
+3. **Type/Compilation Errors** - Fix type mismatches, missing definitions, compile failures
 4. **Lint Errors** - Address code quality issues
 5. **Warning Messages** - Fix if quick, otherwise document
 
@@ -44,14 +55,9 @@ After each fix:
 
 ### Step 5: Final Verification
 ```bash
-# Run full build
-npm run build
-
-# Run type checking
-npm run typecheck
-
-# Run tests if available
-npm test
+# Run the project's build command again
+# Run the project's type-check or lint command if separate
+# Run the project's test command if available
 ```
 
 ## Fixing Guidelines
@@ -59,56 +65,31 @@ npm test
 ### MVP-First Approach
 - Fix errors with simplest solution
 - Don't refactor while fixing build errors
-- Hard-code types if needed temporarily
-- Use `any` sparingly but don't be afraid of it for MVP
+- Use pragmatic shortcuts when needed temporarily
 - Copy-paste working patterns from similar code
+- Document any shortcuts taken
 
-### Common Fixes
+### Common Fixes by Language
 
-**Missing Types**:
-```typescript
-// Quick fix - add explicit type
-const data: any = await fetchData();
+**Import/Module Errors** (all languages):
+- Fix incorrect paths or module names
+- Add missing dependencies to the project's package manager
+- Resolve circular imports by restructuring
 
-// Better fix when time allows
-interface FetchedData {
-  id: string;
-  name: string;
-}
-const data: FetchedData = await fetchData();
-```
+**Type/Compilation Errors**:
+- Add missing type annotations or definitions
+- Fix type mismatches with correct types
+- Use language-appropriate escape hatches sparingly when needed for MVP
+  (e.g., `any` in TypeScript, `Any` in Python, type assertions in Go)
 
-**Import Errors**:
-```typescript
-// Fix path
-import { helper } from './utils/helper';
-// to
-import { helper } from '../utils/helper';
-
-// Add missing import
-import type { ClientConfig } from './types';
-```
-
-**Property Errors**:
-```typescript
-// Add optional chaining
-const name = user.profile.name;
-// to
-const name = user?.profile?.name;
-
-// Add property to interface
-interface User {
-  id: string;
-  name: string;
-  // Add missing property
-  email?: string;
-}
-```
+**Null/Nil Safety**:
+- Add null checks or use safe-access patterns
+- Use default values where appropriate
+- Add guard clauses for required values
 
 ### What NOT to Do
 - Don't refactor unrelated code
-- Don't add complex type systems
-- Don't create abstract types for MVP
+- Don't add complex type systems or abstractions
 - Don't over-engineer the solution
 - Don't fix warnings if they require significant changes
 
@@ -123,8 +104,8 @@ After fixing, provide summary:
 - [Category 2]: [Count] errors
 
 ### Files Modified: [Y]
-- [file1.ts]: [brief description]
-- [file2.ts]: [brief description]
+- [file1]: [brief description]
+- [file2]: [brief description]
 
 ### Approach:
 - [Key decision 1]
@@ -133,12 +114,12 @@ After fixing, provide summary:
 ### Remaining Issues:
 - [ ] [Warning or non-blocking issue]
 
-### Build Status: ✅ SUCCESS / ❌ FAILED
+### Build Status: PASS / FAIL
 ```
 
 ## Important Notes
 
-- Fix errors, don't hide them with `@ts-ignore`
+- Fix errors, don't suppress or hide them
 - Document any temporary/MVP shortcuts
 - If error is complex, ask user before major refactor
 - Keep fixes aligned with MVP principles

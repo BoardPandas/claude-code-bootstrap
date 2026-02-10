@@ -507,13 +507,13 @@ For production deployments, ensure:
 
 | Scenario | Solution |
 |----------|----------|
-| Storing passwords | bcrypt.hash(password, 10) |
-| SQL queries | Parameterized queries ($1, $2, etc.) |
-| Storing API keys | Environment variables (process.env.API_KEY) |
-| Authentication | JWT with expiration (24h default) |
+| Storing passwords | Hash with bcrypt or argon2 (never plaintext) |
+| SQL queries | Parameterized queries (never string concatenation) |
+| Storing API keys | Environment variables (never in code) |
+| Authentication | JWT or sessions with expiration |
 | Authorization | Check permissions on every request |
 | Input validation | Whitelist + regex + length checks |
-| Rate limiting | Express-rate-limit or similar |
+| Rate limiting | Use your framework's rate limiting middleware |
 | HTTPS | Force redirect HTTP → HTTPS in production |
 
 ## Resources

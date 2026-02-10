@@ -1,25 +1,19 @@
 /**
  * File Edit Tracker Utility
  *
- * Tracks which files and repos are modified during Claude's responses.
- * Helps maintain awareness of changes and provides audit trail.
+ * Tracks which files are modified during Claude's responses.
+ * Provides audit trail of changes.
+ * Plain JavaScript - no TypeScript or ts-node dependency needed.
  */
 
-import { execSync } from 'child_process';
-import { existsSync, appendFileSync, mkdirSync } from 'fs';
-import { join } from 'path';
-
-interface FileEdit {
-  timestamp: string;
-  file: string;
-  status: 'added' | 'modified' | 'deleted';
-  linesChanged?: number;
-}
+const { execSync } = require('child_process');
+const { existsSync, appendFileSync, mkdirSync } = require('fs');
+const { join } = require('path');
 
 /**
  * Get list of modified files from git
  */
-export function getModifiedFiles(): string[] {
+function getModifiedFiles() {
   try {
     const output = execSync('git diff --name-only', {
       encoding: 'utf-8',
@@ -28,7 +22,7 @@ export function getModifiedFiles(): string[] {
 
     return output.trim().split('\n').filter(Boolean);
   } catch (error) {
-    console.warn('Failed to get modified files from git:', error);
+    console.warn('Failed to get modified files from git:', error.message);
     return [];
   }
 }
@@ -36,7 +30,7 @@ export function getModifiedFiles(): string[] {
 /**
  * Get file modification status
  */
-export function getFileStatus(file: string): 'added' | 'modified' | 'deleted' {
+function getFileStatus(file) {
   try {
     const status = execSync(`git status --porcelain "${file}"`, {
       encoding: 'utf-8',
@@ -54,7 +48,7 @@ export function getFileStatus(file: string): 'added' | 'modified' | 'deleted' {
 /**
  * Get number of lines changed in a file
  */
-export function getLinesChanged(file: string): number {
+function getLinesChanged(file) {
   try {
     const output = execSync(`git diff --numstat "${file}"`, {
       encoding: 'utf-8',
@@ -77,36 +71,33 @@ export function getLinesChanged(file: string): number {
 /**
  * Log file edits to tracking file
  */
-export function logFileEdits(edits: FileEdit[], logDir: string = '.claude/logs'): void {
+function logFileEdits(edits, logDir) {
+  logDir = logDir || '.claude/logs';
   const logPath = join(process.cwd(), logDir);
 
-  // Ensure log directory exists
   if (!existsSync(logPath)) {
     mkdirSync(logPath, { recursive: true });
   }
 
-  // Get current date for log file name
   const date = new Date().toISOString().split('T')[0];
   const logFile = join(logPath, `file-edits-${date}.log`);
 
-  // Format log entries
   const entries = edits.map(edit => {
     const lines = edit.linesChanged ? ` (${edit.linesChanged} lines)` : '';
     return `[${edit.timestamp}] ${edit.status.toUpperCase()}: ${edit.file}${lines}`;
   });
 
-  // Append to log file
   appendFileSync(logFile, entries.join('\n') + '\n');
 }
 
 /**
  * Track all current file modifications
  */
-export function trackCurrentModifications(): FileEdit[] {
+function trackCurrentModifications() {
   const timestamp = new Date().toISOString();
   const modifiedFiles = getModifiedFiles();
 
-  const edits: FileEdit[] = modifiedFiles.map(file => ({
+  const edits = modifiedFiles.map(file => ({
     timestamp,
     file,
     status: getFileStatus(file),
@@ -123,7 +114,7 @@ export function trackCurrentModifications(): FileEdit[] {
 /**
  * Generate summary of tracked edits
  */
-export function generateEditSummary(edits: FileEdit[]): string {
+function generateEditSummary(edits) {
   if (edits.length === 0) {
     return 'No files modified';
   }
@@ -131,7 +122,6 @@ export function generateEditSummary(edits: FileEdit[]): string {
   const added = edits.filter(e => e.status === 'added').length;
   const modified = edits.filter(e => e.status === 'modified').length;
   const deleted = edits.filter(e => e.status === 'deleted').length;
-
   const totalLines = edits.reduce((sum, e) => sum + (e.linesChanged || 0), 0);
 
   let summary = `Modified ${edits.length} file(s)`;
@@ -144,7 +134,9 @@ export function generateEditSummary(edits: FileEdit[]): string {
   return summary;
 }
 
-// CLI interface for testing
+module.exports = { getModifiedFiles, trackCurrentModifications, generateEditSummary };
+
+// CLI interface
 if (require.main === module) {
   console.log('Tracking current file modifications...\n');
 

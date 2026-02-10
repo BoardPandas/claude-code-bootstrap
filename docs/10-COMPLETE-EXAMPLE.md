@@ -1,5 +1,7 @@
 # Complete Working Example - End to End
 
+> **Note**: This example uses the Node.js/Express/React stack. The same workflow and principles apply to any stack -- just substitute your framework's equivalents.
+
 Real-world example of building a feature from scratch using the complete Claude Code system.
 
 ## Scenario

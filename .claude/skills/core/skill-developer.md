@@ -109,32 +109,20 @@ MVP: Core patterns with examples, link to full SQL reference
 ```markdown
 ### Creating a New API Endpoint
 
-**Pattern:**
-```typescript
-// Simple, direct Express route
-app.post('/api/v1/resource', async (req, res) => {
-  const { field1, field2 } = req.body;
+**Pattern:** (pseudocode — adapt to your framework)
 
-  // Validation
-  if (!field1) {
-    return res.status(400).json({ error: 'field1 required' });
-  }
-
-  // Database query
-  const result = await pool.query(
-    'INSERT INTO table (field1, field2) VALUES ($1, $2) RETURNING *',
-    [field1, field2]
-  );
-
-  res.status(201).json({ success: true, data: result.rows[0] });
-});
-```
+1. Parse and validate input (early return on invalid)
+2. Execute database query with parameterized values
+3. Return result with appropriate status code
+4. Catch errors and return user-friendly message
 
 **Key Points:**
 - Inline validation (no middleware for MVP)
 - Direct SQL query (no ORM)
 - Consistent response format
 - Proper status codes
+
+For concrete code examples, reference the appropriate stack file in `skills/stacks/`.
 ```
 
 #### ❌ BAD Example Structure
@@ -159,9 +147,7 @@ You can create endpoints. Here's an example:
 Use direct SQL with parameterized queries.
 
 ### Basic Query
-```typescript
-const result = await pool.query('SELECT * FROM users WHERE id = $1', [userId]);
-```
+[Simple example in your project's language — see skills/stacks/ for concrete examples]
 
 ### Detailed Reference
 For complex queries, transactions, and optimization:
@@ -548,13 +534,13 @@ Referenced from: [Backend Dev Guidelines](../../backend-dev-guidelines.md)
     },
     "fileTriggers": {
       "pathPatterns": [
-        "src/**/*.ts",
-        "src/routes/**/*.ts"
+        "src/**/*.{ts,js,py,go}",
+        "src/routes/**/*"
       ],
       "contentPatterns": [
         "app\\.(get|post|put|delete)",
-        "router\\.",
-        "pool\\.query"
+        "@app\\.(get|post|put|delete)",
+        "func.*Handler"
       ]
     }
   }

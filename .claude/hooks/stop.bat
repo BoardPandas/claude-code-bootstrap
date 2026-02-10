@@ -4,11 +4,11 @@ REM Stop Event Hook (Windows)
 REM
 REM Runs after Claude's response completes. Performs:
 REM 1. Track file edits
-REM 2. Auto-format modified files with Prettier
-REM 3. Run build check on affected code
+REM 2. Auto-format modified files (detects formatter)
+REM 3. Run build/type check (detects build system)
 REM 4. Check for error handling patterns
 REM
-REM This implements the "no mess left behind" philosophy from the Reddit post.
+REM Multi-stack: auto-detects Node.js, Python, Go, Rust projects.
 
 setlocal enabledelayedexpansion
 
@@ -17,83 +17,158 @@ echo.
 
 REM Get project root
 set PROJECT_ROOT=%CD%
+set HOOK_DIR=%PROJECT_ROOT%\.claude\hooks
 set LOG_DIR=%PROJECT_ROOT%\.claude\logs
 
 REM Create log directory if it doesn't exist
 if not exist "%LOG_DIR%" mkdir "%LOG_DIR%"
 
 REM Timestamp for logs
-for /f "tokens=2 delims==" %%I in ('wmic os get localdatetime /value') do set datetime=%%I
-set TIMESTAMP=%datetime:~0,8%_%datetime:~8,6%
+for /f "tokens=2 delims==" %%I in ('wmic os get localdatetime /value 2^>nul') do set datetime=%%I
+if defined datetime (
+    set TIMESTAMP=%datetime:~0,8%_%datetime:~8,6%
+) else (
+    set TIMESTAMP=unknown
+)
+
+set ISSUES_FOUND=0
 
 REM
 REM 1. TRACK FILE EDITS
 REM
 echo [1/4] Tracking file edits...
 
-REM Get list of modified files
-git diff --name-only > "%TEMP%\modified_files.txt" 2>nul
+git diff --name-only > "%TEMP%\claude_modified_files.txt" 2>nul
 if %ERRORLEVEL% EQU 0 (
-    for /f %%i in ('type "%TEMP%\modified_files.txt" ^| find /c /v ""') do set FILE_COUNT=%%i
+    for /f %%i in ('type "%TEMP%\claude_modified_files.txt" ^| find /c /v ""') do set FILE_COUNT=%%i
     if !FILE_COUNT! GTR 0 (
-        type "%TEMP%\modified_files.txt" >> "%LOG_DIR%\file-edits-%TIMESTAMP%.log"
-        echo [32m✓ Tracked !FILE_COUNT! modified files[0m
+        type "%TEMP%\claude_modified_files.txt" >> "%LOG_DIR%\file-edits-%TIMESTAMP%.log"
+        echo   Tracked !FILE_COUNT! modified files
     ) else (
-        echo [33mNo files modified[0m
+        echo   No files modified
     )
 ) else (
-    echo [33mNot a git repository or no git available[0m
+    echo   Not a git repository or no git available
 )
 
 REM
-REM 2. AUTO-FORMAT WITH PRETTIER
+REM 2. AUTO-FORMAT MODIFIED FILES
 REM
 echo.
 echo [2/4] Auto-formatting modified files...
 
-if exist "%TEMP%\modified_files.txt" (
-    REM Filter for formattable files
-    findstr /R "\.ts$ \.tsx$ \.js$ \.jsx$ \.json$ \.md$ \.yml$ \.yaml$" "%TEMP%\modified_files.txt" > "%TEMP%\formattable_files.txt" 2>nul
-
-    if exist "%TEMP%\formattable_files.txt" (
-        for /f "usebackq delims=" %%f in ("%TEMP%\formattable_files.txt") do (
-            if exist "%%f" (
-                echo   Formatting: %%f
-                call npx prettier --write "%%f" >nul 2>&1
-                if errorlevel 1 echo     [33mWarning: Failed to format %%f[0m
+if exist "%TEMP%\claude_modified_files.txt" (
+    REM Detect formatter: Node.js (Prettier)
+    if exist "package.json" (
+        findstr /R "\.ts$ \.tsx$ \.js$ \.jsx$ \.json$ \.md$ \.yml$ \.yaml$" "%TEMP%\claude_modified_files.txt" > "%TEMP%\claude_formattable.txt" 2>nul
+        if exist "%TEMP%\claude_formattable.txt" (
+            for /f "usebackq delims=" %%f in ("%TEMP%\claude_formattable.txt") do (
+                if exist "%%f" (
+                    call npx prettier --write "%%f" >nul 2>&1
+                )
             )
+            echo   Formatted with Prettier
+        ) else (
+            echo   No formattable files
         )
-        echo [32m✓ Formatted files with Prettier[0m
+    ) else if exist "pyproject.toml" (
+        REM Python: use Black
+        findstr /R "\.py$" "%TEMP%\claude_modified_files.txt" > "%TEMP%\claude_py_files.txt" 2>nul
+        if exist "%TEMP%\claude_py_files.txt" (
+            for /f "usebackq delims=" %%f in ("%TEMP%\claude_py_files.txt") do (
+                if exist "%%f" (
+                    call black --quiet "%%f" 2>nul
+                )
+            )
+            echo   Formatted with Black
+        )
+    ) else if exist "go.mod" (
+        REM Go: use gofmt
+        findstr /R "\.go$" "%TEMP%\claude_modified_files.txt" > "%TEMP%\claude_go_files.txt" 2>nul
+        if exist "%TEMP%\claude_go_files.txt" (
+            for /f "usebackq delims=" %%f in ("%TEMP%\claude_go_files.txt") do (
+                if exist "%%f" (
+                    gofmt -w "%%f" 2>nul
+                )
+            )
+            echo   Formatted with gofmt
+        )
     ) else (
-        echo [33mNo formattable files to process[0m
+        echo   No formatter detected
     )
 ) else (
-    echo [33mNo files to format[0m
+    echo   No files to format
 )
 
 REM
-REM 3. BUILD CHECK (TypeScript)
+REM 3. BUILD / TYPE CHECK
 REM
 echo.
-echo [3/4] Checking TypeScript compilation...
+echo [3/4] Running build check...
 
-if exist "%TEMP%\modified_files.txt" (
-    findstr /R "\.ts$ \.tsx$" "%TEMP%\modified_files.txt" > "%TEMP%\ts_files.txt" 2>nul
+set BUILD_LOG=%LOG_DIR%\build-%TIMESTAMP%.log
 
-    if exist "%TEMP%\ts_files.txt" (
-        call npm run typecheck > "%LOG_DIR%\typecheck-%TIMESTAMP%.log" 2>&1
+if exist "package.json" (
+    REM Node.js: try typecheck, then build
+    findstr /C:"typecheck" package.json >nul 2>&1
+    if not errorlevel 1 (
+        call npm run typecheck > "%BUILD_LOG%" 2>&1
         if errorlevel 1 (
-            echo [31m✗ TypeScript errors found[0m
-            echo [33m  See: .claude\logs\typecheck-%TIMESTAMP%.log[0m
-            echo [33m  Run '/build-and-fix' to resolve errors[0m
+            echo   FAILED: TypeScript errors found
+            echo   See: .claude\logs\build-%TIMESTAMP%.log
+            echo   Run '/build-and-fix' to resolve
+            set /a ISSUES_FOUND+=1
         ) else (
-            echo [32m✓ TypeScript compilation successful[0m
+            echo   TypeScript type check passed
         )
     ) else (
-        echo [33mNo TypeScript files modified, skipping build check[0m
+        findstr /C:"build" package.json >nul 2>&1
+        if not errorlevel 1 (
+            call npm run build > "%BUILD_LOG%" 2>&1
+            if errorlevel 1 (
+                echo   FAILED: Build errors found
+                set /a ISSUES_FOUND+=1
+            ) else (
+                echo   Build passed
+            )
+        ) else (
+            echo   No build script found in package.json
+        )
+    )
+) else if exist "pyproject.toml" (
+    REM Python: run mypy
+    where mypy >nul 2>&1
+    if not errorlevel 1 (
+        mypy . > "%BUILD_LOG%" 2>&1
+        if errorlevel 1 (
+            echo   FAILED: mypy errors found
+            set /a ISSUES_FOUND+=1
+        ) else (
+            echo   mypy type check passed
+        )
+    ) else (
+        echo   mypy not installed, skipping
+    )
+) else if exist "go.mod" (
+    REM Go: run go build
+    go build ./... > "%BUILD_LOG%" 2>&1
+    if errorlevel 1 (
+        echo   FAILED: Go build errors found
+        set /a ISSUES_FOUND+=1
+    ) else (
+        echo   Go build passed
+    )
+) else if exist "Cargo.toml" (
+    REM Rust: run cargo check
+    cargo check > "%BUILD_LOG%" 2>&1
+    if errorlevel 1 (
+        echo   FAILED: Cargo check errors found
+        set /a ISSUES_FOUND+=1
+    ) else (
+        echo   Cargo check passed
     )
 ) else (
-    echo [33mNo files to check[0m
+    echo   No build system detected, skipping
 )
 
 REM
@@ -102,68 +177,58 @@ REM
 echo.
 echo [4/4] Checking error handling patterns...
 
-if exist "%TEMP%\ts_files.txt" (
-    set ISSUES_FOUND=0
-
-    for /f "usebackq delims=" %%f in ("%TEMP%\ts_files.txt") do (
-        if exist "%%f" (
-            REM Check for async functions without try-catch
-            findstr /R "async.*(" "%%f" >nul 2>&1
-            if not errorlevel 1 (
-                findstr /R "try {" "%%f" >nul 2>&1
-                if errorlevel 1 (
-                    echo [33m  ⚠ %%f: Async function without try-catch[0m
-                    set /a ISSUES_FOUND+=1
+if exist "%TEMP%\claude_modified_files.txt" (
+    where node >nul 2>&1
+    if not errorlevel 1 (
+        if exist "%HOOK_DIR%\utils\error-pattern-checker.js" (
+            REM Collect code files
+            findstr /R "\.ts$ \.tsx$ \.js$ \.jsx$ \.py$ \.go$" "%TEMP%\claude_modified_files.txt" > "%TEMP%\claude_code_files.txt" 2>nul
+            if exist "%TEMP%\claude_code_files.txt" (
+                set CODE_FILES=
+                for /f "usebackq delims=" %%f in ("%TEMP%\claude_code_files.txt") do (
+                    set CODE_FILES=!CODE_FILES! "%%f"
                 )
-            )
-
-            REM Check for fetch/API calls without error handling
-            findstr /R "fetch\( axios\. pool\.query" "%%f" >nul 2>&1
-            if not errorlevel 1 (
-                findstr /R "try { \.catch\( catch \(" "%%f" >nul 2>&1
-                if errorlevel 1 (
-                    echo [33m  ⚠ %%f: API call without error handling[0m
-                    set /a ISSUES_FOUND+=1
+                if defined CODE_FILES (
+                    node "%HOOK_DIR%\utils\error-pattern-checker.js" !CODE_FILES! 2>nul
                 )
+            ) else (
+                echo   No code files to check
             )
-
-            REM Check for console.log in production code
-            echo %%f | findstr /V ".test. .spec." >nul 2>&1
-            if not errorlevel 1 (
-                findstr "console\.log" "%%f" >nul 2>&1
-                if not errorlevel 1 (
-                    echo [33m  ⚠ %%f: Contains console.log (consider using proper logging)[0m
-                )
-            )
+        ) else (
+            echo   Error pattern checker not found
         )
-    )
-
-    if !ISSUES_FOUND! EQU 0 (
-        echo [32m✓ No obvious error handling issues detected[0m
+    ) else (
+        echo   Node.js not available, skipping error pattern check
     )
 ) else (
-    echo [33mNo TypeScript files to check[0m
+    echo   No files to check
 )
 
 REM
 REM SUMMARY
 REM
 echo.
-echo ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-echo [32mPost-response checks complete![0m
-echo ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+echo ----------------------------------------
+if !ISSUES_FOUND! GTR 0 (
+    echo Post-response checks complete ^(!ISSUES_FOUND! issue^(s^) found^)
+) else (
+    echo Post-response checks complete!
+)
+echo ----------------------------------------
 echo.
 
 REM Cleanup temp files
-del "%TEMP%\modified_files.txt" 2>nul
-del "%TEMP%\formattable_files.txt" 2>nul
-del "%TEMP%\ts_files.txt" 2>nul
+del "%TEMP%\claude_modified_files.txt" 2>nul
+del "%TEMP%\claude_formattable.txt" 2>nul
+del "%TEMP%\claude_py_files.txt" 2>nul
+del "%TEMP%\claude_go_files.txt" 2>nul
+del "%TEMP%\claude_code_files.txt" 2>nul
 
 REM Cleanup old logs (keep last 20)
 pushd "%LOG_DIR%" 2>nul
 if not errorlevel 1 (
     for /f "skip=20 delims=" %%f in ('dir /b /o-d file-edits-*.log 2^>nul') do del "%%f" 2>nul
-    for /f "skip=20 delims=" %%f in ('dir /b /o-d typecheck-*.log 2^>nul') do del "%%f" 2>nul
+    for /f "skip=20 delims=" %%f in ('dir /b /o-d build-*.log 2^>nul') do del "%%f" 2>nul
     popd
 )
 

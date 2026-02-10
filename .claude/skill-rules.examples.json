@@ -1,0 +1,245 @@
+{
+  "_comment": "Domain-specific skill rules you can copy into skill-rules.json if your project uses these technologies. These were separated from the defaults to keep the base configuration universal.",
+
+  "UIC_Guidelines": {
+    "type": "quality",
+    "enforcement": "suggest",
+    "priority": "critical",
+    "description": "Universal ID Convention (UIC) system - unique data-uic attributes for all UI elements",
+    "promptTriggers": {
+      "keywords": [
+        "uic",
+        "data-uic",
+        "universal id",
+        "element id",
+        "tracking",
+        "testability"
+      ],
+      "intentPatterns": [
+        "(data-uic|uic)",
+        "(master.*list|uic.*list)",
+        "(validate|validation).*(ui|uic)"
+      ]
+    },
+    "fileTriggers": {
+      "pathPatterns": [
+        "**/*.{tsx,jsx}",
+        "**/components/**/*",
+        "docs/UIC_MASTER_LIST.md"
+      ],
+      "contentPatterns": [
+        "data-uic=",
+        "StandardTabs",
+        "StandardTable"
+      ]
+    }
+  },
+
+  "go-desktop-agent-guidelines": {
+    "type": "domain",
+    "enforcement": "suggest",
+    "priority": "high",
+    "description": "Go desktop agent development guidelines with Wails v2",
+    "promptTriggers": {
+      "keywords": [
+        "desktop",
+        "agent",
+        "wails",
+        "systray",
+        "gui",
+        "msi",
+        "dmg",
+        "webview"
+      ],
+      "intentPatterns": [
+        "(desktop|agent).*(build|compile|package|develop)",
+        "(msi|dmg).*(build|create|package)",
+        "wails",
+        "(go|golang).*(function|package|struct)"
+      ]
+    },
+    "fileTriggers": {
+      "pathPatterns": [
+        "desktop_agent/**/*.go",
+        "desktop_agent/**/*.sh",
+        "desktop_agent/**/*.bat"
+      ],
+      "contentPatterns": [
+        "import.*wails",
+        "//go:build (windows|darwin|linux)",
+        "context\\.Context"
+      ]
+    }
+  },
+
+  "openai-api-expert": {
+    "type": "domain",
+    "enforcement": "suggest",
+    "priority": "high",
+    "description": "OpenAI API development with GPT models, reasoning controls, and best practices",
+    "promptTriggers": {
+      "keywords": [
+        "openai",
+        "gpt",
+        "chatgpt",
+        "llm",
+        "reasoning",
+        "embeddings",
+        "completions"
+      ],
+      "intentPatterns": [
+        "(openai|gpt).*(api|integration|call)",
+        "(generate|analyze|summarize).*(ai|gpt|openai)",
+        "reasoning.*(effort|control)"
+      ]
+    },
+    "fileTriggers": {
+      "pathPatterns": [
+        "**/*ai*.{ts,js,py,go}",
+        "**/*openai*.{ts,js,py,go}"
+      ],
+      "contentPatterns": [
+        "import.*openai",
+        "openai\\.chat\\.completions",
+        "gpt-"
+      ]
+    }
+  },
+
+  "rest-api-expert": {
+    "type": "domain",
+    "enforcement": "suggest",
+    "priority": "high",
+    "description": "REST API design, routing, validation, and best practices",
+    "promptTriggers": {
+      "keywords": [
+        "rest",
+        "rest api",
+        "restful",
+        "api design",
+        "http methods",
+        "status codes",
+        "pagination",
+        "cors"
+      ],
+      "intentPatterns": [
+        "(rest|restful).*(api|design|endpoint)",
+        "(http|api).*(method|verb|status)",
+        "(paginate|pagination|filter|sort)"
+      ]
+    },
+    "fileTriggers": {
+      "pathPatterns": [
+        "**/routes/**/*.{ts,js,py,go,rb}",
+        "**/*route*.{ts,js,py,go,rb}",
+        "**/*api*.{ts,js,py,go,rb}"
+      ],
+      "contentPatterns": [
+        "app\\.(get|post|put|delete|patch)",
+        "router\\.(get|post|put|delete)",
+        "res\\.status\\(",
+        "req\\.(body|params|query)"
+      ]
+    }
+  },
+
+  "prompt-engineering-expert": {
+    "type": "domain",
+    "enforcement": "suggest",
+    "priority": "medium",
+    "description": "AI prompt engineering best practices and optimization",
+    "promptTriggers": {
+      "keywords": [
+        "prompt engineering",
+        "system prompt",
+        "few-shot",
+        "chain of thought",
+        "prompt template"
+      ],
+      "intentPatterns": [
+        "(prompt|prompting).*(engineer|design|write|create)",
+        "(system|user).?prompt",
+        "few.?shot",
+        "chain.?of.?thought"
+      ]
+    },
+    "fileTriggers": {
+      "pathPatterns": [
+        "**/*prompt*.{ts,js,py,go}",
+        "**/*ai*.{ts,js,py,go}"
+      ],
+      "contentPatterns": [
+        "const.*PROMPT",
+        "systemPrompt",
+        "role.*system",
+        "messages.*\\["
+      ]
+    }
+  },
+
+  "database-operations": {
+    "type": "domain",
+    "enforcement": "suggest",
+    "priority": "high",
+    "description": "Database schema design and SQL operations",
+    "promptTriggers": {
+      "keywords": [
+        "database",
+        "schema",
+        "migration",
+        "postgres",
+        "mysql",
+        "sql",
+        "table",
+        "index"
+      ],
+      "intentPatterns": [
+        "(create|alter|drop).*(table|column|index)",
+        "(database|db).*(schema|migration)",
+        "sql.*(query|statement)"
+      ]
+    },
+    "fileTriggers": {
+      "pathPatterns": [
+        "database/**/*.sql",
+        "**/migrations/**/*"
+      ],
+      "contentPatterns": [
+        "CREATE TABLE",
+        "ALTER TABLE",
+        "CREATE INDEX"
+      ]
+    }
+  },
+
+  "docker-deployment": {
+    "type": "domain",
+    "enforcement": "suggest",
+    "priority": "medium",
+    "description": "Docker deployment and container management",
+    "promptTriggers": {
+      "keywords": [
+        "docker",
+        "container",
+        "deployment",
+        "compose"
+      ],
+      "intentPatterns": [
+        "docker.*(build|deploy|compose)",
+        "(deploy|deployment).*(production|server)"
+      ]
+    },
+    "fileTriggers": {
+      "pathPatterns": [
+        "docker-compose*.yml",
+        "Dockerfile*",
+        ".dockerignore"
+      ],
+      "contentPatterns": [
+        "FROM",
+        "CMD",
+        "EXPOSE"
+      ]
+    }
+  }
+}

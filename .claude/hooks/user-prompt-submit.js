@@ -2,31 +2,16 @@
  * User Prompt Submit Hook
  *
  * Analyzes user prompts and injects skill activation reminders before Claude processes them.
- * This is the breakthrough feature from the Reddit post - forces skills to activate automatically.
+ * Plain JavaScript - no TypeScript or ts-node dependency needed.
  */
 
-import { existsSync, readFileSync } from 'fs';
-import { join } from 'path';
-
-interface SkillRule {
-  type: string;
-  enforcement: string;
-  priority: string;
-  description: string;
-  promptTriggers: {
-    keywords: string[];
-    intentPatterns: string[];
-  };
-}
-
-interface SkillRules {
-  [skillName: string]: SkillRule;
-}
+const { existsSync, readFileSync } = require('fs');
+const { join } = require('path');
 
 /**
  * Load skill rules from configuration
  */
-function loadSkillRules(): SkillRules {
+function loadSkillRules() {
   const skillRulesPath = join(process.cwd(), '.claude', 'skill-rules.json');
 
   if (!existsSync(skillRulesPath)) {
@@ -37,9 +22,9 @@ function loadSkillRules(): SkillRules {
     const content = readFileSync(skillRulesPath, 'utf-8');
     const parsed = JSON.parse(content);
 
-    // Remove JSON schema property
-    const { $schema, ...rules } = parsed;
-    return rules as SkillRules;
+    // Remove JSON schema property if present
+    const { $schema, description, ...rules } = parsed;
+    return rules;
   } catch (error) {
     console.error('Failed to load skill rules:', error);
     return {};
@@ -49,7 +34,7 @@ function loadSkillRules(): SkillRules {
 /**
  * Analyze prompt for keyword matches
  */
-function matchesKeywords(prompt: string, keywords: string[]): boolean {
+function matchesKeywords(prompt, keywords) {
   const lowerPrompt = prompt.toLowerCase();
   return keywords.some(keyword => lowerPrompt.includes(keyword.toLowerCase()));
 }
@@ -57,7 +42,7 @@ function matchesKeywords(prompt: string, keywords: string[]): boolean {
 /**
  * Analyze prompt for intent pattern matches
  */
-function matchesIntentPatterns(prompt: string, patterns: string[]): boolean {
+function matchesIntentPatterns(prompt, patterns) {
   return patterns.some(pattern => {
     try {
       const regex = new RegExp(pattern, 'i');
@@ -71,11 +56,11 @@ function matchesIntentPatterns(prompt: string, patterns: string[]): boolean {
 /**
  * Analyze prompt and return triggered skills
  */
-function analyzePrompt(prompt: string, skillRules: SkillRules): string[] {
-  const triggeredSkills: string[] = [];
+function analyzePrompt(prompt, skillRules) {
+  const triggeredSkills = [];
 
   for (const [skillName, config] of Object.entries(skillRules)) {
-    const { promptTriggers } = config;
+    const promptTriggers = config.promptTriggers;
 
     if (!promptTriggers) continue;
 
@@ -97,8 +82,8 @@ function analyzePrompt(prompt: string, skillRules: SkillRules): string[] {
 /**
  * Prioritize skills (critical > high > medium > low)
  */
-function prioritizeSkills(skills: string[], skillRules: SkillRules): string[] {
-  const priorityOrder: { [key: string]: number } = {
+function prioritizeSkills(skills, skillRules) {
+  const priorityOrder = {
     'critical': 1,
     'high': 2,
     'medium': 3,
@@ -115,7 +100,7 @@ function prioritizeSkills(skills: string[], skillRules: SkillRules): string[] {
 /**
  * Create skill activation reminder
  */
-function createReminder(skills: string[], skillRules: SkillRules): string {
+function createReminder(skills, skillRules) {
   const skillList = skills
     .map(skill => {
       const description = skillRules[skill]?.description || '';
@@ -136,10 +121,10 @@ Consider using these skills to ensure best practices are followed.
 
 /**
  * Main hook function
- * @param prompt - The user's prompt
- * @returns Modified prompt with skill activation reminders
+ * @param {string} prompt - The user's prompt
+ * @returns {string} Modified prompt with skill activation reminders
  */
-export default function onUserPromptSubmit(prompt: string): string {
+function onUserPromptSubmit(prompt) {
   try {
     // Load skill rules
     const skillRules = loadSkillRules();
@@ -171,14 +156,17 @@ export default function onUserPromptSubmit(prompt: string): string {
   }
 }
 
+module.exports = onUserPromptSubmit;
+module.exports.default = onUserPromptSubmit;
+
 // For testing
 if (require.main === module) {
   const testPrompts = [
     'Create a new API endpoint for ticket creation',
-    'Add a React component to display user profile',
-    'Let\'s refactor this using a service layer',
+    'Add a component to display user profile',
+    "Let's refactor this using a service layer",
     'Write tests for the ticket creation flow',
-    'Build a new Windows installer for the desktop agent',
+    'Implement user authentication with JWT',
   ];
 
   console.log('Testing user-prompt-submit hook:\n');

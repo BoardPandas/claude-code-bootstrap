@@ -25,73 +25,56 @@ List all endpoints to test:
 - Expected response
 
 ### Step 2: Prepare Test Data
-Create realistic test data:
-```typescript
-// Example: Testing ticket creation
-const testPayload = {
-  agentId: "org_35849015040147-agent-test",
-  subject: "Test ticket",
-  userEmail: "test@example.com",
-  priority: "medium",
-  systemInfo: {
-    hostname: "TEST-MACHINE",
-    platform: "windows",
-    osVersion: "10.0.19045"
-  },
-  screenshots: []
-};
+Create realistic test data appropriate for the endpoint:
+```json
+{
+  "name": "Test Resource",
+  "email": "test@example.com",
+  "status": "active",
+  "metadata": {
+    "source": "api-test",
+    "environment": "development"
+  }
+}
 ```
 
-### Step 3: Test with curl or Node.js
+### Step 3: Test with curl
 
-#### Using curl:
+#### Basic GET request:
 ```bash
-# Basic GET request
-curl -X GET "https://api.your-domain.com/api/v1/health"
+curl -X GET "http://localhost:PORT/api/v1/health"
+```
 
-# POST with authentication
-curl -X POST "https://api.your-domain.com/api/v1/agents/tickets" \
+#### POST with authentication:
+```bash
+curl -X POST "http://localhost:PORT/api/v1/resources" \
   -H "Content-Type: application/json" \
-  -H "X-Client-ID: org_35849015040147" \
   -H "Authorization: Bearer $API_KEY" \
+  -H "X-Tenant-ID: YOUR_TENANT_ID" \
   -d '{
-    "agentId": "test-agent",
-    "subject": "Test ticket",
-    "userEmail": "test@example.com"
+    "name": "Test Resource",
+    "email": "test@example.com",
+    "status": "active"
   }'
 ```
 
-#### Using Node.js:
-```typescript
-// Create test script
-const axios = require('axios');
-
-async function testEndpoint() {
-  try {
-    const response = await axios.post(
-      'https://api.your-domain.com/api/v1/agents/tickets',
-      {
-        agentId: "test-agent",
-        subject: "Test ticket",
-        userEmail: "test@example.com",
-        priority: "medium"
-      },
-      {
-        headers: {
-          'X-Client-ID': 'org_35849015040147',
-          'Content-Type': 'application/json'
-        }
-      }
-    );
-
-    console.log('Success:', response.data);
-  } catch (error) {
-    console.error('Error:', error.response?.data || error.message);
-  }
-}
-
-testEndpoint();
+#### PUT (update):
+```bash
+curl -X PUT "http://localhost:PORT/api/v1/resources/123" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $API_KEY" \
+  -d '{
+    "name": "Updated Resource"
+  }'
 ```
+
+#### DELETE:
+```bash
+curl -X DELETE "http://localhost:PORT/api/v1/resources/123" \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+Replace `PORT`, `API_KEY`, and `YOUR_TENANT_ID` with values from your project's configuration or environment variables.
 
 ### Step 4: Validate Response
 Check:
@@ -106,40 +89,40 @@ Check:
 - Invalid data types
 - Malformed JSON
 - Missing authentication
-- Wrong client ID
+- Invalid credentials or tenant ID
 - Rate limiting (if applicable)
 
 ## Test Scenarios
 
 ### 1. Happy Path
 ```markdown
-**Scenario**: Valid ticket creation
+**Scenario**: Valid resource creation
 **Input**: Complete, valid payload
-**Expected**: 201 Created, ticket ID returned
+**Expected**: 201 Created, resource ID returned
 **Actual**: [record result]
 ```
 
 ### 2. Missing Required Field
 ```markdown
-**Scenario**: Missing subject field
-**Input**: Payload without subject
-**Expected**: 400 Bad Request, error message
+**Scenario**: Missing required field
+**Input**: Payload without required field
+**Expected**: 400 Bad Request, error message identifying missing field
 **Actual**: [record result]
 ```
 
 ### 3. Authentication
 ```markdown
-**Scenario**: Missing API key
+**Scenario**: Missing API key / auth token
 **Input**: Request without Authorization header
 **Expected**: 401 Unauthorized (or allowed if public endpoint)
 **Actual**: [record result]
 ```
 
-### 4. Wrong Client ID
+### 4. Invalid Tenant / Scope
 ```markdown
-**Scenario**: Invalid X-Client-ID
-**Input**: Non-existent organization ID
-**Expected**: 400 or 404, appropriate error
+**Scenario**: Invalid tenant or scope identifier
+**Input**: Non-existent or unauthorized tenant ID
+**Expected**: 400 or 403, appropriate error
 **Actual**: [record result]
 ```
 
@@ -148,29 +131,28 @@ Check:
 ```markdown
 ## API Test Results
 
-### Endpoint: POST /api/v1/agents/tickets
-**Base URL**: https://api.your-domain.com
+### Endpoint: [METHOD] [PATH]
+**Base URL**: [base URL]
 **Authentication**: Required/Not Required
 **Rate Limit**: [if applicable]
 
 ### Test Cases
 
-#### ✅ Happy Path
+#### PASS - Happy Path
 - **Status**: 201 Created
 - **Response Time**: 234ms
-- **Ticket ID**: 12345
-- **AI Summary**: Generated successfully
-- **Zendesk ID**: 98765432
+- **Resource ID**: 12345
+- **Notes**: [any observations]
 
-#### ⚠️ Missing Subject
+#### PASS - Missing Required Field
 - **Status**: 400 Bad Request
-- **Error**: "Subject is required"
+- **Error**: "name is required"
 - **Behavior**: Correct
 
-#### ❌ Authentication Failure
+#### FAIL - Authentication
 - **Status**: Expected 401, Got 200
 - **Issue**: Endpoint not properly protected
-- **Action Required**: Add auth middleware
+- **Action Required**: Add auth middleware/guard
 
 ### Summary
 - Total Tests: 5
@@ -186,41 +168,43 @@ Check:
 ## Important Notes
 
 ### Testing Production
-- Use test organization IDs when possible
+- Use test accounts and tenant IDs when possible
 - Don't spam endpoints (respect rate limits)
 - Clean up test data after testing
 - Be careful with destructive operations
 
 ### Testing Local
 ```bash
-# Start local server
-npm run dev:simple
+# Start local server using your project's dev command
+# Examples: npm run dev, python manage.py runserver, go run ., cargo run
 
 # Test against localhost
-curl -X GET "http://localhost:3002/health"
+curl -X GET "http://localhost:PORT/health"
 ```
 
 ### Common Headers
 ```
 Content-Type: application/json
-X-Client-ID: [organization ID]
-Authorization: Bearer [API key]
-User-Agent: Claude-Code-Test
+Authorization: Bearer [API key or token]
+X-Tenant-ID: [tenant identifier, if applicable]
+User-Agent: API-Test
 ```
 
 ## Integration Testing
 
-For comprehensive endpoint testing:
+For comprehensive endpoint testing, run your project's test suite:
 
 ```bash
-# Run existing test suite
-npm test
+# Run your project's test command (check CLAUDE.md for specifics)
+# Examples:
+#   npm test
+#   pytest
+#   go test ./...
+#   cargo test
+#   dotnet test
 
-# Run specific test file
-npm test -- routes/agents.test.ts
-
-# Run with coverage
-npm run test:coverage
+# Run a specific test file (adjust for your test framework)
+# Run with coverage (if your framework supports it)
 ```
 
 Remember: Tests should be fast, focused, and aligned with TDD principles.

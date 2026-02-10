@@ -104,6 +104,7 @@ npm run test         # turbo run test
 - `/build-and-fix` - Run build and fix all errors
 - `/code-review` - Architecture review against best practices
 - `/test-api [endpoint]` - Test API endpoints
+- `/setup-stack` - Configure bootstrap for your tech stack
 
 ## Project-Specific Notes
 

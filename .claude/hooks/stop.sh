@@ -4,20 +4,20 @@
 #
 # Runs after Claude's response completes. Performs:
 # 1. Track file edits
-# 2. Auto-format modified files with Prettier
-# 3. Run build check on affected code
+# 2. Auto-format modified files (detects formatter)
+# 3. Run build/type check (detects build system)
 # 4. Check for error handling patterns
 #
-# This implements the "no mess left behind" philosophy from the Reddit post.
+# Multi-stack: auto-detects Node.js, Python, Go, Rust projects.
 
-set -e  # Exit on error
+set -e
 
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
 echo -e "${BLUE}[Hook] Running post-response checks...${NC}\n"
 
@@ -32,64 +32,145 @@ mkdir -p "$LOG_DIR"
 # Timestamp for logs
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
+# Track issues across all checks (use temp file to avoid subshell variable loss)
+ISSUES_FILE=$(mktemp)
+echo "0" > "$ISSUES_FILE"
+
+increment_issues() {
+    local current
+    current=$(cat "$ISSUES_FILE")
+    echo $((current + 1)) > "$ISSUES_FILE"
+}
+
 #
 # 1. TRACK FILE EDITS
 #
 echo -e "${BLUE}[1/4] Tracking file edits...${NC}"
 
-# Get list of modified files (staged and unstaged)
 MODIFIED_FILES=$(git diff --name-only 2>/dev/null || echo "")
 
 if [ -n "$MODIFIED_FILES" ]; then
     echo "$MODIFIED_FILES" >> "$LOG_DIR/file-edits-$TIMESTAMP.log"
-    echo -e "${GREEN}✓ Tracked $(echo "$MODIFIED_FILES" | wc -l) modified files${NC}"
+    FILE_COUNT=$(echo "$MODIFIED_FILES" | wc -l | tr -d ' ')
+    echo -e "${GREEN}Tracked $FILE_COUNT modified files${NC}"
 else
     echo -e "${YELLOW}No files modified${NC}"
 fi
 
 #
-# 2. AUTO-FORMAT WITH PRETTIER
+# 2. AUTO-FORMAT MODIFIED FILES
 #
 echo -e "\n${BLUE}[2/4] Auto-formatting modified files...${NC}"
 
 if [ -n "$MODIFIED_FILES" ]; then
-    # Filter for files that Prettier can format
-    FORMATTABLE_FILES=$(echo "$MODIFIED_FILES" | grep -E '\.(ts|tsx|js|jsx|json|md|yml|yaml)$' || echo "")
-
-    if [ -n "$FORMATTABLE_FILES" ]; then
-        echo "$FORMATTABLE_FILES" | while IFS= read -r file; do
-            if [ -f "$file" ]; then
-                echo "  Formatting: $file"
-                npx prettier --write "$file" 2>/dev/null || echo -e "${YELLOW}    Warning: Failed to format $file${NC}"
-            fi
-        done
-        echo -e "${GREEN}✓ Formatted files with Prettier${NC}"
+    # Detect formatter
+    if [ -f "package.json" ] && command -v npx &> /dev/null; then
+        # Node.js: use Prettier
+        FORMATTABLE_FILES=$(echo "$MODIFIED_FILES" | grep -E '\.(ts|tsx|js|jsx|json|md|yml|yaml)$' || echo "")
+        if [ -n "$FORMATTABLE_FILES" ]; then
+            echo "$FORMATTABLE_FILES" | while IFS= read -r file; do
+                if [ -f "$file" ]; then
+                    npx prettier --write "$file" 2>/dev/null || true
+                fi
+            done
+            echo -e "${GREEN}Formatted with Prettier${NC}"
+        else
+            echo -e "${YELLOW}No formattable files${NC}"
+        fi
+    elif [ -f "pyproject.toml" ] && command -v black &> /dev/null; then
+        # Python: use Black
+        PY_FILES=$(echo "$MODIFIED_FILES" | grep -E '\.py$' || echo "")
+        if [ -n "$PY_FILES" ]; then
+            echo "$PY_FILES" | xargs -r black --quiet 2>/dev/null || true
+            echo -e "${GREEN}Formatted with Black${NC}"
+        else
+            echo -e "${YELLOW}No Python files to format${NC}"
+        fi
+    elif [ -f "go.mod" ] && command -v gofmt &> /dev/null; then
+        # Go: use gofmt
+        GO_FILES=$(echo "$MODIFIED_FILES" | grep -E '\.go$' || echo "")
+        if [ -n "$GO_FILES" ]; then
+            echo "$GO_FILES" | xargs -r gofmt -w 2>/dev/null || true
+            echo -e "${GREEN}Formatted with gofmt${NC}"
+        fi
+    elif [ -f "Cargo.toml" ] && command -v rustfmt &> /dev/null; then
+        # Rust: use rustfmt
+        RS_FILES=$(echo "$MODIFIED_FILES" | grep -E '\.rs$' || echo "")
+        if [ -n "$RS_FILES" ]; then
+            echo "$RS_FILES" | xargs -r rustfmt 2>/dev/null || true
+            echo -e "${GREEN}Formatted with rustfmt${NC}"
+        fi
     else
-        echo -e "${YELLOW}No formattable files to process${NC}"
+        echo -e "${YELLOW}No formatter detected (install Prettier, Black, gofmt, or rustfmt)${NC}"
     fi
 else
     echo -e "${YELLOW}No files to format${NC}"
 fi
 
 #
-# 3. BUILD CHECK (TypeScript only on affected files)
+# 3. BUILD / TYPE CHECK
 #
-echo -e "\n${BLUE}[3/4] Checking TypeScript compilation...${NC}"
+echo -e "\n${BLUE}[3/4] Running build check...${NC}"
 
-# Check if there are any TypeScript files modified
-TS_FILES=$(echo "$MODIFIED_FILES" | grep -E '\.(ts|tsx)$' || echo "")
+BUILD_LOG="$LOG_DIR/build-$TIMESTAMP.log"
 
-if [ -n "$TS_FILES" ]; then
-    # Only run type check, not full build (faster)
-    if npm run typecheck > "$LOG_DIR/typecheck-$TIMESTAMP.log" 2>&1; then
-        echo -e "${GREEN}✓ TypeScript compilation successful${NC}"
+if [ -f "package.json" ]; then
+    # Node.js: try typecheck first, then build
+    if grep -q '"typecheck"' package.json 2>/dev/null; then
+        if npm run typecheck > "$BUILD_LOG" 2>&1; then
+            echo -e "${GREEN}TypeScript type check passed${NC}"
+        else
+            echo -e "${RED}TypeScript errors found${NC}"
+            echo -e "${YELLOW}  See: .claude/logs/build-$TIMESTAMP.log${NC}"
+            echo -e "${YELLOW}  Run '/build-and-fix' to resolve${NC}"
+            increment_issues
+        fi
+    elif grep -q '"build"' package.json 2>/dev/null; then
+        if npm run build > "$BUILD_LOG" 2>&1; then
+            echo -e "${GREEN}Build passed${NC}"
+        else
+            echo -e "${RED}Build errors found${NC}"
+            echo -e "${YELLOW}  See: .claude/logs/build-$TIMESTAMP.log${NC}"
+            increment_issues
+        fi
+    elif [ -f "tsconfig.json" ]; then
+        if npx tsc --noEmit > "$BUILD_LOG" 2>&1; then
+            echo -e "${GREEN}TypeScript compilation passed${NC}"
+        else
+            echo -e "${RED}TypeScript errors found${NC}"
+            increment_issues
+        fi
     else
-        echo -e "${RED}✗ TypeScript errors found${NC}"
-        echo -e "${YELLOW}  See: .claude/logs/typecheck-$TIMESTAMP.log${NC}"
-        echo -e "${YELLOW}  Run '/build-and-fix' to resolve errors${NC}"
+        echo -e "${YELLOW}No build/typecheck script found in package.json${NC}"
+    fi
+elif [ -f "pyproject.toml" ] && command -v mypy &> /dev/null; then
+    # Python: run mypy
+    if mypy . > "$BUILD_LOG" 2>&1; then
+        echo -e "${GREEN}mypy type check passed${NC}"
+    else
+        echo -e "${RED}mypy errors found${NC}"
+        echo -e "${YELLOW}  See: .claude/logs/build-$TIMESTAMP.log${NC}"
+        increment_issues
+    fi
+elif [ -f "go.mod" ]; then
+    # Go: run go build
+    if go build ./... > "$BUILD_LOG" 2>&1; then
+        echo -e "${GREEN}Go build passed${NC}"
+    else
+        echo -e "${RED}Go build errors found${NC}"
+        echo -e "${YELLOW}  See: .claude/logs/build-$TIMESTAMP.log${NC}"
+        increment_issues
+    fi
+elif [ -f "Cargo.toml" ]; then
+    # Rust: run cargo check
+    if cargo check > "$BUILD_LOG" 2>&1; then
+        echo -e "${GREEN}Cargo check passed${NC}"
+    else
+        echo -e "${RED}Cargo check errors found${NC}"
+        increment_issues
     fi
 else
-    echo -e "${YELLOW}No TypeScript files modified, skipping build check${NC}"
+    echo -e "${YELLOW}No build system detected, skipping${NC}"
 fi
 
 #
@@ -97,53 +178,42 @@ fi
 #
 echo -e "\n${BLUE}[4/4] Checking error handling patterns...${NC}"
 
-if [ -n "$TS_FILES" ]; then
-    ISSUES_FOUND=0
-
-    echo "$TS_FILES" | while IFS= read -r file; do
-        if [ -f "$file" ]; then
-            # Check for async functions without try-catch
-            if grep -q "async.*(" "$file"; then
-                if ! grep -q "try {" "$file"; then
-                    echo -e "${YELLOW}  ⚠ $file: Async function without try-catch${NC}"
-                    ISSUES_FOUND=$((ISSUES_FOUND + 1))
-                fi
-            fi
-
-            # Check for fetch/API calls without error handling
-            if grep -qE "(fetch\(|axios\.|pool\.query)" "$file"; then
-                if ! grep -qE "(try \{|\.catch\(|catch \()" "$file"; then
-                    echo -e "${YELLOW}  ⚠ $file: API call without error handling${NC}"
-                    ISSUES_FOUND=$((ISSUES_FOUND + 1))
-                fi
-            fi
-
-            # Check for console.log in production code (excluding test files)
-            if [[ "$file" != *".test."* ]] && [[ "$file" != *".spec."* ]]; then
-                if grep -q "console\.log" "$file"; then
-                    echo -e "${YELLOW}  ⚠ $file: Contains console.log (consider using proper logging)${NC}"
-                fi
-            fi
+if [ -n "$MODIFIED_FILES" ]; then
+    # Use the JS error pattern checker if node is available
+    if command -v node &> /dev/null && [ -f "$HOOK_DIR/utils/error-pattern-checker.js" ]; then
+        # Pass only code files that were modified
+        CODE_FILES=$(echo "$MODIFIED_FILES" | grep -E '\.(ts|tsx|js|jsx|py|go)$' || echo "")
+        if [ -n "$CODE_FILES" ]; then
+            node "$HOOK_DIR/utils/error-pattern-checker.js" $CODE_FILES 2>/dev/null || true
+        else
+            echo -e "${GREEN}No code files to check${NC}"
         fi
-    done
-
-    if [ $ISSUES_FOUND -eq 0 ]; then
-        echo -e "${GREEN}✓ No obvious error handling issues detected${NC}"
+    else
+        echo -e "${YELLOW}Error pattern checker not available (requires Node.js)${NC}"
     fi
 else
-    echo -e "${YELLOW}No TypeScript files to check${NC}"
+    echo -e "${YELLOW}No files to check${NC}"
 fi
 
 #
 # SUMMARY
 #
-echo -e "\n${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${GREEN}Post-response checks complete!${NC}"
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
+TOTAL_ISSUES=$(cat "$ISSUES_FILE")
+rm -f "$ISSUES_FILE"
 
-# Cleanup old logs (keep last 20)
-cd "$LOG_DIR"
-ls -t file-edits-*.log 2>/dev/null | tail -n +21 | xargs rm -f 2>/dev/null || true
-ls -t typecheck-*.log 2>/dev/null | tail -n +21 | xargs rm -f 2>/dev/null || true
+echo -e "\n${BLUE}----------------------------------------${NC}"
+if [ "$TOTAL_ISSUES" -gt 0 ]; then
+    echo -e "${YELLOW}Post-response checks complete ($TOTAL_ISSUES issue(s) found)${NC}"
+else
+    echo -e "${GREEN}Post-response checks complete!${NC}"
+fi
+echo -e "${BLUE}----------------------------------------${NC}\n"
+
+# Cleanup old logs (keep last 20) - use subshell to avoid cd side effects
+(
+    cd "$LOG_DIR" 2>/dev/null || exit 0
+    ls -t file-edits-*.log 2>/dev/null | tail -n +21 | xargs rm -f 2>/dev/null || true
+    ls -t build-*.log 2>/dev/null | tail -n +21 | xargs rm -f 2>/dev/null || true
+)
 
 exit 0

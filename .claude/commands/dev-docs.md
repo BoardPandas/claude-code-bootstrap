@@ -72,11 +72,10 @@ Create a checklist for tracking progress:
 
 ### For UI/Frontend Tasks
 If the task involves UI components:
-- [ ] Include UIC (Universal ID Convention) allocation in tasks
-- [ ] Plan to update UIC Master List (`/docs/UIC_MASTER_LIST.md`)
-- [ ] Specify which canonical components to use (StandardTabs, StandardTable)
-- [ ] Include `npm run ui:enforce` validation in testing phase
-- [ ] Reference UIC Guidelines: [`/.claude/skills/UIC_Guidelines.md`](../skills/UIC_Guidelines.md)
+- [ ] Plan which design tokens and components to use
+- [ ] Ensure accessibility requirements are included in tasks
+- [ ] Include design system compliance validation in testing phase
+- [ ] Reference your project's UI conventions or design system docs
 
 ## After Generation
 

@@ -7,393 +7,136 @@ description: Test-Driven Development workflow with Red-Green-Refactor cycle and 
 
 Test-Driven Development is **REQUIRED** for all coding tasks on this project.
 
+> For stack-specific test examples, see the relevant file in `.claude/skills/stacks/` (e.g., `tdd-jest.md`, `tdd-pytest.md`, `tdd-go.md`).
+
 ## TDD Cycle (Red-Green-Refactor)
 
 ```
-1. 🔴 RED: Write a failing test
-2. 🟢 GREEN: Write minimal code to pass
-3. 🔵 REFACTOR: Clean up (keep it simple!)
+1. RED:      Write a failing test
+2. GREEN:    Write minimal code to make it pass
+3. REFACTOR: Clean up while keeping tests green
 ```
 
 ## The Process
 
 ### Step 1: Write Test First (RED)
 
-Before writing ANY production code, write a test:
-
-```typescript
-// test/routes/tickets.test.ts
-import request from 'supertest';
-import app from '../../src/server-simple';
-
-describe('POST /api/v1/tickets', () => {
-  it('should create a ticket with valid data', async () => {
-    const response = await request(app)
-      .post('/api/v1/tickets')
-      .send({
-        subject: 'Test ticket',
-        email: 'user@example.com',
-        priority: 'medium'
-      });
-
-    expect(response.status).toBe(201);
-    expect(response.body).toHaveProperty('id');
-    expect(response.body.subject).toBe('Test ticket');
-  });
-});
-```
-
-**Run test** - It should FAIL (endpoint doesn't exist yet).
+Before writing ANY production code, write a test that:
+- Calls the function/endpoint you're about to create
+- Asserts the expected behavior
+- **Run it** — it should FAIL (the thing doesn't exist yet)
 
 ### Step 2: Write Minimal Code (GREEN)
 
-Write the simplest code to make the test pass:
-
-```typescript
-// src/routes-simple.ts
-app.post('/api/v1/tickets', async (req, res) => {
-  const { subject, email, priority } = req.body;
-
-  const result = await pool.query(
-    'INSERT INTO tickets (subject, requester_email, priority) VALUES ($1, $2, $3) RETURNING *',
-    [subject, email, priority]
-  );
-
-  res.status(201).json(result.rows[0]);
-});
-```
-
-**Run test** - It should PASS (green).
+Write the **simplest possible code** to make the test pass:
+- Don't add features the test doesn't require
+- Don't optimize
+- Just make the test green
 
 ### Step 3: Refactor (BLUE)
 
-Clean up code while keeping tests green:
-
-```typescript
-// Add validation
-app.post('/api/v1/tickets', async (req, res) => {
-  const { subject, email, priority } = req.body;
-
-  // Validation
-  if (!subject) {
-    return res.status(400).json({ error: 'Subject required' });
-  }
-
-  const result = await pool.query(
-    'INSERT INTO tickets (subject, requester_email, priority) VALUES ($1, $2, $3) RETURNING *',
-    [subject, email, priority || 'medium']
-  );
-
-  res.status(201).json(result.rows[0]);
-});
-```
-
-**Run test** - Still passes.
+Now clean up while keeping tests green:
+- Add validation
+- Improve naming
+- Extract duplicates (only if 3+ exist)
+- **Run tests after every change** — they must stay green
 
 ### Step 4: Add More Tests
 
-Test error cases:
-
-```typescript
-it('should return 400 when subject is missing', async () => {
-  const response = await request(app)
-    .post('/api/v1/tickets')
-    .send({
-      email: 'user@example.com'
-    });
-
-  expect(response.status).toBe(400);
-  expect(response.body.error).toBe('Subject required');
-});
-```
-
-**Run test** - Should pass (we already added validation).
-
-## Test Structure
-
-### Unit Tests (Functions)
-```typescript
-// test/utils/validation.test.ts
-import { validateEmail } from '../../src/utils/validation';
-
-describe('validateEmail', () => {
-  it('should return true for valid email', () => {
-    expect(validateEmail('user@example.com')).toBe(true);
-  });
-
-  it('should return false for invalid email', () => {
-    expect(validateEmail('invalid')).toBe(false);
-  });
-
-  it('should return false for empty email', () => {
-    expect(validateEmail('')).toBe(false);
-  });
-});
-```
-
-### Integration Tests (API Endpoints)
-```typescript
-// test/routes/tickets.test.ts
-describe('Ticket API', () => {
-  beforeEach(async () => {
-    // Clean up database before each test
-    await pool.query('DELETE FROM tickets WHERE subject LIKE \'Test%\'');
-  });
-
-  describe('POST /api/v1/tickets', () => {
-    it('should create ticket', async () => {
-      // Test implementation
-    });
-
-    it('should validate input', async () => {
-      // Test validation
-    });
-  });
-
-  describe('GET /api/v1/tickets', () => {
-    it('should list tickets', async () => {
-      // Test listing
-    });
-  });
-});
-```
+Once the happy path works, add tests for:
+- Error cases (invalid input, missing required fields)
+- Edge cases (boundary values, empty collections)
+- Auth/permission failures (if applicable)
 
 ## What to Test
 
-### ✅ DO Test
-- **Happy paths** - Core functionality works
-- **Error cases** - Invalid inputs handled
-- **Edge cases** - Boundary conditions
-- **Critical paths** - User-facing features
-- **Business logic** - Core algorithms
+### DO Test
+- **Happy paths** — core functionality works as expected
+- **Error cases** — invalid inputs return proper errors
+- **Edge cases** — boundary conditions, empty states
+- **Critical paths** — user-facing features, payment flows
+- **Business logic** — core algorithms, calculations
 
-### ❌ DON'T Test (For MVP)
-- **Third-party libraries** - Trust they work
-- **Framework internals** - Trust Express/Next.js works
-- **Database engine** - Trust PostgreSQL works
-- **Trivial getters/setters** - Not worth the time
-- **Over-mocking** - Use real DB when possible
+### DON'T Test (For MVP)
+- **Third-party libraries** — trust they work
+- **Framework internals** — trust your framework works
+- **Database engine** — trust your database works
+- **Trivial getters/setters** — not worth the time
+- **Over-mocking** — use real dependencies when sensible
 
-## Testing Patterns
+## Testing Principles
 
-### API Endpoint Testing
-```typescript
-import request from 'supertest';
-import app from '../src/server-simple';
-
-describe('Ticket endpoints', () => {
-  it('creates a ticket', async () => {
-    const response = await request(app)
-      .post('/api/v1/tickets')
-      .send({ subject: 'Test', email: 'test@test.com' });
-
-    expect(response.status).toBe(201);
-    expect(response.body.id).toBeDefined();
-  });
-});
+### Test Behavior, Not Implementation
+```
+BAD:  "it calls the database with the correct query string"
+GOOD: "it creates an item and returns it with an ID"
 ```
 
-### Database Testing (Use Real DB)
-```typescript
-import { pool } from '../src/database/connection';
+Testing implementation details makes tests brittle — they break when you refactor even if behavior is unchanged.
 
-describe('Ticket creation', () => {
-  afterEach(async () => {
-    // Clean up test data
-    await pool.query('DELETE FROM tickets WHERE subject = $1', ['Test Ticket']);
-  });
+### Use Real Dependencies When Possible
+- Prefer integration tests with a real database over unit tests with mocks
+- Only mock external services you don't control (third-party APIs)
+- If you're mocking more than one thing per test, the test is probably too complex
 
-  it('inserts ticket into database', async () => {
-    const result = await pool.query(
-      'INSERT INTO tickets (subject) VALUES ($1) RETURNING *',
-      ['Test Ticket']
-    );
+### Keep Tests Simple and Focused
+- One assertion per concept (multiple asserts are fine if testing one thing)
+- Each test should be independently understandable
+- Tests are documentation — make them readable
 
-    expect(result.rows[0].subject).toBe('Test Ticket');
-  });
-});
+### Test Organization
 ```
-
-### Component Testing (Frontend)
-```typescript
-import { render, screen, fireEvent } from '@testing-library/react';
-import TicketForm from '../components/TicketForm';
-
-describe('TicketForm', () => {
-  it('submits form with valid data', () => {
-    const onSubmit = jest.fn();
-    render(<TicketForm onSubmit={onSubmit} />);
-
-    fireEvent.change(screen.getByLabelText('Subject'), {
-      target: { value: 'Test Ticket' }
-    });
-
-    fireEvent.click(screen.getByText('Submit'));
-
-    expect(onSubmit).toHaveBeenCalledWith({
-      subject: 'Test Ticket'
-    });
-  });
-
-  it('shows error for empty subject', () => {
-    render(<TicketForm onSubmit={jest.fn()} />);
-
-    fireEvent.click(screen.getByText('Submit'));
-
-    expect(screen.getByText('Subject is required')).toBeInTheDocument();
-  });
-});
+Group by feature, not by type:
+  "Item creation"
+    - creates item with valid data
+    - returns error when name is missing
+    - returns error for invalid email
 ```
-
-## Test Organization
-
-```
-test/
-├── routes/              # API endpoint tests
-│   ├── tickets.test.ts
-│   ├── agents.test.ts
-│   └── clients.test.ts
-├── utils/               # Utility function tests
-│   └── validation.test.ts
-├── components/          # Frontend component tests
-│   └── TicketCard.test.tsx
-└── integration/         # End-to-end tests
-    └── ticket-flow.test.ts
-```
-
-## Running Tests
-
-### Development Workflow
-```bash
-# Run all tests
-npm test
-
-# Run specific test file
-npm test -- tickets.test.ts
-
-# Run in watch mode
-npm test -- --watch
-
-# Run with coverage
-npm test -- --coverage
-```
-
-### Before Committing
-```bash
-# Always run full test suite
-npm test
-
-# Ensure all tests pass
-# If any fail, fix before committing
-```
-
-## TDD for MVP - Keep It Simple
-
-### ✅ Good Test (Simple, Focused)
-```typescript
-it('creates ticket with subject', async () => {
-  const response = await request(app)
-    .post('/api/v1/tickets')
-    .send({ subject: 'Test' });
-
-  expect(response.status).toBe(201);
-  expect(response.body.subject).toBe('Test');
-});
-```
-
-### ❌ Bad Test (Over-Mocked, Complex)
-```typescript
-it('creates ticket with dependency injection', async () => {
-  const mockRepo = createMockRepository();
-  const mockService = createMockService(mockRepo);
-  const mockValidator = createMockValidator();
-  // ... 50 lines of mocking
-
-  // This is over-engineered for MVP
-});
-```
-
-## TDD Benefits for MVP
-
-### Why TDD Matters
-1. **Confidence** - Know your code works
-2. **Documentation** - Tests show how to use code
-3. **Regression prevention** - Catch breaks early
-4. **Better design** - Testable code is simpler code
-5. **Faster debugging** - Tests pinpoint issues
-
-### MVP-Specific Benefits
-- **Fast iteration** - Change with confidence
-- **Refactor safely** - Tests catch regressions
-- **Prevent tech debt** - Good tests = good design
-- **Ship with confidence** - Know it works
 
 ## Common TDD Mistakes
 
-### ❌ Mistake 1: Testing Implementation
-```typescript
-// Bad - tests implementation details
-it('calls database with correct query', () => {
-  const spy = jest.spyOn(pool, 'query');
-  createTicket({ subject: 'Test' });
-  expect(spy).toHaveBeenCalledWith('INSERT INTO...');
-});
-```
+### Mistake 1: Testing Implementation Details
+Don't spy on internal method calls. Test the observable outcome instead.
 
-### ✅ Fix: Test Behavior
-```typescript
-// Good - tests behavior/outcome
-it('creates ticket in database', async () => {
-  const ticket = await createTicket({ subject: 'Test' });
-  expect(ticket.subject).toBe('Test');
+### Mistake 2: Too Many Mocks
+If you need to mock 5 things to test one function, your code is probably too coupled. Simplify the code, don't add more mocks.
 
-  // Verify in database
-  const result = await pool.query('SELECT * FROM tickets WHERE id = $1', [ticket.id]);
-  expect(result.rows[0].subject).toBe('Test');
-});
-```
+### Mistake 3: Testing Frameworks
+Don't test that your framework does its job. Test YOUR code.
 
-### ❌ Mistake 2: Too Many Mocks
-```typescript
-// Bad - mocking everything
-const mockDB = jest.fn();
-const mockValidator = jest.fn();
-const mockLogger = jest.fn();
-// ... too complex
-```
+### Mistake 4: Skipping the RED Step
+If you write code first and tests after, you don't know if your tests actually catch failures. Always see the test fail before making it pass.
 
-### ✅ Fix: Use Real Dependencies
-```typescript
-// Good - use real database, simple test
-const result = await pool.query('INSERT INTO tickets...');
-expect(result.rows[0]).toBeDefined();
-```
+## TDD for MVP — Keep It Simple
 
-### ❌ Mistake 3: Testing Frameworks
-```typescript
-// Bad - testing Express/Next.js internals
-it('uses Express correctly', () => {
-  expect(app).toBeInstanceOf(Express);
-});
-```
+### Good Test (Simple, Focused)
+- Tests one behavior
+- Sets up minimal data
+- Makes one API call or function call
+- Asserts the expected outcome
 
-### ✅ Fix: Test Your Code
-```typescript
-// Good - test your endpoint behavior
-it('returns 201 on successful creation', async () => {
-  const response = await request(app).post('/tickets').send({...});
-  expect(response.status).toBe(201);
-});
-```
+### Bad Test (Over-Engineered)
+- Sets up complex mocks and fixtures
+- Tests implementation details
+- Has 50 lines of setup for 1 line of assertion
+- Uses dependency injection and mock frameworks
+
+## TDD Benefits
+
+1. **Confidence** — know your code works before shipping
+2. **Documentation** — tests show how to use the code
+3. **Regression prevention** — catch breaks early
+4. **Better design** — testable code is simpler code
+5. **Faster debugging** — tests pinpoint exactly what broke
 
 ## TDD Checklist
 
 Before implementing any feature:
 
 - [ ] Write failing test first (RED)
-- [ ] Run test - confirm it fails
+- [ ] Run test — confirm it fails
 - [ ] Write minimal code to pass (GREEN)
-- [ ] Run test - confirm it passes
+- [ ] Run test — confirm it passes
 - [ ] Add error case tests
 - [ ] Add edge case tests (critical ones only)
 - [ ] Refactor while keeping tests green
@@ -404,7 +147,7 @@ Before implementing any feature:
 - **Test first, code second** (always)
 - **Keep tests simple** (no over-mocking)
 - **Test behavior, not implementation**
-- **Use real dependencies** (DB, APIs) when sensible
+- **Use real dependencies** when sensible
 - **Tests are documentation** (make them readable)
 - **Green tests before committing** (always)
 
