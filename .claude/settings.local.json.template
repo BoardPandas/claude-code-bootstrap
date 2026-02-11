@@ -1,9 +1,37 @@
 {
-  "$schema": "https://code.claude.com/settings-schema.json",
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
 
   "hooks": {
-    "userPromptSubmit": ".claude/hooks/user-prompt-submit.js",
-    "stop": ".claude/hooks/stop.sh"
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/pre-tool-use.js\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/stop.js\""
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.js\""
+          }
+        ]
+      }
+    ]
   },
 
   "permissions": {
@@ -20,12 +48,14 @@
       "Bash(python *)",
       "Bash(pip *)"
     ],
-    "deny": []
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)"
+    ]
   },
 
-  "settings": {
-    "plansDirectory": ".claude/plans",
-    "respectGitignore": true,
-    "showTurnDuration": false
-  }
+  "plansDirectory": ".claude/plans",
+  "respectGitignore": true,
+  "showTurnDuration": true
 }

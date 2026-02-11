@@ -6,7 +6,7 @@ tools:
   - Grep
   - Glob
   - Write
-model: sonnet
+model: inherit
 ---
 
 # Strategic Plan Architect Agent

@@ -1,5 +1,12 @@
 ---
+name: setup-stack
 description: Configure the bootstrap for your specific tech stack (one-time setup)
+disable-model-invocation: true
+allowed-tools:
+  - Read
+  - Edit
+  - Glob
+  - Grep
 ---
 
 # Setup Stack - Configure Bootstrap for Your Project

@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+.venv/
+vendor/
+
+# Build output
+dist/
+build/
+.next/
+out/
+
+# Secrets and credentials
+.env
+.env.*
+secrets/
+*.pem
+*.key
+
+# IDE settings
+.idea/
+.vscode/settings.json
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+.claude/logs/

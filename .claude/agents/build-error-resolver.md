@@ -7,7 +7,7 @@ tools:
   - Bash
   - Grep
   - Glob
-model: sonnet
+model: inherit
 ---
 
 # Build Error Resolver Agent

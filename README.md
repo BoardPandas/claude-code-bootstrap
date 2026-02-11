@@ -55,8 +55,9 @@ Battle-tested on real production applications. Framework-agnostic. Copy and cust
 - `/setup-stack` - Configure bootstrap for your tech stack
 
 ### Hooks (automation)
-- **user-prompt-submit.js** - Skill suggestion, context analysis
-- **stop.sh/.bat** - Auto-format, build check, error detection
+- **pre-tool-use.js** - Tool validation and safety checks
+- **session-start.js** - Session initialization
+- **stop.js** - Auto-format, build check, error detection
 - **utils/** - Build checker, error pattern detection, file tracking
 
 ### Documentation (10 guides)
@@ -126,20 +127,20 @@ Start here based on your goal:
 
 Run `/setup-stack` to interactively configure your project. This will:
 1. Ask which stack you're using (Node.js, Python, Go, etc.)
-2. Enable the relevant stack pack files from `skills/stacks/`
+2. Enable the relevant stack-specific skills
 3. Enable any optional skills you need
-4. Update skill activation rules
+4. Update CLAUDE.md with your stack details
 
 ### Manual Configuration
 
-Core skills in `skills/core/` contain **universal principles only** -- no stack-specific code. Stack-specific examples live in `skills/stacks/`:
+Core skills in `.claude/skills/` contain **universal principles** -- no stack-specific code. Stack-specific skills are disabled by default (`disable-model-invocation: true`) and enabled when you run `/setup-stack`:
 
-- **Node.js/Express**: Keep `node-express.md`, `react-nextjs.md`, `tdd-jest.md`
-- **Python/FastAPI**: Keep `python-fastapi.md`, `tdd-pytest.md`
-- **Go/Gin**: Keep `go-gin.md`, `tdd-go.md`
-- **Other stacks**: Core skills still apply; create your own stack file using existing ones as templates
+- **Node.js/Express**: `node-express/`, `react-nextjs/`, `tdd-jest/`
+- **Python/FastAPI**: `python-fastapi/`, `tdd-pytest/`
+- **Go/Gin**: `go-gin/`, `tdd-go/`
+- **Other stacks**: Core skills still apply; create your own skill directory using existing ones as templates
 
-Remove stack files you don't need to keep Claude focused on your tech stack.
+Remove skill directories you don't need to keep Claude focused on your tech stack.
 
 ## Key Features
 

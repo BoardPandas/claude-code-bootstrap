@@ -31,8 +31,7 @@ cp /path/to/claude-code-bootstrap/CLAUDE.md.template ./.claude/CLAUDE.md
 # 6. Copy and rename settings template
 cp .claude/settings.local.json.template .claude/settings.local.json
 
-# 7. Make hooks executable (Linux/Mac)
-chmod +x .claude/hooks/stop.sh
+# 7. Hooks are cross-platform JavaScript (no chmod needed)
 ```
 
 ### Method 2: Manual Download
@@ -63,22 +62,22 @@ chmod +x .claude/hooks/stop.sh
 
 Run `/setup-stack` in Claude Code to interactively configure your project. This will:
 - Ask which tech stack you're using
-- Enable the relevant stack pack files from `skills/stacks/`
+- Enable the relevant stack-specific skills
 - Enable any optional skills you need
-- Update skill activation rules
+- Update CLAUDE.md with your stack details
 
 **Or configure manually:**
 
-The `skills/stacks/` directory contains stack-specific example files. Keep the ones matching your project and remove the rest:
+Stack-specific skills are in `.claude/skills/` with `disable-model-invocation: true` by default. To enable one, edit its `SKILL.md` frontmatter and remove that line:
 
-| Your Stack | Keep These Files |
+| Your Stack | Enable These Skills |
 |---|---|
-| Node.js + Express | `node-express.md`, `tdd-jest.md` |
-| React + Next.js | `react-nextjs.md` |
-| Python + FastAPI | `python-fastapi.md`, `tdd-pytest.md` |
-| Go + Gin | `go-gin.md`, `tdd-go.md` |
+| Node.js + Express | `node-express/`, `tdd-jest/` |
+| React + Next.js | `react-nextjs/` |
+| Python + FastAPI | `python-fastapi/`, `tdd-pytest/` |
+| Go + Gin | `go-gin/`, `tdd-go/` |
 
-Core skills in `skills/core/` are universal and work with any stack.
+Core skills (backend-dev-guidelines, frontend-dev-guidelines, etc.) are universal and auto-activate for any stack.
 
 ### 2. Customize CLAUDE.md
 
@@ -97,25 +96,7 @@ Open `.claude/CLAUDE.md` and replace all placeholders:
 {{FILE_ORGANIZATION}}     -> Your file structure rules
 ```
 
-### 3. Update skill-rules.json (Optional)
-
-Edit `.claude/skill-rules.json` to add project-specific triggers:
-
-```json
-{
-  "backend-dev-guidelines": {
-    "promptTriggers": {
-      "keywords": [
-        "backend",
-        "api",
-        "your-framework-name"
-      ]
-    }
-  }
-}
-```
-
-### 4. Test the Setup
+### 3. Test the Setup
 
 ```bash
 # Start Claude Code
@@ -138,27 +119,21 @@ claude-code
 your-project/
 ├── .claude/
 │   ├── agents/              # 4 agent files
-│   ├── skills/
-│   │   ├── core/            # 6 universal skills
-│   │   ├── stacks/          # Stack-specific examples
-│   │   └── optional/        # Domain-specific skills
-│   ├── commands/            # Command files
-│   ├── hooks/               # Hook files + utils/
-│   ├── CLAUDE.md            # Customized (not .template)
-│   ├── settings.local.json  # (not .template)
-│   └── skill-rules.json
+│   ├── skills/              # Each skill in its own directory
+│   │   ├── backend-dev-guidelines/SKILL.md
+│   │   ├── frontend-dev-guidelines/SKILL.md
+│   │   ├── node-express/SKILL.md
+│   │   ├── ...              # More skill directories
+│   │   └── skill-developer/SKILL.md
+│   ├── commands/            # Command files (also available as skills)
+│   ├── hooks/               # Cross-platform JS hooks + utils/
+│   ├── settings.json        # Shared project settings
+│   ├── settings.local.json  # Local settings (not .template)
+│   └── settings.local.json.template
+├── .claudeignore            # Files excluded from Claude's context
+├── .mcp.json                # MCP server configuration
+├── CLAUDE.md                # Project instructions
 └── docs/                    # (optional) documentation files
-```
-
-### Verify Hooks are Executable
-
-```bash
-# Linux/Mac
-ls -la .claude/hooks/stop.sh
-# Should show: -rwxr-xr-x (x means executable)
-
-# If not executable:
-chmod +x .claude/hooks/stop.sh
 ```
 
 ### Test Auto-Activation
@@ -186,10 +161,11 @@ chmod +x .claude/hooks/stop.sh
 **Problem**: Skills don't auto-suggest
 
 **Solutions**:
-1. Check `.claude/skill-rules.json` exists
-2. Verify `CLAUDE.md` is named correctly (not `.template`)
-3. Try explicit activation: "Use backend-dev-guidelines skill"
-4. Restart Claude Code session
+1. Check each skill's `SKILL.md` has a descriptive `description` field in frontmatter
+2. Verify `CLAUDE.md` exists in your project root
+3. Check that `disable-model-invocation: true` is not set on skills you want auto-activated
+4. Try explicit activation: `/backend-dev-guidelines`
+5. Restart Claude Code session
 
 ### Hooks Not Running
 
@@ -197,10 +173,9 @@ chmod +x .claude/hooks/stop.sh
 
 **Solutions**:
 1. Check `.claude/settings.local.json` exists (not `.template`)
-2. Verify paths in settings.local.json are correct
-3. Make `stop.sh` executable: `chmod +x .claude/hooks/stop.sh`
-4. Check hook file permissions
-5. Restart Claude Code
+2. Verify hook paths in settings.local.json use `$CLAUDE_PROJECT_DIR`
+3. Hooks are cross-platform JavaScript — no chmod needed
+4. Restart Claude Code
 
 ### Commands Not Working
 

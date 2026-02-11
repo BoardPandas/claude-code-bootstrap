@@ -13,7 +13,7 @@ See @package.json for available npm commands.
 - **Frontend**: {{FRONTEND_FRAMEWORK}} / {{UI_LIBRARY}}
 - **Testing**: {{TEST_FRAMEWORK}}
 
-## Recommended Package Versions (2025)
+## Recommended Package Versions
 
 When initializing new projects, use the latest stable versions:
 
@@ -97,7 +97,7 @@ npm run build        # turbo run build
 npm run test         # turbo run test
 ```
 
-## Custom Slash Commands
+## Skills & Commands
 
 - `/dev-docs [task]` - Create strategic implementation plan
 - `/dev-docs-update` - Update plan before context compaction
@@ -105,6 +105,13 @@ npm run test         # turbo run test
 - `/code-review` - Architecture review against best practices
 - `/test-api [endpoint]` - Test API endpoints
 - `/setup-stack` - Configure bootstrap for your tech stack
+
+Core skills (auto-activate when relevant):
+- `backend-dev-guidelines` - Backend API development principles
+- `frontend-dev-guidelines` - Frontend/UI development principles
+- `production-principles` - Anti-over-engineering + production quality
+- `security-practices` - Auth, validation, secrets management
+- `tdd-workflow` - Test-Driven Development workflow
 
 ## Project-Specific Notes
 
