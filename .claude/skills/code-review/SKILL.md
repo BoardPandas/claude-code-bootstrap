@@ -1,141 +1,109 @@
 ---
 name: code-review
-description: Perform architecture review focused on production principles and best practices
-disable-model-invocation: true
+description: Run a full code review of the codebase with severity-ranked findings. Use when you want a comprehensive quality check.
+user-invocable: true
+argument-hint: [optional: file or directory path to scope the review]
 allowed-tools:
   - Read
   - Glob
   - Grep
+  - Task
 ---
 
-# Code Review - Architecture & Best Practices
+# Code Review
 
-Perform a comprehensive code review focused on architecture, production principles, and best practices.
+You have been asked to perform a full code review. Follow these steps.
 
-## Instructions
+## Step 1: Determine Scope
 
-Review the recently modified code for adherence to project standards.
+1. If the user specified a file or directory, scope the review to that path.
+2. If no scope was specified, review the entire codebase.
+3. Read `.gitignore` and respect its patterns -- do not review ignored files.
+4. Read `CLAUDE.md` to understand the project's coding standards.
 
-### Review Checklist
+## Step 2: Scan Files
 
-#### 1. Production Principles Compliance
-- [ ] Following "simplest reliable solution" principle
-- [ ] No unjustified enterprise patterns (check criteria: 3+ implementations, 5+ data sources, etc.)
-- [ ] Using preferred patterns (direct queries with transactions, error handling)
-- [ ] Building for your current scale (not 1, not hypothetical millions)
-- [ ] Abstraction only after 3rd duplicate (Rule of Three)
-- [ ] Functions under 200 lines (extract at 200, not 50)
+Use Glob to find all source files in scope. Group them by type (e.g., TypeScript, Python, Go, Rust, etc.). Read each file.
 
-#### 2. Production Quality (Required)
-- [ ] Error handling on ALL external calls (API, database, file system)
-- [ ] Retry logic for transient failures (3 attempts, exponential backoff)
-- [ ] Logging with context (tenant, user, operation, timestamp)
-- [ ] Input validation before database writes
-- [ ] Database transactions for multi-step operations
-- [ ] User-friendly error messages (not raw stack traces)
+## Step 3: Review Checklist
 
-#### 3. Code Quality
-- [ ] Functions are focused and single-purpose
-- [ ] Minimal nesting (prefer early returns)
-- [ ] No complex type gymnastics or unnecessary abstractions
-- [ ] Comments for complex logic
-- [ ] No dead/commented code
+For each file, evaluate against these categories:
 
-#### 4. Architecture
-- [ ] Minimal abstraction (wait for 3rd duplicate)
-- [ ] Inline logic or extracted functions (not over-modularized)
-- [ ] Config for secrets/URLs, constants for other values
-- [ ] Transactions for multi-step database operations
-- [ ] Reasonable file count (5-10 files for complex features is ok)
+### Correctness
+- Logic errors, off-by-one bugs, race conditions
+- Unhandled edge cases (null, empty, negative, overflow)
+- Incorrect return types or missing return statements
+- Async/await misuse (missing await, unhandled promise rejections)
 
-#### 5. Security (Production)
-- [ ] No hardcoded secrets in code (use env vars)
-- [ ] Input validation and sanitization
-- [ ] Injection-protected queries (parameterized queries, ORMs with safe defaults)
-- [ ] Authentication enforced on protected routes
-- [ ] Rate limiting on public endpoints
-- [ ] Multi-tenant filter where applicable (e.g., WHERE tenant_id = ?)
+### Naming and Clarity
+- Vague or misleading variable and function names
+- Inconsistent naming conventions within the codebase
+- Functions doing more than their name suggests
 
-#### 6. Performance (Measured)
-- [ ] No obvious O(n^2) loops on user data
-- [ ] Database queries aren't N+1 problems
-- [ ] No unnecessary API calls in loops
-- [ ] Database indexes for frequent queries
-- [ ] Caching for expensive operations (>500ms)
-- [ ] Optimize for your current scale, not hypothetical millions
+### DRY Violations
+- Duplicated logic that should be extracted into a shared function
+- Copy-pasted blocks with minor variations
 
-#### 7. Testing (TDD Requirement)
-- [ ] Tests written BEFORE implementation
-- [ ] Core functionality is tested
-- [ ] Edge cases covered
-- [ ] Tests are simple and focused
-- [ ] No complex test frameworks or mocking
+### Error Handling
+- Swallowed exceptions (empty catch blocks)
+- Generic error messages that lose context
+- Missing error handling on I/O operations, network calls, or user input
 
-#### 8. UI/UX (If Reviewing Frontend Code)
-**Only check these if the review includes frontend code:**
-- [ ] Using design tokens (not hardcoded colors or magic numbers)
-- [ ] Using semantic tokens for colors, spacing, typography
-- [ ] Consistent spacing scale
-- [ ] Accessibility basics (contrast, ARIA labels, keyboard navigation)
-- [ ] Theme support (if applicable to the project)
-- [ ] Responsive design (mobile/tablet/desktop)
-- [ ] Component patterns consistent with project design system
+### Type Safety
+- Implicit `any` types (TypeScript)
+- Unsafe type assertions or casts
+- Missing null checks on nullable values
 
-## Review Output
+### Test Coverage
+- Public functions or API endpoints with no tests
+- Tests that verify implementation details instead of behavior
+- Missing edge case tests
 
-Provide feedback in this format:
+### Dead Code
+- Unused imports, variables, or functions
+- Commented-out code blocks
+- Unreachable code after return/throw/break
 
-### Good Practices Found
-- [Specific example of production-aligned code: simple + reliable]
-- [Another example]
+### TODO/FIXME/HACK
+- Outstanding TODO comments that should be resolved or tracked as issues
+- HACK comments indicating known shortcuts
 
-### Concerns
-1. **[Issue Type]**: [Specific concern]
-   - **Location**: [file:line]
-   - **Current**: [What it does now]
-   - **Suggestion**: [Fix aligned with production principles]
-   - **Priority**: [High/Medium/Low]
+### Consistency
+- Mixed formatting styles within a file
+- Inconsistent patterns across similar files (e.g., some API handlers validate input, others do not)
 
-### Production Principles Violations
-1. **[Violation]**: [Unjustified pattern or missing production requirement]
-   - **Location**: [file:line]
-   - **Why it's a problem**: [Over-engineering OR missing error handling/logging/validation]
-   - **Fix**: [Simpler approach OR add required production quality]
+## Step 4: Produce Report
 
-### Quick Wins
-- [Easy improvements that add value]
-- [Production quality additions (error handling, logging, validation)]
+Format the report as follows:
 
-### Technical Debt (Document but Accept)
-- [Reasonable shortcuts that work at current scale]
-- [Things to revisit when scaling significantly]
-- [Constants to extract when used 3+ times]
+```
+# Code Review Report
 
-## Review Guidelines
+## Summary
+- Files reviewed: <count>
+- Critical: <count>
+- Warning: <count>
+- Suggestion: <count>
 
-### Be Pragmatic
-- Simple + Reliable > Complex + Perfect
-- Works at current scale > Works for millions
-- Abstract after 3rd duplicate > Abstract speculatively
+## Critical Findings
+[CRITICAL] file:line -- <description>
+  Recommendation: <how to fix>
 
-### Focus On (High Priority)
-- Missing production requirements (error handling, logging, validation)
-- Unjustified enterprise patterns (check criteria)
-- Security issues
-- Obvious bugs or logic errors
-- Missing tests (TDD requirement)
+## Warnings
+[WARNING] file:line -- <description>
+  Recommendation: <how to fix>
 
-### Don't Nitpick
-- Variable naming (unless truly confusing)
-- Minor style inconsistencies
-- Lack of comments (unless logic is complex)
-- "Better" ways that add unjustified complexity
+## Suggestions
+[SUGGESTION] file:line -- <description>
+  Recommendation: <how to fix>
+```
 
-## After Review
+## Step 5: Offer Fixes
 
-1. Discuss findings with user
-2. Prioritize fixes (production requirements > security > unjustified patterns > style)
-3. Make changes or document accepted technical debt
-4. Re-review critical changes
+After presenting the report, ask the user:
 
-Remember: The goal is simple, reliable code that works at your current scale, not perfect code.
+1. "Would you like me to fix all critical issues now?"
+2. "Would you like me to fix all warnings?"
+3. "Would you like a fix plan for the full list?"
+
+Act on their response.
