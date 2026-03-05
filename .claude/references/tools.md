@@ -9,6 +9,10 @@ Claude Code reads this file to know which CLI tools are available and how to use
 - Claude Code should check `<tool> --version` before assuming a tool is available.
 - If a tool is missing and needed, ask the user before installing.
 
+## Important: No Local Infrastructure
+
+All databases, caches, and backend services run on **Northflank** and **Cloudflare** -- never locally. There is no Docker, no local Postgres, no local Redis. Development connects to remote services via environment variables or Northflank CLI port-forwarding.
+
 ## Universal Tools
 
 ### Git
@@ -68,20 +72,85 @@ This section is populated by plan-repo or init-repo based on the project's stack
 | esbuild | `npx esbuild --version` | `npm i -D esbuild` | Fast JS bundling |
 | tsc | `npx tsc --version` | `npm i -D typescript` | TypeScript compilation |
 
-### Database Tools
+### Database Tools (Remote Only)
 | Tool | Check | Install | Use When |
 |------|-------|---------|----------|
-| prisma | `npx prisma --version` | `npm i -D prisma` | Prisma ORM |
-| drizzle-kit | `npx drizzle-kit --version` | `npm i -D drizzle-kit` | Drizzle ORM |
-| psql | `psql --version` | System package manager | PostgreSQL CLI |
+| prisma | `npx prisma --version` | `npm i -D prisma` | Prisma ORM (connects to Northflank Postgres) |
+| drizzle-kit | `npx drizzle-kit --version` | `npm i -D drizzle-kit` | Drizzle ORM (connects to Northflank Postgres) |
 
 ### Deployment Tools
 | Tool | Check | Install | Use When |
 |------|-------|---------|----------|
-| vercel | `vercel --version` | `npm i -g vercel` | Vercel deployment |
-| wrangler | `npx wrangler --version` | `npm i -D wrangler` | Cloudflare Workers |
-| fly | `fly version` | https://fly.io/docs/hands-on/install-flyctl | Fly.io deployment |
-| docker | `docker --version` | https://docs.docker.com/get-docker | Container builds |
+| wrangler | `npx wrangler --version` | `npm i -D wrangler` | Cloudflare Pages & R2 |
+| northflank | `northflank --version` | `npm i -g @northflank/cli` | Northflank backend, Postgres, Redis |
+
+## Available MCP Servers
+
+Claude Code has access to the following MCP (Model Context Protocol) servers. These provide direct integration with external services without needing CLI tools.
+
+### Cloudflare MCPs
+
+| MCP Server | Purpose |
+|------------|---------|
+| **cloudflare-observability** | Query Worker logs, inspect structured log payloads, list Workers |
+| **cloudflare-workers-builds** | View and debug Workers Builds CI/CD (list builds, get build logs) |
+| **cloudflare-workers-bindings** | Manage KV, R2, D1, Hyperdrive bindings; read Worker code |
+| **cloudflare-containers** | Sandboxed Ubuntu container for running commands, reading/writing files |
+| **cloudflare-radar** | Global internet insights: traffic, attacks, rankings, BGP, URL scanning |
+| **cloudflare-docs** | Search Cloudflare documentation, Pages-to-Workers migration guides |
+| **cloudflare-api** | Execute and search raw Cloudflare API endpoints |
+| **cloudflare-graphql** | Query Cloudflare's GraphQL analytics API, explore schema |
+| **cloudflare-dns-analytics** | DNS analytics reports, zone and account DNS settings |
+| **cloudflare-audit-logs** | Query account audit logs |
+| **cloudflare-logpush** | Manage Logpush jobs by account |
+| **cloudflare-browser** | Fetch URL content as HTML, Markdown, or screenshot |
+| **cloudflare-ai-gateway** | Inspect AI Gateway logs (request/response bodies) |
+| **cloudflare-ai-search** | Search using Cloudflare AI Search / RAG |
+| **cloudflare-casb** | Query CASB integrations, assets, and categories |
+| **cloudflare-dex** | Digital Experience monitoring: fleet status, HTTP/traceroute tests, WARP diagnostics |
+| **cloudflare-agents-sdk-docs** | Search Cloudflare Agents SDK documentation |
+
+### GitHub MCP
+
+| MCP Server | Purpose |
+|------------|---------|
+| **github** | Full GitHub integration: repos, issues, PRs, branches, commits, code search, releases, reviews |
+
+### Communication & Productivity MCPs
+
+| MCP Server | Purpose |
+|------------|---------|
+| **claude_ai_Slack** | Read/search channels, send messages, create canvases, search users |
+| **claude_ai_Gmail** | Search/read emails, create drafts, get profile |
+| **claude_ai_Google_Calendar** | List/create/update events, find free time, RSVP |
+| **claude_ai_Notion** | Search/create/update pages and databases, query views, manage comments |
+
+### Notion MCP (Direct)
+
+| MCP Server | Purpose |
+|------------|---------|
+| **notion** | Direct Notion API: search, create/update pages, query databases, manage comments |
+
+### Infrastructure MCPs
+
+| MCP Server | Purpose |
+|------------|---------|
+| **northflank** | Full Northflank management: projects, services, addons (Postgres, Redis), jobs, secrets, volumes, domains, templates, builds, metrics |
+| **railway** | Railway platform: projects, services, deployments, variables, logs, domains |
+| **doppler** | Secrets management: projects, configs, secrets, environments, integrations, service accounts |
+
+### Browser Automation MCP
+
+| MCP Server | Purpose |
+|------------|---------|
+| **claude-in-chrome** | Chrome browser automation: navigate, click, type, read pages, take screenshots, record GIFs, execute JS |
+
+### IT Management MCPs
+
+| MCP Server | Purpose |
+|------------|---------|
+| **ninjaone** | RMM/endpoint management: devices, organizations, tickets, patches, scripts, alerts |
+| **zendesk** | Help desk: tickets, users, organizations, triggers, automations, macros, views |
 
 ## Project-Specific Tools
 

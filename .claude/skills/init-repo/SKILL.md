@@ -77,7 +77,7 @@ For each gap identified, create or update the file. Follow these rules:
 - **Skills:** Ensure all template skills exist in `.claude/skills/`. If additional skills are relevant to the detected tech stack, add them.
 - **Agents:** Ensure all template agents exist in `.claude/agents/`. Add others if relevant.
 - **Settings:** Update `.claude/settings.json` with recommended permissions and hooks. Preserve existing custom entries.
-- **Tools reference:** Update `.claude/references/tools.md` with stack-specific CLI tools, install commands, and usage patterns.
+- **Tools reference:** Update `.claude/references/tools.md` with stack-specific CLI tools, install commands, and usage patterns. **Important:** There is no local Docker, no local Postgres, no local Redis -- all infrastructure runs remotely on Northflank and Cloudflare. Do not add local infrastructure tools (docker, docker-compose, psql, redis-cli). Preserve the existing **Available MCP Servers** section that documents all MCP integrations available to Claude Code.
 - **CLAUDE.md:** Build a hierarchical CLAUDE.md structure:
   - Update root `CLAUDE.md` with project-specific stack info, conventions, and skill/agent inventory.
   - Plan (but do not create) subfolder CLAUDE.md files where distinct rules will apply.

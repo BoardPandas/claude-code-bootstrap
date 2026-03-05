@@ -207,18 +207,26 @@ Create `.claude/references/design-guardrails.md` with rules specific to the chos
 
 ## Step 6: Generate Tools Reference
 
-Create or update `.claude/references/tools.md` with the exact CLI tools for the chosen stack:
+Create or update `.claude/references/tools.md` with the exact CLI tools for the chosen stack. **Important constraints:**
+
+- There is NO local Docker, no local Postgres, no local Redis. All databases and services run remotely on Northflank and Cloudflare.
+- Development connects to remote services via environment variables or Northflank CLI port-forwarding.
+- Do NOT add docker, docker-compose, psql, redis-cli, or any local infrastructure tools.
+
+Tools to include:
 
 - Package manager commands
 - Build and dev commands
 - Framework CLI commands (frontend + backend)
-- Database commands (Postgres migrations, seed)
+- ORM/migration commands (connecting to remote Northflank Postgres)
 - Wrangler commands (Cloudflare Pages + R2)
-- Northflank CLI or API commands (if applicable)
+- Northflank CLI commands (backend deploy, addon management, port-forwarding)
 - Linter and formatter commands
 - Test runner commands
 
 For each tool: name, install command, version check command, common usage patterns.
+
+Also preserve the **Available MCP Servers** section in tools.md -- it documents all MCP integrations available to Claude Code (Cloudflare, GitHub, Slack, Gmail, Google Calendar, Notion, Northflank, Railway, Doppler, NinjaOne, Zendesk, browser automation). Do not remove or overwrite this section.
 
 ## Step 7: Plan the Hierarchical CLAUDE.md Structure
 
