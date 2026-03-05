@@ -17,6 +17,7 @@ This repository provides a pre-configured `.claude/` folder that gives Claude Co
     security.md            # Security analysis agent
     performance.md         # Performance analysis agent
     explorer.md            # Codebase exploration and research agent
+  rules/                   # Conditional instructions (paths: frontmatter)
   skills/                  # Executable skill definitions
     plan-repo/SKILL.md     # Pre-init project planning
     init-repo/SKILL.md     # Repository initialization
@@ -196,10 +197,11 @@ CLAUDE.md files are loaded top-down: root user level → project level → subfo
 
 1. **Root CLAUDE.md** contains project-wide rules, stack info, global conventions.
 2. **Subfolder CLAUDE.md** files only exist where subfolder-specific rules differ from root (e.g., `frontend/CLAUDE.md` for UI conventions).
-3. A landing page task never loads your backend CLAUDE.md. Context stays narrow.
-4. Keep each file focused and under 150 lines.
-5. Prune after every model update -- remove what the model handles natively.
-6. Do NOT bloat CLAUDE.md with generic advice the model already knows.
+3. **`.claude/rules/*.md`** files with `paths:` frontmatter provide conditional instructions that only load when working with matching file paths. Use these instead of subfolder CLAUDE.md files for fine-grained scoping.
+4. A landing page task never loads your backend CLAUDE.md. Context stays narrow.
+5. Keep each file focused and under 150 lines.
+6. Prune after every model update -- remove what the model handles natively.
+7. Do NOT bloat CLAUDE.md with generic advice the model already knows.
 
 ### When to Create Subfolder CLAUDE.md
 
@@ -254,6 +256,7 @@ description: What this skill does
 user-invocable: true
 disable_model_invocation: true   # Only manual /skillname invocation
 model: haiku                      # Which model runs this skill
+context: fork                     # Run in isolated subagent context
 allowed-tools:
   - Read
   - Glob
@@ -265,6 +268,11 @@ allowed-tools:
 - `sonnet` — Analysis and research skills (code review, exploration)
 - `opus` — Orchestration and planning skills (spec developer, architect)
 
+**Additional frontmatter fields (v2.1.69):**
+- `context: fork` — Run skill in an isolated subagent, preventing context contamination
+- `${CLAUDE_SKILL_DIR}` — Reference the skill's own directory for relative file paths
+- Skills in nested `.claude/skills/` subdirectories are auto-discovered
+
 ---
 
 ## Context Management Tips
@@ -275,14 +283,16 @@ allowed-tools:
 - **Code bias fix:** If Claude is stuck in bad existing patterns, build the feature in isolation in a fresh empty folder, then port it into the main project.
 - **`/rewind`:** Instead of arguing with Claude after a wrong turn, rewind to the last good point and re-guide.
 - **Document failed attempts:** For stubborn bugs, have Claude write a document of all attempted fixes before starting a new session. The new session loads the document and avoids dead ends.
+- **`/handoff`:** Create a handoff document (goal, progress, what worked, what failed, next steps) before ending a session. Load it in the fresh session as sole context.
 - **Modularize aggressively:** Files over 500 lines consume massive context. Regularly break them apart.
 
 ### Context Window Management
 
 - Keep CLAUDE.md under 150 lines
-- Use `/compact` proactively around 50% context
+- Use `/compact` proactively around 50% context (disable auto-compact in `/config` for manual control)
 - Start fresh conversations for unrelated topics
 - Break tasks small enough to complete in under 50% context usage
+- System prompt + tools consume ~10% of context. Enable `ENABLE_TOOL_SEARCH: "true"` in settings to lazy-load MCP tools and save tokens.
 
 ---
 
@@ -318,6 +328,14 @@ To add custom hooks, edit `.claude/settings.json`. Supported hook events:
 - `Notification` -- System notifications
 - `PreCompact` -- Before context compaction
 - `UserPromptSubmit` -- Before user prompt processing
+- `InstructionsLoaded` -- When CLAUDE.md or `.claude/rules/*.md` files load
+- `ConfigChange` -- When configuration files change during session
+- `WorktreeCreate` / `WorktreeRemove` -- Git worktree operations
+- `PermissionRequest` -- Process permission requests with custom logic
+- `TeammateIdle` / `TaskCompleted` -- Agent team events
+- `Setup` -- Triggered via `--init`, `--init-only`, or `--maintenance` flags
+
+Hooks also support HTTP mode (POST JSON to URLs) in addition to command mode.
 
 ---
 
@@ -327,6 +345,12 @@ To add custom hooks, edit `.claude/settings.json`. Supported hook events:
 - **Verbose mode** (`/config` → verbose → true) — Shows token count and reasoning trace. Read the trace to learn Claude's terminology, then use it in prompts.
 - **`/statusline`** — Shows model name, context battery, git branch, unstaged changes. Essential with multiple sessions.
 - **`/rewind`** — Return to last good point instead of arguing about a wrong turn.
+- **`/fork`** — Branch current session within conversation. Use `--fork-session` with `--continue` to fork from recent sessions.
+- **`/handoff`** — Create a summary document before ending a session for seamless continuation.
+- **`/release-notes`** — View latest changes in the current Claude Code version.
+- **`--worktree` / `-w`** — Start Claude Code in an isolated git worktree for parallel work.
+- **`--from-pr`** — Resume sessions linked to a GitHub PR.
+- **`claude agents`** — List all configured agents from the CLI.
 
 ---
 
@@ -347,10 +371,17 @@ Update root CLAUDE.md with your project's stack, conventions, and standards. Kee
 ### Adding New Agents
 
 1. Create a markdown file in `.claude/agents/` named after the agent.
-2. Add YAML frontmatter: `name`, `description`, `model`, and optionally `tools`, `permissionMode`, `maxTurns`.
+2. Add YAML frontmatter: `name`, `description`, `model`, and optionally `tools`, `permissionMode`, `maxTurns`, `skills`, `memory`, `isolation`, `background`, `disallowedTools`.
 3. Write the agent's role, focus areas, and behavior.
 4. Register the agent in [agents.md](agents.md).
 5. Update CLAUDE.md.
+
+**New agent fields (v2.1.69):**
+- `skills:` — Preload specific skills into the agent for progressive disclosure
+- `memory:` — Persistent memory scope (`user`, `project`, or `local`)
+- `isolation: worktree` — Run in a temporary git worktree
+- `background: true` — Run asynchronously without blocking
+- `disallowedTools:` — Remove specific tools from inherited tool lists
 
 ### Updating the Source URL Registry
 

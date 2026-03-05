@@ -27,6 +27,7 @@ CLAUDE.md files load top-down: root user level, then project level, then subfold
 
 - Root `CLAUDE.md` — Project-wide rules, stack, global conventions (this file).
 - Subfolder `CLAUDE.md` — Only when subfolder has distinct conventions (e.g., `frontend/CLAUDE.md` for UI rules, `backend/CLAUDE.md` for API rules).
+- `.claude/rules/*.md` — Conditional instructions with `paths:` frontmatter. Only load when working with matching file paths.
 - Keep each file focused. Prune after every model update -- remove what the model handles natively.
 - Do NOT bloat CLAUDE.md with generic advice the model already knows.
 
@@ -43,7 +44,9 @@ Always and aggressively offload to subagents: online research, doc fetching, log
 Skills support these optional fields:
 
 - `disable_model_invocation: true` — Prevents auto-loading; invoke manually with /skillname.
-- `model: haiku|sonnet|opus` — Which model runs the skill. Step-by-step skills (localization, release) use haiku. Analysis skills use sonnet. Orchestration/planning skills use opus.
+- `model: haiku|sonnet|opus` — Which model runs the skill. Step-by-step skills use haiku. Analysis skills use sonnet. Orchestration/planning skills use opus.
+- `context: fork` — Run skill in isolated subagent context (prevents context contamination).
+- `${CLAUDE_SKILL_DIR}` — Variable to reference the skill's own directory for relative file access.
 
 ## Fixed Infrastructure
 
@@ -80,6 +83,7 @@ Plan-repo only recommends language, frameworks, UI library, ORM, and tooling. In
 - Begin complex tasks in plan mode before implementation.
 - **Code bias fix:** If stuck in bad patterns, build the feature in isolation in a fresh folder, then port it in.
 - **Document failed attempts:** For stubborn bugs, have Claude write a document of all attempted fixes before starting a new session. New session loads the document, avoids repeating dead ends.
+- **Handoff docs:** Use `/handoff` to create a summary before ending a session. Load in fresh session as sole context.
 
 ## Date Awareness
 

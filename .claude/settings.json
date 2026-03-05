@@ -9,6 +9,10 @@
     ],
     "deny": []
   },
+  "env": {
+    "ENABLE_TOOL_SEARCH": "true"
+  },
+  "plansDirectory": "tasks",
   "hooks": {
     "PreToolUse": [
       {
