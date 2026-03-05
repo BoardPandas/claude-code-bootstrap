@@ -7,7 +7,7 @@ All custom agents for this project. Each agent is defined in `.claude/agents/` a
 ### architect
 
 - **File:** `.claude/agents/architect.md`
-- **Purpose:** High-level planning, tech stack decisions, file structure design, and architectural review.
+- **Purpose:** Phase-based planning, tech stack decisions, file structure design, and architectural review. Uses phase-based planning (Foundation → Core → Polish → Ship), never timeline-based.
 - **When to use:** Starting a new feature, restructuring a codebase, evaluating technology choices, or designing system architecture.
 - **Model:** opus
 
@@ -30,4 +30,11 @@ All custom agents for this project. Each agent is defined in `.claude/agents/` a
 - **File:** `.claude/agents/performance.md`
 - **Purpose:** Performance-focused analysis covering query optimization, memory leaks, bundle size, caching, and algorithmic efficiency.
 - **When to use:** When response times degrade, before scaling, or when optimizing resource-intensive operations.
+- **Model:** sonnet
+
+### explorer
+
+- **File:** `.claude/agents/explorer.md`
+- **Purpose:** Codebase exploration, online research, doc fetching, and context gathering. Always include a "why" when spawning -- not just what to find, but why you need it.
+- **When to use:** Before implementing features (understand existing patterns), when researching approaches, when gathering context for planning. Spin up multiple explorers in parallel for competing approaches.
 - **Model:** sonnet
