@@ -152,7 +152,7 @@ The README should explain:
 ## Step 9: Add Skill Frontmatter Optimizations
 
 For each skill, consider adding:
-- `disable_model_invocation: true` for skills that should only be manually invoked
+- `disable-model-invocation: true` for skills that should only be manually invoked
 - `model: haiku` for well-defined step-by-step skills that do not require heavy reasoning
 - `model: sonnet` for analysis and research skills
 - `model: opus` for orchestration and planning skills
@@ -164,14 +164,15 @@ For each skill, consider adding:
 For each agent, consider adding these frontmatter fields beyond the basics (name, description, model, permissionMode, tools):
 
 - `background: true` — Agent runs in the background without blocking the main session. Good for: long-running analysis, monitoring, continuous review tasks.
-- `isolation: true` — Agent gets a completely separate context, no access to the main session's conversation history. Good for: security analysis (prevent prompt injection from analyzed code), unbiased review.
+- `isolation: worktree` — Agent runs in a temporary git worktree (isolated copy of repo). Worktree is auto-cleaned if no changes; if changes are made, the worktree path and branch are returned. Good for: implementer agents, parallel feature work, security analysis.
 - `context: <instructions>` — Additional context injected into the agent's system prompt. Use for agent-specific rules that don't belong in the main CLAUDE.md.
 - `skills: [skill1, skill2]` — List of skills this agent can invoke. Restricts which skills are available to the agent.
-- `memory: <path>` — Path to an agent-memory file this agent should read on startup. Points to files in `.claude/agent-memory/`. Example: `memory: agent-memory/patterns.md` for agents that need project pattern awareness.
+- `maxTurns: N` — Maximum agentic iterations. Use for budget control (e.g., `maxTurns: 20` on implementer agents).
+- `memory: user|project|local` — Persistent cross-session memory scope. `user` = `~/.claude/agent-memory/` (cross-project), `project` = `.claude/agent-memory/` (team-shared), `local` = `.claude/agent-memory-local/` (personal, git-ignored). First 200 lines of MEMORY.md are injected into the agent's system prompt on startup.
 
 ### Recommended agent enhancements
 
-- **security** agent: Consider `isolation: true` to prevent analyzed code from influencing the agent's behavior.
+- **security** agent: Consider `isolation: worktree` to prevent analyzed code from influencing the agent's behavior.
 - **reviewer** agent: Consider `memory: agent-memory/patterns.md` so it reviews against discovered project patterns.
 - **explorer** agent: Consider `background: true` for long research tasks that shouldn't block the main session.
 - **architect** agent: Consider `skills: [plan-repo, spec-developer]` to give it access to planning skills.
@@ -180,33 +181,37 @@ Only add these fields when they provide clear value for the project. Do not add 
 
 ## Step 11: Configure Hooks
 
-### Available hook events (15+)
+### Available hook events (18)
 
 Beyond the 3 currently configured (PreToolUse, Stop, Notification), these hook events are available:
 
 | Event | Fires When | Use Cases |
 |-------|-----------|-----------|
+| **SessionStart** | When a new session begins | Welcome message, status check, re-inject context after compaction (matcher: `compact`) |
+| **SessionEnd** | When a session ends | Save state, create handoff doc |
+| **UserPromptSubmit** | When user submits a prompt | Input validation, prompt logging |
 | **PreToolUse** | Before any tool call | Validate tool args, block dangerous commands, log activity |
-| **PostToolUse** | After any tool call completes | Post-processing, validation of results, cleanup |
+| **PostToolUse** | After any tool call completes | Post-processing, validation of results, auto-lint |
+| **PostToolUseFailure** | When a tool call fails | Error logging, fallback actions, retry logic |
+| **PermissionRequest** | When a tool requests permission | Auto-approve safe reads, log permission decisions |
+| **SubagentStart** | When a subagent launches | Log subagent activity, resource tracking |
+| **SubagentStop** | When a subagent completes | Aggregate results, trigger follow-up tasks |
 | **Stop** | When Claude finishes a response | Notification sounds, auto-formatting, status updates |
 | **Notification** | When Claude sends a notification | Alert sounds, desktop notifications, webhook pings |
-| **SubagentStop** | When a subagent completes | Aggregate results, trigger follow-up tasks |
-| **PreCompact** | Before context compaction | Save important state, create summaries |
-| **PostCompact** | After context compaction | Restore state, verify nothing was lost |
-| **Login** | User authenticates | Setup tasks, environment validation |
-| **Logout** | User logs out | Cleanup, session summary |
-| **ProjectInit** | When Claude enters a project | Load project context, check prerequisites |
-| **SessionStart** | When a new session begins | Welcome message, status check, load state |
-| **SessionEnd** | When a session ends | Save state, create handoff doc |
-| **Error** | When an error occurs | Error reporting, recovery actions |
-| **ToolError** | When a tool call fails | Retry logic, fallback actions, error logging |
-| **ModelSwitch** | When the model changes | Adjust behavior, log model usage |
+| **PreCompact** | Before context compaction (matcher: `manual` or `auto`) | Save important state, create summaries |
+| **TeammateIdle** | When a teammate agent is idle | Coordination, load balancing |
+| **TaskCompleted** | When a background task completes | Status updates, follow-up actions |
+| **InstructionsLoaded** | When a CLAUDE.md or rules file loads | Audit logging, rule tracking |
+| **ConfigChange** | When settings or skill files change | Audit logging, reload triggers |
+| **WorktreeCreate** | When an isolated worktree is created | Setup worktree-specific config |
+| **WorktreeRemove** | When a worktree is cleaned up | Cleanup, merge results |
 
 ### Hook types
 
-1. **Command hooks** (current): `{ "type": "command", "command": "..." }` — Runs a shell command.
+1. **Command hooks** (current): `{ "type": "command", "command": "..." }` — Runs a shell command. Exit code 0 = allow, 2 = block (PreToolUse), non-zero = error.
 2. **HTTP hooks**: `{ "type": "http", "url": "https://..." }` — Sends an HTTP POST to a URL. The request body contains the event payload. Requires the URL to be listed in `settings.json` under `allowedHttpHookUrls`.
-3. **Prompt hooks**: Inject text into the conversation at specific points. Useful for reminders or context injection.
+3. **Prompt hooks**: `{ "type": "prompt", "prompt": "..." }` — Single-turn LLM judgment (yes/no decision). Useful for validation gates.
+4. **Agent hooks**: `{ "type": "agent", "prompt": "..." }` — Multi-turn subagent with tool access. Useful for complex validation or post-processing.
 
 ### Hooks to configure based on project needs
 
@@ -240,6 +245,7 @@ Update `.claude/settings.json` with all relevant settings. Deep-merge with exist
 ### Core settings (always configure)
 ```json
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": { "allow": [...], "deny": [...] },
   "env": { ... },
   "plansDirectory": "tasks",

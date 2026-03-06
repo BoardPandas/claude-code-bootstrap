@@ -98,11 +98,12 @@ Review each skill for new frontmatter fields:
 - Should HTTP hooks be added for team workflows?
 - Are matchers using the correct syntax?
 
-Available hook events (check for new ones in fetched sources):
-PreToolUse, PostToolUse, Stop, Notification, SubagentStop, PreCompact, PostCompact,
-Login, Logout, ProjectInit, SessionStart, SessionEnd, Error, ToolError, ModelSwitch
+Available hook events (18 as of v2.1.70 -- check for new ones in fetched sources):
+SessionStart, SessionEnd, UserPromptSubmit, PreToolUse, PostToolUse, PostToolUseFailure,
+PermissionRequest, SubagentStart, SubagentStop, Stop, Notification, PreCompact,
+TeammateIdle, TaskCompleted, InstructionsLoaded, ConfigChange, WorktreeCreate, WorktreeRemove
 
-Hook types: command, http, prompt
+Hook types: command, http, prompt, agent
 
 ### Settings
 Check for new or updated settings:
@@ -142,7 +143,7 @@ Update `.claude/references/tools.md` if any tools have new versions or new tools
 
 Update `.claude/references/design-guardrails.md` if UI best practices have changed.
 
-Review skill frontmatter and update `model`, `disable_model_invocation`, `context`, and `agent` fields if recommendations have changed.
+Review skill frontmatter and update `model`, `disable-model-invocation`, `context`, and `agent` fields if recommendations have changed.
 
 Review agent frontmatter and update `background`, `isolation`, `context`, `skills`, and `memory` fields if recommendations have changed.
 
@@ -181,7 +182,7 @@ Review `.claude/rules/*.md` files:
    - Path-scoped rules (`.claude/rules/*.md`)
    - Agent memory (`.claude/agent-memory/`)
    - All agent and skill frontmatter fields
-   - All hook events and types (command, http, prompt)
+   - All hook events and types (command, http, prompt, agent)
    - All settings options including settings.local.json overrides
 
 ## Step 8: Report

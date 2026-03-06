@@ -43,7 +43,7 @@ Always and aggressively offload to subagents: online research, doc fetching, log
 
 Skills support these optional fields:
 
-- `disable_model_invocation: true` — Prevents auto-loading; invoke manually with /skillname.
+- `disable-model-invocation: true` — Prevents auto-loading; invoke manually with /skillname.
 - `model: haiku|sonnet|opus` — Which model runs the skill. Step-by-step skills use haiku. Analysis skills use sonnet. Orchestration/planning skills use opus.
 - `context: fork` — Run skill in isolated subagent context (prevents context contamination).
 - `agent: <agent-name>` — Bind skill execution to a specific agent's persona and tools.
@@ -54,10 +54,11 @@ Skills support these optional fields:
 Beyond basics (name, description, model, permissionMode, tools), agents support:
 
 - `background: true` — Run without blocking the main session (long analysis, monitoring).
-- `isolation: true` — Separate context, no main session history (security analysis, unbiased review).
+- `isolation: worktree` — Run in isolated git worktree (independent copy of repo, auto-cleaned if no changes).
 - `context: <text>` — Additional instructions injected into the agent's system prompt.
 - `skills: [skill1, skill2]` — Restrict which skills the agent can invoke.
-- `memory: <path>` — Agent-memory file to read on startup (e.g., `agent-memory/patterns.md`).
+- `maxTurns: N` — Cap agentic iterations (budget control).
+- `memory: user|project|local` — Persistent cross-session memory scope.
 
 ## Fixed Infrastructure
 
@@ -82,8 +83,8 @@ Plan-repo only recommends language, frameworks, UI library, ORM, and tooling. In
 
 ## Hooks and Settings
 
-- Hooks fire on events: PreToolUse, PostToolUse, Stop, Notification, SubagentStop, PreCompact, PostCompact, ProjectInit, SessionStart, SessionEnd, Error, ToolError, and more. See init-repo skill for full list.
-- Hook types: `command` (shell), `http` (POST to URL), `prompt` (inject text).
+- Hooks fire on events: PreToolUse, PostToolUse, PostToolUseFailure, Stop, Notification, SubagentStart, SubagentStop, PreCompact, SessionStart, SessionEnd, UserPromptSubmit, PermissionRequest, TeammateIdle, TaskCompleted, InstructionsLoaded, ConfigChange, WorktreeCreate, WorktreeRemove. See init-repo skill for full list.
+- Hook types: `command` (shell), `http` (POST to URL), `prompt` (single-turn LLM yes/no), `agent` (multi-turn subagent with tools).
 - Optional settings: `attribution.commit/pr`, `autoUpdatesChannel`, `sandbox.*`, `language`, `allowedHttpHookUrls`, `alwaysThinkingEnabled`. See init-repo skill for details.
 - `settings.local.json` for personal overrides (git-ignored). Supports `disableAllHooks` kill switch.
 
