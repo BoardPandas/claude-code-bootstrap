@@ -46,7 +46,18 @@ Skills support these optional fields:
 - `disable_model_invocation: true` — Prevents auto-loading; invoke manually with /skillname.
 - `model: haiku|sonnet|opus` — Which model runs the skill. Step-by-step skills use haiku. Analysis skills use sonnet. Orchestration/planning skills use opus.
 - `context: fork` — Run skill in isolated subagent context (prevents context contamination).
+- `agent: <agent-name>` — Bind skill execution to a specific agent's persona and tools.
 - `${CLAUDE_SKILL_DIR}` — Variable to reference the skill's own directory for relative file access.
+
+## Agent Frontmatter
+
+Beyond basics (name, description, model, permissionMode, tools), agents support:
+
+- `background: true` — Run without blocking the main session (long analysis, monitoring).
+- `isolation: true` — Separate context, no main session history (security analysis, unbiased review).
+- `context: <text>` — Additional instructions injected into the agent's system prompt.
+- `skills: [skill1, skill2]` — Restrict which skills the agent can invoke.
+- `memory: <path>` — Agent-memory file to read on startup (e.g., `agent-memory/patterns.md`).
 
 ## Fixed Infrastructure
 
@@ -61,11 +72,20 @@ Plan-repo only recommends language, frameworks, UI library, ORM, and tooling. In
 - Keep the `.claude/` folder self-contained. No absolute paths, no references outside the repo except CLAUDE.md, agents.md, and README.md.
 - Skills live in `.claude/skills/<skill-name>/SKILL.md`.
 - Agents live in `.claude/agents/<agent-name>.md`.
+- Path-scoped rules live in `.claude/rules/*.md` (conditional on `paths:` frontmatter).
+- Agent memory lives in `.claude/agent-memory/` (version-controlled, team-shared evolving knowledge).
 - Source URLs for fetching best practices live in `.claude/references/source-urls.md`.
 - Infrastructure definition lives in `.claude/references/infrastructure.md` (locked, do not modify per-project).
 - CLI tools reference lives in `.claude/references/tools.md`.
 - Design guardrails (UI projects) live in `.claude/references/design-guardrails.md`.
 - Project settings go in `.claude/settings.json` (version-controlled). Personal overrides go in `.claude/settings.local.json` (git-ignored).
+
+## Hooks and Settings
+
+- Hooks fire on events: PreToolUse, PostToolUse, Stop, Notification, SubagentStop, PreCompact, PostCompact, ProjectInit, SessionStart, SessionEnd, Error, ToolError, and more. See init-repo skill for full list.
+- Hook types: `command` (shell), `http` (POST to URL), `prompt` (inject text).
+- Optional settings: `attribution.commit/pr`, `autoUpdatesChannel`, `sandbox.*`, `language`, `allowedHttpHookUrls`, `alwaysThinkingEnabled`. See init-repo skill for details.
+- `settings.local.json` for personal overrides (git-ignored). Supports `disableAllHooks` kill switch.
 
 ## Planning
 

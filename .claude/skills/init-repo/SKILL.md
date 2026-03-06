@@ -35,6 +35,8 @@ Before fetching any best practices, check the current date. All recommendations 
 3. Read `README.md` in the repo root (if it exists). Identify the project's tech stack, purpose, and conventions.
 4. Scan the `.claude/` folder (if it exists) using Glob. List all existing files.
 5. Read `.claude/settings.json` (if it exists). Note current settings.
+6. Check for existing `.claude/rules/*.md` files. Note any path-scoped rules already defined.
+7. Check for existing `.claude/agent-memory/` directory. Note any shared knowledge files.
 
 ## Step 3: Fetch Best Practices
 
@@ -68,6 +70,8 @@ Compare the current `.claude/` folder against the best practices you fetched. Id
 - Agent definitions that are missing or incomplete
 - Settings that should be updated
 - Missing tools.md entries for detected stack tools
+- Missing `.claude/rules/*.md` files for path-scoped conventions
+- Missing `.claude/agent-memory/` directory for team knowledge
 
 ## Step 6: Build or Update
 
@@ -85,39 +89,229 @@ For each gap identified, create or update the file. Follow these rules:
 - **agents.md:** Update the root agents.md to register all agents. Preserve project-specific content.
 - **README.md:** If a README exists, add or update the "Claude Code" section. Do not alter other sections.
 
-## Step 7: Add Skill Frontmatter Optimizations
+## Step 7: Configure Path-Scoped Rules
+
+Create `.claude/rules/` directory with conditional instruction files. Each rule file uses `paths:` frontmatter to load only when working with matching file patterns.
+
+### How rules work
+- Files in `.claude/rules/*.md` have YAML frontmatter with a `paths:` array of glob patterns.
+- A rule file only loads into context when Claude is working with files matching those patterns.
+- This keeps context lean -- backend rules don't load for frontend work and vice versa.
+
+### Rules to create based on detected stack
+
+For every project, create:
+- `.claude/rules/tests.md` — Testing conventions, paths: `["**/test/**", "**/*.test.*", "**/*.spec.*", "**/__tests__/**"]`
+
+For frontend projects, also create:
+- `.claude/rules/frontend.md` — Component patterns, styling rules, accessibility. Paths matching frontend source dirs.
+- `.claude/rules/styles.md` — CSS/styling conventions. Paths matching style files.
+
+For backend/API projects, also create:
+- `.claude/rules/api.md` — API conventions, error handling, auth patterns. Paths matching API source dirs.
+- `.claude/rules/database.md` — Migration rules, query patterns, ORM conventions. Paths matching schema/migration files.
+
+For monorepos, create rules scoped to each package/app.
+
+### Example rule file format
+```markdown
+---
+paths:
+  - "src/components/**"
+  - "src/ui/**"
+---
+
+# Component Rules
+
+- Max 200 lines per component file. Split large components into composition.
+- Always export a single default component per file.
+- Use semantic HTML elements over generic divs.
+```
+
+## Step 8: Initialize Agent Memory
+
+Create `.claude/agent-memory/` as a version-controlled team-shared knowledge base.
+
+### Purpose
+Agent memory is evolving knowledge that agents accumulate during work. Unlike CLAUDE.md (static rules), agent memory captures discovered patterns, debugging insights, and project-specific knowledge that emerges over time.
+
+### Structure to create
+- `.claude/agent-memory/README.md` — Explains the purpose and conventions for this directory.
+- `.claude/agent-memory/patterns.md` — Discovered code patterns and conventions (starts nearly empty).
+- `.claude/agent-memory/decisions.md` — Key technical decisions and their rationale (starts nearly empty).
+- `.claude/agent-memory/debugging.md` — Known gotchas, past debugging insights (starts empty).
+
+### README content guidelines
+The README should explain:
+- Files are version-controlled and shared across the team.
+- Agents should read relevant memory files before starting work.
+- Agents should update memory files when they discover new patterns or make decisions.
+- Keep entries concise. Remove outdated entries. No session-specific information.
+- Memory files complement CLAUDE.md — CLAUDE.md has rules, agent-memory has discovered knowledge.
+
+## Step 9: Add Skill Frontmatter Optimizations
 
 For each skill, consider adding:
 - `disable_model_invocation: true` for skills that should only be manually invoked
 - `model: haiku` for well-defined step-by-step skills that do not require heavy reasoning
 - `model: sonnet` for analysis and research skills
 - `model: opus` for orchestration and planning skills
+- `context: fork` for skills that should run in isolated subagent context (prevents context contamination in the main session). Good for: analysis skills that produce large output, research skills that fetch many URLs, any skill that shouldn't pollute the main conversation.
+- `agent: <agent-name>` to bind a skill to a specific agent that should execute it. Useful when a skill requires the specialized persona and tools of a particular agent.
 
-## Step 8: Create instructions.md
+## Step 10: Add Agent Frontmatter Optimizations
+
+For each agent, consider adding these frontmatter fields beyond the basics (name, description, model, permissionMode, tools):
+
+- `background: true` — Agent runs in the background without blocking the main session. Good for: long-running analysis, monitoring, continuous review tasks.
+- `isolation: true` — Agent gets a completely separate context, no access to the main session's conversation history. Good for: security analysis (prevent prompt injection from analyzed code), unbiased review.
+- `context: <instructions>` — Additional context injected into the agent's system prompt. Use for agent-specific rules that don't belong in the main CLAUDE.md.
+- `skills: [skill1, skill2]` — List of skills this agent can invoke. Restricts which skills are available to the agent.
+- `memory: <path>` — Path to an agent-memory file this agent should read on startup. Points to files in `.claude/agent-memory/`. Example: `memory: agent-memory/patterns.md` for agents that need project pattern awareness.
+
+### Recommended agent enhancements
+
+- **security** agent: Consider `isolation: true` to prevent analyzed code from influencing the agent's behavior.
+- **reviewer** agent: Consider `memory: agent-memory/patterns.md` so it reviews against discovered project patterns.
+- **explorer** agent: Consider `background: true` for long research tasks that shouldn't block the main session.
+- **architect** agent: Consider `skills: [plan-repo, spec-developer]` to give it access to planning skills.
+
+Only add these fields when they provide clear value for the project. Do not add them speculatively.
+
+## Step 11: Configure Hooks
+
+### Available hook events (15+)
+
+Beyond the 3 currently configured (PreToolUse, Stop, Notification), these hook events are available:
+
+| Event | Fires When | Use Cases |
+|-------|-----------|-----------|
+| **PreToolUse** | Before any tool call | Validate tool args, block dangerous commands, log activity |
+| **PostToolUse** | After any tool call completes | Post-processing, validation of results, cleanup |
+| **Stop** | When Claude finishes a response | Notification sounds, auto-formatting, status updates |
+| **Notification** | When Claude sends a notification | Alert sounds, desktop notifications, webhook pings |
+| **SubagentStop** | When a subagent completes | Aggregate results, trigger follow-up tasks |
+| **PreCompact** | Before context compaction | Save important state, create summaries |
+| **PostCompact** | After context compaction | Restore state, verify nothing was lost |
+| **Login** | User authenticates | Setup tasks, environment validation |
+| **Logout** | User logs out | Cleanup, session summary |
+| **ProjectInit** | When Claude enters a project | Load project context, check prerequisites |
+| **SessionStart** | When a new session begins | Welcome message, status check, load state |
+| **SessionEnd** | When a session ends | Save state, create handoff doc |
+| **Error** | When an error occurs | Error reporting, recovery actions |
+| **ToolError** | When a tool call fails | Retry logic, fallback actions, error logging |
+| **ModelSwitch** | When the model changes | Adjust behavior, log model usage |
+
+### Hook types
+
+1. **Command hooks** (current): `{ "type": "command", "command": "..." }` — Runs a shell command.
+2. **HTTP hooks**: `{ "type": "http", "url": "https://..." }` — Sends an HTTP POST to a URL. The request body contains the event payload. Requires the URL to be listed in `settings.json` under `allowedHttpHookUrls`.
+3. **Prompt hooks**: Inject text into the conversation at specific points. Useful for reminders or context injection.
+
+### Hooks to configure based on project needs
+
+**Always configure:**
+- `PreToolUse` with `Bash(git commit*)` matcher — validation before commits
+- `Stop` — notification sound
+- `Notification` — notification sound
+
+**Recommended for active development:**
+- `PostToolUse` with `Write(*)` or `Edit(*)` matcher — auto-lint after file changes (if linter is configured)
+- `PreToolUse` with `Bash(rm -rf*)` matcher — block dangerous delete commands
+- `SubagentStop` — notification when long-running subagents complete
+
+**Recommended for team projects using HTTP hooks:**
+- `Stop` with HTTP hook — ping team webhook (Slack, Discord) when Claude finishes a task
+- `Error` with HTTP hook — send error reports to monitoring
+
+**Ask the user** which additional hooks they want before configuring beyond the defaults.
+
+### Matcher syntax
+- `Bash(pattern)` — matches Bash tool calls where the command matches the glob pattern
+- `Write(pattern)` — matches Write tool calls where the file path matches
+- `Edit(pattern)` — matches Edit tool calls where the file path matches
+- `Read(pattern)` — matches Read tool calls where the file path matches
+- No matcher = fires for all tool calls of that event type
+
+## Step 12: Configure Settings
+
+Update `.claude/settings.json` with all relevant settings. Deep-merge with existing.
+
+### Core settings (always configure)
+```json
+{
+  "permissions": { "allow": [...], "deny": [...] },
+  "env": { ... },
+  "plansDirectory": "tasks",
+  "hooks": { ... }
+}
+```
+
+### Optional settings to evaluate and configure
+
+| Setting | Purpose | When to enable |
+|---------|---------|---------------|
+| `attribution.commit` | Add "Generated by Claude Code" to commit messages | Team projects for audit trail |
+| `attribution.pr` | Add Claude attribution to PR descriptions | Team projects for transparency |
+| `autoUpdatesChannel` | `"stable"` or `"preview"` for Claude Code updates | `"stable"` for production repos, `"preview"` for template/experimental repos |
+| `sandbox.permissions` | Sandboxed execution permissions for tools | When running untrusted code analysis |
+| `sandbox.network` | Network access restrictions in sandbox | Security-sensitive projects |
+| `language` | Preferred response language (e.g., `"en"`, `"ja"`) | Non-English teams |
+| `allowedHttpHookUrls` | Allowlist of URLs for HTTP hooks | When using HTTP hooks for webhooks |
+| `alwaysThinkingEnabled` | Always use extended thinking | Complex codebases that benefit from deeper reasoning |
+| `disableAllHooks` | Kill switch for all hooks | For `settings.local.json` — lets individuals disable hooks locally |
+
+### settings.json vs settings.local.json
+
+- **`.claude/settings.json`** — Version-controlled, shared team settings. Put everything the team agrees on here.
+- **`.claude/settings.local.json`** — Git-ignored, personal overrides. Document this in instructions.md so developers know they can create it.
+
+Recommend creating a `.claude/settings.local.json.example` file showing common personal overrides:
+```json
+{
+  "disableAllHooks": false,
+  "alwaysThinkingEnabled": true,
+  "language": "en"
+}
+```
+
+**Ask the user** about attribution, language, and autoUpdatesChannel preferences before setting them. Configure the rest based on project analysis.
+
+## Step 13: Create instructions.md
 
 Create or update `instructions.md` in the repo root with:
 
 - What the `.claude/` folder contains
 - How to use each skill (trigger phrase and description)
 - Hierarchical CLAUDE.md architecture explanation
+- Path-scoped rules explanation (`.claude/rules/*.md`)
+- Agent memory explanation (`.claude/agent-memory/`)
+- Agent and skill frontmatter fields reference
+- Hook events reference (all available events, types, matcher syntax)
+- Settings reference (settings.json vs settings.local.json, all available settings)
 - Subagent usage best practices
 - Phase-based planning workflow
 - Context management tips
 - How to customize the setup for this specific project
-- How to add new skills or agents
+- How to add new skills, agents, rules, or memory files
 
-## Step 9: Report
+## Step 14: Report
 
 Print a summary listing:
 
 - Files created (with paths)
 - Files updated (with what changed)
-- Skills available (with model assignments)
-- Agents registered
+- Skills available (with model assignments and frontmatter)
+- Agents registered (with frontmatter enhancements)
+- Path-scoped rules created
+- Agent memory initialized
+- Hooks configured (events, matchers, types)
+- Settings configured (highlighting opt-in features)
 - Hierarchical CLAUDE.md plan
 - Tools detected and added to tools.md
 - Design guardrails generated (if applicable)
 - Any warnings or issues encountered
+- Features available but not yet configured (with instructions to enable later)
 
 ## Non-Destructive Merge Rules
 
@@ -127,3 +321,5 @@ When merging with existing configuration:
 2. For markdown files: append new sections. Do not remove existing sections.
 3. For skills: if a skill already exists with custom content, do not overwrite. Only update if the existing skill references deprecated features.
 4. For agents: same rule as skills.
+5. For rules: if a rule file already exists, preserve it. Only add new rule files.
+6. For agent-memory: never overwrite existing memory files. Only create missing ones.
