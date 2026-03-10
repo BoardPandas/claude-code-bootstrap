@@ -119,6 +119,16 @@ Numbered steps in implementation order. For each step:
 - How to undo this feature without affecting other work
 - Database rollback steps (if applicable)
 
+### 9. Learning Lessons / Gotchas
+
+After implementation, capture here:
+- [ ] New patterns discovered -- add to `.claude/agent-memory/patterns.md`
+- [ ] Gotchas encountered -- add to `.claude/agent-memory/debugging.md`
+- [ ] Workflow improvements -- update CLAUDE.md or agent memory
+- [ ] Failed approaches -- document what was tried and why it failed
+
+*Fill in during/after implementation. Route generalizable lessons to the appropriate agent-memory file.*
+
 ## Step 4: Save the Spec
 
 Save to `tasks/<feature-slug>.md` with the complete spec.
@@ -130,6 +140,8 @@ If a `tasks/` folder does not exist, create it.
 Print a summary of the spec, then tell the user:
 
 > Spec saved to `tasks/<feature-slug>.md`. Start a fresh session to implement -- this keeps context clean. In the new session, say: "Implement the spec in tasks/<feature-slug>.md"
+
+> **Reminder:** After implementing this spec, review the "Learning Lessons / Gotchas" section and route discoveries to `.claude/agent-memory/debugging.md`.
 
 ## Document Failed Attempts
 

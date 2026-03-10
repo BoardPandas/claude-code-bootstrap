@@ -199,7 +199,7 @@ CLAUDE.md files are loaded top-down: root user level → project level → subfo
 2. **Subfolder CLAUDE.md** files only exist where subfolder-specific rules differ from root (e.g., `frontend/CLAUDE.md` for UI conventions).
 3. **`.claude/rules/*.md`** files with `paths:` frontmatter provide conditional instructions that only load when working with matching file paths. Use these instead of subfolder CLAUDE.md files for fine-grained scoping.
 4. A landing page task never loads your backend CLAUDE.md. Context stays narrow.
-5. Keep each file focused and under 150 lines.
+5. Keep each file focused and under 200 lines.
 6. Prune after every model update -- remove what the model handles natively.
 7. Do NOT bloat CLAUDE.md with generic advice the model already knows.
 
@@ -288,7 +288,7 @@ allowed-tools:
 
 ### Context Window Management
 
-- Keep CLAUDE.md under 150 lines
+- Keep CLAUDE.md under 200 lines
 - Use `/compact` proactively around 50% context (disable auto-compact in `/config` for manual control)
 - Start fresh conversations for unrelated topics
 - Break tasks small enough to complete in under 50% context usage
@@ -358,7 +358,7 @@ Hooks also support HTTP mode (POST JSON to URLs) in addition to command mode.
 
 ### Editing CLAUDE.md
 
-Update root CLAUDE.md with your project's stack, conventions, and standards. Keep under 150 lines. Create subfolder CLAUDE.md files only where distinct rules apply.
+Update root CLAUDE.md with your project's stack, conventions, and standards. Keep under 200 lines. Create subfolder CLAUDE.md files only where distinct rules apply.
 
 ### Adding New Skills
 

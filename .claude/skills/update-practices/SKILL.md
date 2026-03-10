@@ -76,6 +76,7 @@ Check each of these areas explicitly:
 - Are the standard files present (README.md, patterns.md, decisions.md, debugging.md)?
 - Is the README still accurate about conventions?
 - Have any memory entries become stale or contradicted by current code?
+- Does `debugging.md` have the standard gotchas structure? If empty or unstructured, initialize with the template from init-repo.
 
 ### Agent frontmatter
 Review each agent for new frontmatter fields:
@@ -164,7 +165,7 @@ Review all CLAUDE.md files in the hierarchy. Remove:
 - Outdated version references
 - Redundant rules that duplicate parent CLAUDE.md content
 
-Keep each CLAUDE.md focused and under 150 lines.
+Keep each CLAUDE.md focused and under 200 lines.
 
 ## Step 6: Prune and Validate Rules
 

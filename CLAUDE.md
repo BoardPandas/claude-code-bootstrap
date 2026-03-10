@@ -94,16 +94,17 @@ Plan-repo only recommends language, frameworks, UI library, ORM, and tooling. In
 - Always plan in one session, execute in another. Clear context between planning and implementation.
 - Save every plan to a `/tasks` folder. This lets you selectively undo a feature later.
 - For big features, use the **spec-developer** skill to generate a thorough plan.
+- Every plan MUST end with a **Learning Lessons / Gotchas** section. After implementation, route discoveries to `.claude/agent-memory/debugging.md`.
 
 ## Context Management
 
-- Keep this file under 150 lines for reliable adherence.
+- Keep this file under 200 lines for reliable adherence.
 - Break tasks small enough to complete in under 50% context usage.
 - Use `/compact` proactively around 50% context.
 - Start fresh conversations for unrelated topics.
 - Begin complex tasks in plan mode before implementation.
 - **Code bias fix:** If stuck in bad patterns, build the feature in isolation in a fresh folder, then port it in.
-- **Document failed attempts:** For stubborn bugs, have Claude write a document of all attempted fixes before starting a new session. New session loads the document, avoids repeating dead ends.
+- **Document failed attempts:** Write failed fixes to `.claude/agent-memory/debugging.md` before starting new sessions. Avoids repeating dead ends.
 - **Handoff docs:** Use `/handoff` to create a summary before ending a session. Load in fresh session as sole context.
 
 ## Date Awareness

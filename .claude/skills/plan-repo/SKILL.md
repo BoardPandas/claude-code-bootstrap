@@ -252,9 +252,12 @@ Save the complete plan to `tasks/plan-repo.md` with:
 8. Phase-based development plan
 9. Environment variables needed
 10. Tools required
+11. Learning Lessons / Gotchas checklist (to be filled during/after implementation)
 
 ## Step 9: Report and Next Step
 
 Print a summary of everything planned, then tell the user:
 
 > Your project plan is saved to `tasks/plan-repo.md`. To initialize the project with Claude Code, say **"initialize repo"**. The init-repo skill will read your plan and use it to configure everything.
+
+> **Reminder:** The plan includes a Learning Lessons / Gotchas section. After each phase, route discoveries to `.claude/agent-memory/debugging.md`.

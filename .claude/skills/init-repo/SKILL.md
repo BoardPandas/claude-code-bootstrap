@@ -85,7 +85,8 @@ For each gap identified, create or update the file. Follow these rules:
 - **CLAUDE.md:** Build a hierarchical CLAUDE.md structure:
   - Update root `CLAUDE.md` with project-specific stack info, conventions, and skill/agent inventory.
   - Plan (but do not create) subfolder CLAUDE.md files where distinct rules will apply.
-  - Keep each CLAUDE.md file focused and under 150 lines.
+  - Keep each CLAUDE.md file focused and under 200 lines.
+  - Include in the Planning section: "Every plan MUST end with a Learning Lessons / Gotchas section. After implementation, route discoveries to `.claude/agent-memory/debugging.md`."
 - **agents.md:** Update the root agents.md to register all agents. Preserve project-specific content.
 - **README.md:** If a README exists, add or update the "Claude Code" section. Do not alter other sections.
 
@@ -139,7 +140,26 @@ Agent memory is evolving knowledge that agents accumulate during work. Unlike CL
 - `.claude/agent-memory/README.md` — Explains the purpose and conventions for this directory.
 - `.claude/agent-memory/patterns.md` — Discovered code patterns and conventions (starts nearly empty).
 - `.claude/agent-memory/decisions.md` — Key technical decisions and their rationale (starts nearly empty).
-- `.claude/agent-memory/debugging.md` — Known gotchas, past debugging insights (starts empty).
+- `.claude/agent-memory/debugging.md` — Known gotchas and learning lessons. Initialize with this structure:
+
+  ```markdown
+  # Gotchas & Learning Lessons
+
+  Reference this file before starting work. Add entries when you discover non-obvious behavior, surprising failures, or patterns that wasted time. Don't make the same mistakes twice.
+
+  ## Format
+
+  ### [Number]. [Short descriptive title]
+
+  **Context:** When/where this occurs.
+  **Problem:** What goes wrong.
+  **Solution:** What to do instead.
+  **Why:** Brief explanation of root cause.
+
+  ---
+
+  *Keep entries concise and actionable. Remove entries that no longer apply.*
+  ```
 
 ### README content guidelines
 The README should explain:
