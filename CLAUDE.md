@@ -94,7 +94,7 @@ Plan-repo only recommends language, frameworks, UI library, ORM, and tooling. In
 - Always plan in one session, execute in another. Clear context between planning and implementation.
 - Save every plan to a `/tasks` folder. This lets you selectively undo a feature later.
 - For big features, use the **spec-developer** skill to generate a thorough plan.
-- Every plan MUST end with a **Lessons Learned / Gotchas** section. After implementation, route discoveries to the LL-G repo (`C:\Github\LL-G`) via `/add-lesson` -- not to local debugging.md files.
+- Every plan MUST end with a **Lessons Learned / Gotchas** section. After implementation, route discoveries to LL-G via `/add-lesson` -- not to local debugging.md files.
 
 ## Context Management
 
@@ -164,7 +164,7 @@ This applies to every session, every technician, every developer. Not optional.
 
 Every plan file MUST end with a **Lessons Learned / Gotchas** section. After implementation, route any new discoveries to LL-G -- not to local agent-memory or local pattern files only.
 
-- Preferred: run `/add-lesson` from any session that has `C:\Github\LL-G` in context
-- Manual: create `kb/<tech>/<slug>.md`, update `kb/<tech>/llms.txt`, update the master `llms.txt`
+- Preferred: run `/add-lesson` from any session (uses GitHub API, no local clone needed)
+- Manual: create `kb/<tech>/<slug>.md`, update `kb/<tech>/llms.txt`, update the master `llms.txt` in the `wellforce-brandon/LL-G` repo
 
 Lessons stored locally stay local. Lessons in LL-G benefit every repo and every technician.
