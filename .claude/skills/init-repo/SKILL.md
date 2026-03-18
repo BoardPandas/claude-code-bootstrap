@@ -103,6 +103,7 @@ Create `.claude/rules/` directory with conditional instruction files. Each rule 
 
 For every project, create:
 - `.claude/rules/tests.md` — Testing conventions, paths: `["**/test/**", "**/*.test.*", "**/*.spec.*", "**/__tests__/**"]`
+- `.claude/rules/bp-check.md` — RULE 3 enforcement: check BP before modifying infrastructure/tooling configs. Paths: `["CLAUDE.md", ".claude/**", "Dockerfile*", "biome.*", "turbo.json", "vitest.config.*", "jest.config.*", ".github/**"]`
 
 For frontend projects, also create:
 - `.claude/rules/frontend.md` — Component patterns, styling rules, accessibility. Paths matching frontend source dirs.
@@ -338,6 +339,34 @@ Print a summary listing:
 - Design guardrails generated (if applicable)
 - Any warnings or issues encountered
 - Features available but not yet configured (with instructions to enable later)
+
+## Step 15: BP Integration (if BP repo is available)
+
+Check if `C:\Github\BP` exists locally or if the GitHub repo is accessible.
+
+If available:
+1. Fetch `https://raw.githubusercontent.com/wellforce-brandon/BP/main/llms.txt` to get the current practice list
+2. Run a lightweight audit: for each FOUNDATIONAL practice, check if the repo passes. Don't check RECOMMENDED/OPTIONAL at this stage.
+3. Write a seed `.claude/bp-audit.md` with the results:
+   ```markdown
+   # BP Audit Results
+   Date: <YYYY-MM-DD>
+   Score: Y/X (FOUNDATIONAL only, initial audit)
+
+   ## Failing Practices (fix with `/apply-practice <slug>`)
+
+   ### FOUNDATIONAL
+   - [ ] `<slug>` -- <what's missing>
+
+   ## Passing Practices
+   - [x] `<slug>` -- <title>
+
+   ## Note
+   This is an initial audit of FOUNDATIONAL practices only.
+   Run `/audit-repo` for a full audit including RECOMMENDED and OPTIONAL.
+   ```
+
+If BP is not available, skip this step and note in the report: "BP repo not found -- skipping initial audit. Set up BP at C:\\Github\\BP for best practices integration."
 
 ## Non-Destructive Merge Rules
 
