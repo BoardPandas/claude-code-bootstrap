@@ -38,13 +38,46 @@ Before fetching any best practices, check the current date. All recommendations 
 6. Check for existing `.claude/rules/*.md` files. Note any path-scoped rules already defined.
 7. Check for existing `.claude/agent-memory/` directory. Note any shared knowledge files.
 
-## Step 3: Fetch Best Practices
+## Step 3: Fetch Best Practices (BP + LL-G + Web)
+
+**3a. Load BP (Best Practices knowledge base) -- PRIMARY SOURCE**
+
+1. Fetch `https://raw.githubusercontent.com/wellforce-brandon/BP/main/llms.txt` to get all concern categories.
+2. Identify which concerns are relevant based on the detected tech stack from Step 2.
+3. Fetch each relevant concern's `llms.txt` index (e.g., `practices/claude-config/llms.txt`, `practices/safety/llms.txt`).
+4. Read ALL FOUNDATIONAL entries -- these apply to every repo regardless of stack.
+5. Read RECOMMENDED entries whose `applies-to` tags match this project's tech stack.
+6. Use these practices as the primary guide for all configuration decisions in Steps 4-12. BP entries include CHECK (verify if already applied) and IMPLEMENT (steps to adopt) sections -- follow the IMPLEMENT steps when building new config.
+
+Key BP practices to apply during init:
+- `claude-config/hierarchical-claude-md` -- structure CLAUDE.md correctly
+- `claude-config/rule1-llg-integration` -- add RULE 1 to CLAUDE.md
+- `claude-config/path-scoped-rules` -- create .claude/rules/ files
+- `claude-config/hook-configuration` -- configure hooks
+- `safety/credential-deny-list` -- add deny rules to settings.json
+- `safety/read-only-first-rule` -- add RULE 0 to CLAUDE.md
+- `context-management/compact-and-handoff` -- add context management guidance
+- `context-management/agent-memory` -- initialize .claude/agent-memory/
+- `documentation/plan-with-lessons-learned` -- add lessons learned requirement
+- `ai-workflow/plan-then-execute` -- add planning guidance
+- `ai-workflow/anti-patterns` -- add anti-pattern awareness
+
+**3b. Load LL-G (Lessons Learned & Gotchas)**
+
+1. Fetch `https://raw.githubusercontent.com/wellforce-brandon/LL-G/main/llms.txt` to get all technologies.
+2. For each technology matching this project's stack, fetch its sub-index.
+3. Note any HIGH-severity gotchas relevant to the config being generated (e.g., TypeScript strict mode, Drizzle version pinning, Better Auth import paths).
+4. Include relevant gotchas as warnings in the generated CLAUDE.md or agent-memory/debugging.md.
+
+**3c. Fetch from web sources**
 
 1. Read the source URL registry at `.claude/references/source-urls.md`.
 2. Spin up parallel Explore subagents to fetch and analyze sources:
    - **Subagent 1:** "Fetch official Anthropic sources and extract current Claude Code version, features, and recommended patterns. WHY: We need the latest official conventions to generate an up-to-date config."
    - **Subagent 2:** "Fetch community sources and extract practical tips, skill patterns, and agent patterns. WHY: Community sources have battle-tested patterns not in official docs."
 3. For URLs that fail to fetch, log the failure and continue. Do not halt.
+
+**Priority:** BP entries take precedence over web sources when they conflict. BP entries are vetted and tested across 28 repos; web sources may be outdated or context-specific.
 
 ## Step 4: Detect Stack and Generate Design Guardrails
 
@@ -60,18 +93,23 @@ Before fetching any best practices, check the current date. All recommendations 
    - Accessibility requirements (WCAG level, required ARIA patterns)
    - Performance budgets (bundle size, image optimization, lazy loading)
 
-## Step 5: Analyze Gaps
+## Step 5: Analyze Gaps (against BP + web sources)
 
-Compare the current `.claude/` folder against the best practices you fetched. Identify:
+Compare the current `.claude/` folder against BP practices and web sources. For each applicable BP practice, run its CHECK items to see if the repo already follows it. Identify:
 
+- **BP FOUNDATIONAL gaps** -- practices every repo should have but this one is missing
+- **BP RECOMMENDED gaps** -- practices matching this tech stack that are missing
 - Missing configuration files (settings.json, agents, skills)
 - Outdated patterns or deprecated features in use
 - Skills that should exist but do not
 - Agent definitions that are missing or incomplete
-- Settings that should be updated
+- Settings that should be updated (including credential deny-list from BP `safety/credential-deny-list`)
 - Missing tools.md entries for detected stack tools
-- Missing `.claude/rules/*.md` files for path-scoped conventions
+- Missing `.claude/rules/*.md` files for path-scoped conventions (including bp-check.md and llg-check.md)
 - Missing `.claude/agent-memory/` directory for team knowledge
+- Missing RULE 0 (read-only-first), RULE 1 (LL-G), RULE 3 (BP) in CLAUDE.md
+- Missing context management guidance (compact at 50%, handoff docs, anti-patterns)
+- LL-G gotchas relevant to this stack that should be noted in agent-memory/debugging.md
 
 ## Step 6: Build or Update
 
@@ -267,8 +305,23 @@ Update `.claude/settings.json` with all relevant settings. Deep-merge with exist
 ```json
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "permissions": { "allow": [...], "deny": [...] },
-  "env": { ... },
+  "permissions": {
+    "allow": ["Read", "Glob", "Grep", "WebFetch", "WebSearch"],
+    "deny": [
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Read(~/.azure/**)",
+      "Read(~/.kube/**)",
+      "Read(~/.docker/config.json)",
+      "Read(~/.npmrc)",
+      "Read(~/.git-credentials)",
+      "Read(~/.config/gh/**)",
+      "Edit(~/.bashrc)",
+      "Edit(~/.zshrc)",
+      "Edit(~/.profile)"
+    ]
+  },
+  "env": { "ENABLE_TOOL_SEARCH": "true" },
   "plansDirectory": "tasks",
   "hooks": { ... }
 }
@@ -340,33 +393,67 @@ Print a summary listing:
 - Any warnings or issues encountered
 - Features available but not yet configured (with instructions to enable later)
 
-## Step 15: BP Integration (if BP repo is available)
+## Step 15: BP Verification and Audit
 
-Check if `C:\Github\BP` exists locally or if the GitHub repo is accessible.
+By this point, Steps 3-12 should have already applied the relevant BP practices during configuration. This step verifies the result and creates the audit trail.
 
-If available:
-1. Fetch `https://raw.githubusercontent.com/wellforce-brandon/BP/main/llms.txt` to get the current practice list
-2. Run a lightweight audit: for each FOUNDATIONAL practice, check if the repo passes. Don't check RECOMMENDED/OPTIONAL at this stage.
-3. Write a seed `.claude/bp-audit.md` with the results:
-   ```markdown
-   # BP Audit Results
-   Date: <YYYY-MM-DD>
-   Score: Y/X (FOUNDATIONAL only, initial audit)
+**15a. Verify FOUNDATIONAL practices were applied**
 
-   ## Failing Practices (fix with `/apply-practice <slug>`)
+Re-run the CHECK items from each FOUNDATIONAL BP practice against the repo. Confirm:
+- [ ] Hierarchical CLAUDE.md under 200 lines with tech stack, standards, workflow
+- [ ] RULE 0 (read-only-first) present in CLAUDE.md
+- [ ] RULE 1 (LL-G integration) present in CLAUDE.md with 4-step protocol
+- [ ] RULE 3 (BP integration) present in CLAUDE.md
+- [ ] Credential deny-list in settings.json
+- [ ] Context management guidance (compact at 50%, handoff docs)
+- [ ] Plans must end with lessons learned stated in CLAUDE.md
+- [ ] Plan-then-execute workflow documented
+- [ ] Anti-pattern awareness documented
+- [ ] `.claude/rules/bp-check.md` exists
+- [ ] `.claude/rules/llg-check.md` exists
 
-   ### FOUNDATIONAL
-   - [ ] `<slug>` -- <what's missing>
+If any are missing, apply them now.
 
-   ## Passing Practices
-   - [x] `<slug>` -- <title>
+**15b. Run RECOMMENDED audit for matching tech tags**
 
-   ## Note
-   This is an initial audit of FOUNDATIONAL practices only.
-   Run `/audit-repo` for a full audit including RECOMMENDED and OPTIONAL.
-   ```
+Fetch the relevant concern indexes from BP and check RECOMMENDED practices against the repo. Don't apply these automatically -- just record them.
 
-If BP is not available, skip this step and note in the report: "BP repo not found -- skipping initial audit. Set up BP at C:\\Github\\BP for best practices integration."
+**15c. Write the audit file**
+
+Write `.claude/bp-audit.md` with full results:
+```markdown
+# BP Audit Results
+Date: <YYYY-MM-DD>
+Score: Y/X (percentage%)
+
+## Failing Practices (fix with `/apply-practice <slug>`)
+
+### FOUNDATIONAL
+- [ ] `<slug>` -- <what's missing>
+
+### RECOMMENDED
+- [ ] `<slug>` -- <what's missing>
+
+## Passing Practices
+- [x] `<slug>` -- <title>
+
+## Note
+Run `/audit-repo` for a full audit or `/fix-audit` to apply all failing practices.
+```
+
+**15d. Seed LL-G gotchas into agent-memory**
+
+If LL-G had HIGH-severity entries matching this project's tech stack (from Step 3b), add a summary to `.claude/agent-memory/debugging.md`:
+```markdown
+## Known Gotchas (from LL-G)
+
+These are HIGH-severity gotchas for this project's tech stack.
+See LL-G for full details: https://github.com/wellforce-brandon/LL-G
+
+- [Gotcha title]: brief summary (tech, severity)
+```
+
+If BP or LL-G are not accessible, note in the report: "BP/LL-G not reachable -- skipping knowledge base integration. Ensure repos are available for full integration."
 
 ## Non-Destructive Merge Rules
 
