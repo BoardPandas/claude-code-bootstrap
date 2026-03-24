@@ -1,7 +1,6 @@
 ---
 description: Update changelog and version before committing
-globs: ["CHANGELOG.md", "package.json"]
-alwaysApply: false
+alwaysApply: true
 ---
 
 # Pre-Commit: Changelog & Version Update

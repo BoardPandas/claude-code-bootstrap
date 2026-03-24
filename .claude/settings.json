@@ -21,8 +21,35 @@
         "hooks": [
           {
             "type": "command",
+            "command": "bash .claude/scripts/pre-commit-changelog-reminder.sh",
+            "statusMessage": "Checking changelog update..."
+          },
+          {
+            "type": "command",
             "command": "bash .claude/scripts/check-changelog-staged.sh",
-            "statusMessage": "Checking changelog is staged..."
+            "statusMessage": "Verifying changelog is staged..."
+          }
+        ]
+      },
+      {
+        "matcher": "EnterPlanMode",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/scripts/pre-plan-kb-check.sh",
+            "statusMessage": "Checking LL-G and BP knowledge bases..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash(git commit*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/scripts/post-commit-kb-contribute.sh",
+            "statusMessage": "Checking for knowledge base contributions..."
           }
         ]
       }

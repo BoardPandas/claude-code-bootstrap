@@ -1,0 +1,60 @@
+---
+name: apply-practice
+description: Apply a specific best practice from BP to a target repository
+---
+
+You are applying a specific best practice from the BP knowledge base to a target repository.
+
+**Repository:** `wellforce-brandon/BP` on GitHub
+**Raw URL base:** `https://raw.githubusercontent.com/wellforce-brandon/BP/main/`
+
+## Step 1: Identify inputs
+
+You need two things:
+1. **Practice slug** -- e.g., `testing/vitest-monorepo-config` or `safety/read-only-first-rule`
+2. **Target repo** -- the local repository to apply the practice to (current working directory by default, or ask the user)
+
+Ask the user for any missing inputs.
+
+## Step 2: Load the practice from GitHub
+
+Fetch the practice entry via GitHub API:
+```
+mcp__github__get_file_contents on wellforce-brandon/BP, path: practices/<concern>/<slug>.md
+```
+
+If the user doesn't know the exact slug, fetch the concern index first to show available practices:
+```
+WebFetch https://raw.githubusercontent.com/wellforce-brandon/BP/main/practices/<concern>/llms.txt
+```
+
+Or fetch the master index to show all concerns:
+```
+WebFetch https://raw.githubusercontent.com/wellforce-brandon/BP/main/llms.txt
+```
+
+## Step 3: Run CHECK steps
+
+Execute each CHECK item against the target repo to verify the practice isn't already applied.
+
+- If ALL checks pass: inform the user "This practice is already applied to <repo-name>" and stop.
+- If SOME checks pass: inform the user which parts are already in place and which are missing. Ask if they want to proceed with the missing parts only.
+- If NO checks pass: proceed to implementation.
+
+## Step 4: Follow IMPLEMENT steps
+
+Execute each step in the IMPLEMENT section against the target repo. For each step:
+1. Show what you're about to do
+2. Execute the change
+3. Verify the change was applied correctly
+
+## Step 5: Validate
+
+Re-run the CHECK steps to confirm all checks now pass.
+
+## Step 6: Report
+
+Output:
+- Which steps were applied
+- Which checks now pass
+- Any manual follow-up needed (e.g., "run tests to verify", "restart dev server")
