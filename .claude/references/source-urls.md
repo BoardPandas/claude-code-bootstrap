@@ -29,6 +29,12 @@ Both the `init-repo` and `update-practices` skills read this file to get the lis
 - https://ykdojo.github.io/claude-code-tips/content/boris-claude-code-tips.html
 - https://agenticcoding.substack.com/p/32-claude-code-tips-from-basics-to
 
+## Bootstrap Template
+
+- https://github.com/BoardPandas/claude-code-bootstrap
+- https://api.github.com/repos/BoardPandas/claude-code-bootstrap/git/trees/main?recursive=1
+- https://raw.githubusercontent.com/BoardPandas/claude-code-bootstrap/main
+
 ## Changelog Trackers
 
 - https://claudefa.st/blog/guide/changelog

@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.4.0.0] - 2026-03-25
+
+### Added
+- Bootstrap template sync step in update-practices skill (Step 2b) to pull new/updated files from upstream template repo
+- Bootstrap Template source URLs for GitHub API tree and raw content access
+- Template sync report section in update-practices output summary
+
 ## [1.3.0.0] - 2026-03-24
 
 ### Added

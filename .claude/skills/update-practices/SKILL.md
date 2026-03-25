@@ -47,6 +47,68 @@ Spin up parallel Explore subagents to fetch and analyze sources:
 
 Wait for all subagents, then proceed.
 
+## Step 2b: Sync from Bootstrap Template
+
+The `.claude/` folder in this repo was originally scaffolded from the **claude-code-bootstrap** template. This step checks the template for any new or updated files that should be pulled in.
+
+### Fetch the template file tree
+
+```
+WebFetch https://api.github.com/repos/BoardPandas/claude-code-bootstrap/git/trees/main?recursive=1
+```
+
+Parse the JSON response. Extract all paths under `.claude/` — these are the canonical template files. Ignore files outside `.claude/` (CLAUDE.md, README.md, package.json, etc.) since those are project-specific.
+
+### Categorize each template file
+
+For each `.claude/` path in the template tree:
+
+1. **Check if it exists locally** using Glob or Read.
+2. If it does NOT exist locally → mark as **TEMPLATE-NEW**.
+3. If it exists locally → fetch the template version:
+   ```
+   WebFetch https://raw.githubusercontent.com/BoardPandas/claude-code-bootstrap/main/<path>
+   ```
+   Compare with the local version (Read the local file). If they differ → mark as **TEMPLATE-UPDATED**.
+   If identical → mark as **TEMPLATE-CURRENT** (no action needed).
+
+### Files to sync (whitelist)
+
+Only sync these categories of `.claude/` files from the template:
+
+| Category | Path pattern | Sync strategy |
+|----------|-------------|---------------|
+| Skills | `.claude/skills/*/SKILL.md` | Sync new skills entirely. For existing skills, merge new steps/sections but preserve project-specific customizations (e.g., custom matchers, stack-specific checks). |
+| Agents | `.claude/agents/*.md` | Sync new agents entirely. For existing agents, update frontmatter fields and instructions but preserve project-specific `context` or `skills` overrides. |
+| Rules | `.claude/rules/*.md` | Sync new rules entirely. For existing rules, update content but preserve custom `paths:` frontmatter if the project has different file structure. |
+| Scripts | `.claude/scripts/*.sh` | Sync new scripts entirely. For existing scripts, replace with template version unless local version has project-specific logic (check for project-specific paths, env vars, or tool references). |
+| References | `.claude/references/source-urls.md` | Merge: add any new URLs from template that aren't already present. Never remove existing URLs. |
+| References | `.claude/references/infrastructure.md` | Do NOT sync — infrastructure is project-specific. |
+| References | `.claude/references/tools.md` | Do NOT sync — tools depend on project stack. |
+| References | `.claude/references/design-guardrails.md` | Do NOT sync — guardrails depend on project stack. |
+| Settings | `.claude/settings.json` | Deep-merge: add new hooks, permissions, and env vars from template. Never remove existing entries. Preserve project-specific matchers and custom hooks. |
+| Settings | `.claude/settings.local.json.example` | Replace with template version (it's just an example file). |
+
+### Files to NEVER sync
+
+- `.claude/agent-memory/*` — project-specific memory, never overwrite.
+- Any file not in the `.claude/` directory.
+- `CLAUDE.md`, `agents.md`, `instructions.md` — these are project-tailored.
+
+### Apply template changes
+
+For each **TEMPLATE-NEW** file:
+- Create it locally with the template content.
+
+For each **TEMPLATE-UPDATED** file:
+- Apply the sync strategy from the table above.
+- When merging, use the non-destructive rules: never remove project-specific content, append/merge rather than replace.
+- If a skill or agent has significant structural changes (new sections, rewritten steps), prefer the template version but port over any project-specific additions.
+
+### Track template version
+
+After syncing, note the latest commit SHA from the template repo (available from the tree API response). Log it in the final report so future runs can detect if the template has changed.
+
 ## Step 3: Compare and Identify Changes
 
 Categorize findings as:
@@ -191,6 +253,14 @@ Review `.claude/rules/*.md` files:
 Print a diff-style summary:
 
 ```
+BOOTSTRAP TEMPLATE SYNC:
+  Template repo: BoardPandas/claude-code-bootstrap
+  Template commit: <SHA from tree API>
+  [TEMPLATE-NEW] Added <path> -- <description>
+  [TEMPLATE-UPDATED] Updated <path> -- <what changed>
+  [TEMPLATE-CURRENT] No changes needed: <list>
+  [TEMPLATE-SKIPPED] Skipped <path> -- <reason, e.g., project-specific>
+
 CHANGES APPLIED:
   [NEW] Added skill: <name> -- <reason>
   [NEW] Added rule: <path> -- <scope description>
