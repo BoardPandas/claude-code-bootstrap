@@ -139,11 +139,25 @@ Claude Code has access to the following MCP (Model Context Protocol) servers. Th
 | **railway** | Railway platform: projects, services, deployments, variables, logs, domains |
 | **doppler** | Secrets management: projects, configs, secrets, environments, integrations, service accounts |
 
-### Browser Automation MCP
+### Browser Automation MCPs
 
 | MCP Server | Purpose |
 |------------|---------|
 | **claude-in-chrome** | Chrome browser automation: navigate, click, type, read pages, take screenshots, record GIFs, execute JS |
+| **playwright** | Playwright browser automation: navigate, click, fill forms, take screenshots, evaluate JS, handle dialogs |
+
+### Analytics and Product MCPs
+
+| MCP Server | Purpose |
+|------------|---------|
+| **posthog** | Product analytics: feature flags, experiments, insights, cohorts, dashboards, events, surveys |
+| **asana** | Project management: tasks, projects, goals, portfolios, teams, attachments |
+
+### Meetings and Productivity MCPs
+
+| MCP Server | Purpose |
+|------------|---------|
+| **krisp** | Meeting transcripts, action items, activities, upcoming meetings, user preferences |
 
 ### IT Management MCPs
 

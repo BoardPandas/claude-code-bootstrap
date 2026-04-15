@@ -47,6 +47,7 @@ Skills support these optional fields:
 - `model: haiku|sonnet|opus` — Which model runs the skill. Step-by-step skills use haiku. Analysis skills use sonnet. Orchestration/planning skills use opus.
 - `context: fork` — Run skill in isolated subagent context (prevents context contamination).
 - `agent: <agent-name>` — Bind skill execution to a specific agent's persona and tools.
+- `effort: low|medium|high|max` — Override reasoning effort level for the skill.
 - `${CLAUDE_SKILL_DIR}` — Variable to reference the skill's own directory for relative file access.
 
 ## Agent Frontmatter
@@ -59,6 +60,9 @@ Beyond basics (name, description, model, permissionMode, tools), agents support:
 - `skills: [skill1, skill2]` — Restrict which skills the agent can invoke.
 - `maxTurns: N` — Cap agentic iterations (budget control).
 - `memory: user|project|local` — Persistent cross-session memory scope.
+- `effort: low|medium|high|max` — Override reasoning effort level.
+- `disallowedTools: [tool1, tool2]` — Remove specific tools from inherited tool lists.
+- `initialPrompt: <text>` — First message sent to the agent on startup.
 
 ## Fixed Infrastructure
 
@@ -83,9 +87,9 @@ Plan-repo only recommends language, frameworks, UI library, ORM, and tooling. In
 
 ## Hooks and Settings
 
-- Hooks fire on events: PreToolUse, PostToolUse, PostToolUseFailure, Stop, Notification, SubagentStart, SubagentStop, PreCompact, SessionStart, SessionEnd, UserPromptSubmit, PermissionRequest, TeammateIdle, TaskCompleted, InstructionsLoaded, ConfigChange, WorktreeCreate, WorktreeRemove. See init-repo skill for full list.
+- Hooks fire on events: PreToolUse, PostToolUse, PostToolUseFailure, Stop, StopFailure, Notification, SubagentStart, SubagentStop, PreCompact, PostCompact, SessionStart, SessionEnd, UserPromptSubmit, PermissionRequest, PermissionDenied, TeammateIdle, TaskCompleted, TaskCreated, InstructionsLoaded, ConfigChange, WorktreeCreate, WorktreeRemove, CwdChanged, FileChanged, Elicitation, ElicitationResult, Setup. See init-repo skill for full list.
 - Hook types: `command` (shell), `http` (POST to URL), `prompt` (single-turn LLM yes/no), `agent` (multi-turn subagent with tools).
-- Optional settings: `attribution.commit/pr`, `autoUpdatesChannel`, `sandbox.*`, `language`, `allowedHttpHookUrls`, `alwaysThinkingEnabled`. See init-repo skill for details.
+- Optional settings: `attribution.commit/pr`, `autoUpdatesChannel`, `sandbox.*`, `language`, `allowedHttpHookUrls`, `alwaysThinkingEnabled`, `autoMemoryDirectory`, `modelOverrides`, `includeGitInstructions`, `forceRemoteSettingsRefresh`. See init-repo skill for details.
 - `settings.local.json` for personal overrides (git-ignored). Supports `disableAllHooks` kill switch.
 
 ## Planning
@@ -126,6 +130,10 @@ Best practices must reflect the current date. Always check the current date -- d
 | test-scaffold | "scaffold tests" | Generate test files for untested modules |
 | doc-sync | "sync docs" | Align documentation with current code |
 | mermaid-diagram | "mermaid diagram" | Generate data flow / architecture diagrams |
+| ux-review | "ux review" | Review UI/UX against Laws of UX and Gestalt principles |
+| add-lesson | "add lesson" | Add a gotcha or lesson learned to the LL-G knowledge base |
+| add-practice | "add practice" | Add a best practice entry to the BP knowledge base |
+| apply-practice | "apply practice" | Apply a BP best practice to a target repository |
 
 ## Available Agents
 
@@ -136,6 +144,7 @@ See `agents.md` in the repo root for the full agent registry. Key agents:
 - **security** -- security-focused analysis and vulnerability detection
 - **performance** -- performance-focused analysis and optimization
 - **explorer** -- codebase exploration, research, and context gathering
+- **ux-reviewer** -- UX-focused review against Laws of UX and Gestalt principles
 
 ## Workflow
 

@@ -4,6 +4,7 @@ Both the `init-repo` and `update-practices` skills read this file to get the lis
 
 ## Official Anthropic Sources
 
+- https://code.claude.com/docs/en/changelog
 - https://github.com/anthropics/claude-code
 - https://raw.githubusercontent.com/anthropics/claude-code/refs/heads/main/CHANGELOG.md
 - https://github.com/anthropics/claude-code/releases

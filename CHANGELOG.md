@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.5.0.0] - 2026-04-14
+
+### Added
+- UX Review skill (`/ux-review`) for reviewing UI code against Laws of UX and Gestalt principles
+- UX Reviewer agent (`ux-reviewer`) with severity-ranked finding output format
+- UX Laws reference doc (`.claude/references/ux-laws.md`) covering all 30 laws from lawsofux.com with code-level indicators
+
 ## [1.4.0.0] - 2026-03-25
 
 ### Added

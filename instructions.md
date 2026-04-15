@@ -17,7 +17,16 @@ This repository provides a pre-configured `.claude/` folder that gives Claude Co
     security.md            # Security analysis agent
     performance.md         # Performance analysis agent
     explorer.md            # Codebase exploration and research agent
+  agent-memory/            # Persistent cross-session knowledge
+    README.md              # Conventions and usage guide
+    patterns.md            # Recurring patterns and conventions
+    decisions.md           # Technical decisions with rationale
+    debugging.md           # Failed approaches and dead ends
   rules/                   # Conditional instructions (paths: frontmatter)
+    llg-check.md           # LL-G knowledge base check before code changes
+    bp-check.md            # BP best practices check before config changes
+    commit-changelog.md    # Changelog and version bump enforcement
+  scripts/                 # Hook scripts
   skills/                  # Executable skill definitions
     plan-repo/SKILL.md     # Pre-init project planning
     init-repo/SKILL.md     # Repository initialization
@@ -30,8 +39,12 @@ This repository provides a pre-configured `.claude/` folder that gives Claude Co
     test-scaffold/SKILL.md      # Test generation
     doc-sync/SKILL.md           # Documentation sync
     mermaid-diagram/SKILL.md    # Diagram generation
+    add-lesson/SKILL.md         # Add gotcha to LL-G knowledge base
+    add-practice/SKILL.md       # Add best practice to BP knowledge base
+    apply-practice/SKILL.md     # Apply BP practice to a target repo
   references/
     source-urls.md         # URL registry for fetching best practices
+    infrastructure.md      # Fixed infrastructure stack (do not modify)
     tools.md               # CLI tools reference (auto-populated per stack)
     design-guardrails.md   # UI/design SLA (generated for frontend projects)
   settings.json            # Project-level Claude Code settings
@@ -145,6 +158,24 @@ All planning uses phases, never dates or time estimates:
 - **Trigger:** "mermaid diagram", "generate diagram", "visualize data flow"
 - **What it does:** Explores the codebase and generates Mermaid diagrams (data flow, architecture, sequence, state machine, ER). Saves to `docs/diagrams/`.
 - **When to use:** For debugging user-reported issues without reading code, for documentation, or for understanding complex systems.
+
+### add-lesson
+
+- **Trigger:** "add lesson", "add gotcha", "add to LL-G"
+- **What it does:** Adds a gotcha or lesson learned to the LL-G knowledge base (`wellforce-brandon/LL-G` repo) via GitHub API. No local clone needed.
+- **When to use:** After discovering a non-obvious failure pattern during implementation.
+
+### add-practice
+
+- **Trigger:** "add practice", "add best practice", "add to BP"
+- **What it does:** Adds a new best practice entry to the BP knowledge base (`wellforce-brandon/BP` repo) via GitHub API.
+- **When to use:** When establishing a proven pattern that should apply across repos.
+
+### apply-practice
+
+- **Trigger:** "apply practice", "apply BP"
+- **What it does:** Applies a specific best practice from the BP knowledge base to the current or a target repository.
+- **When to use:** When onboarding a repo or setting up tooling that should follow established patterns.
 
 ---
 
@@ -268,10 +299,12 @@ allowed-tools:
 - `sonnet` — Analysis and research skills (code review, exploration)
 - `opus` — Orchestration and planning skills (spec developer, architect)
 
-**Additional frontmatter fields (v2.1.69):**
+**Additional frontmatter fields:**
 - `context: fork` — Run skill in an isolated subagent, preventing context contamination
+- `effort: low|medium|high|max` — Override reasoning effort level for the skill
 - `${CLAUDE_SKILL_DIR}` — Reference the skill's own directory for relative file paths
 - Skills in nested `.claude/skills/` subdirectories are auto-discovered
+- Skill description length supports up to 1,536 characters
 
 ---
 
@@ -322,35 +355,57 @@ The template includes hooks in `.claude/settings.json`:
 
 To add custom hooks, edit `.claude/settings.json`. Supported hook events:
 
-- `PreToolUse` / `PostToolUse` -- Before/after tool execution
+- `PreToolUse` / `PostToolUse` / `PostToolUseFailure` -- Before/after/on-failure tool execution
 - `SessionStart` / `SessionEnd` -- Session lifecycle
-- `Stop` / `SubagentStop` -- Task completion
+- `Stop` / `StopFailure` -- Turn completion (success / API error)
+- `SubagentStart` / `SubagentStop` -- Subagent lifecycle
 - `Notification` -- System notifications
-- `PreCompact` -- Before context compaction
+- `PreCompact` / `PostCompact` -- Before/after context compaction
 - `UserPromptSubmit` -- Before user prompt processing
 - `InstructionsLoaded` -- When CLAUDE.md or `.claude/rules/*.md` files load
 - `ConfigChange` -- When configuration files change during session
 - `WorktreeCreate` / `WorktreeRemove` -- Git worktree operations
-- `PermissionRequest` -- Process permission requests with custom logic
-- `TeammateIdle` / `TaskCompleted` -- Agent team events
+- `PermissionRequest` / `PermissionDenied` -- Permission lifecycle
+- `TeammateIdle` / `TaskCompleted` / `TaskCreated` -- Agent team and task events
+- `CwdChanged` / `FileChanged` -- Working directory and file change events
+- `Elicitation` / `ElicitationResult` -- MCP structured input request events
 - `Setup` -- Triggered via `--init`, `--init-only`, or `--maintenance` flags
 
-Hooks also support HTTP mode (POST JSON to URLs) in addition to command mode.
+Hook types: `command` (shell), `http` (POST JSON to URL), `prompt` (single-turn LLM), `agent` (multi-turn subagent).
+
+---
+
+## Agent Memory
+
+The `.claude/agent-memory/` directory stores persistent, version-controlled knowledge that agents accumulate:
+
+| File | Purpose |
+|------|---------|
+| `README.md` | Conventions and usage guide |
+| `patterns.md` | Recurring code patterns and conventions |
+| `decisions.md` | Key technical decisions with rationale |
+| `debugging.md` | Failed approaches and dead ends |
+
+Agents with `memory: project` read this directory on startup. Any agent can write here to share knowledge across sessions. See `.claude/agent-memory/README.md` for conventions.
 
 ---
 
 ## Power User Tips
 
-- **`/add-dir`** — Add a second project directory to copy proven implementations between projects.
-- **Verbose mode** (`/config` → verbose → true) — Shows token count and reasoning trace. Read the trace to learn Claude's terminology, then use it in prompts.
-- **`/statusline`** — Shows model name, context battery, git branch, unstaged changes. Essential with multiple sessions.
-- **`/rewind`** — Return to last good point instead of arguing about a wrong turn.
-- **`/fork`** — Branch current session within conversation. Use `--fork-session` with `--continue` to fork from recent sessions.
-- **`/handoff`** — Create a summary document before ending a session for seamless continuation.
-- **`/release-notes`** — View latest changes in the current Claude Code version.
-- **`--worktree` / `-w`** — Start Claude Code in an isolated git worktree for parallel work.
-- **`--from-pr`** — Resume sessions linked to a GitHub PR.
-- **`claude agents`** — List all configured agents from the CLI.
+- **`/add-dir`** -- Add a second project directory to copy proven implementations between projects.
+- **Verbose mode** (`/config` -> verbose -> true) -- Shows token count and reasoning trace. Read the trace to learn Claude's terminology, then use it in prompts.
+- **`/statusline`** -- Shows model name, context battery, git branch, unstaged changes. Essential with multiple sessions.
+- **`/rewind`** (or `/undo`) -- Return to last good point instead of arguing about a wrong turn.
+- **`/fork`** -- Branch current session within conversation. Use `--fork-session` with `--continue` to fork from recent sessions.
+- **`/handoff`** -- Create a summary document before ending a session for seamless continuation.
+- **`/recap`** -- Get a context summary when returning to a session. Configurable in `/config`.
+- **`/release-notes`** -- View latest changes in the current Claude Code version.
+- **`/team-onboarding`** -- Generate a teammate ramp-up guide from your local Claude Code usage.
+- **`--worktree` / `-w`** -- Start Claude Code in an isolated git worktree for parallel work.
+- **`--bare`** -- Skip hooks, LSP, and plugin sync for scripted/CI calls.
+- **`-n` / `--name`** -- Set a display name for the session at startup.
+- **`--from-pr`** -- Resume sessions linked to a GitHub PR.
+- **`claude agents`** -- List all configured agents from the CLI.
 
 ---
 
@@ -376,12 +431,14 @@ Update root CLAUDE.md with your project's stack, conventions, and standards. Kee
 4. Register the agent in [agents.md](agents.md).
 5. Update CLAUDE.md.
 
-**New agent fields (v2.1.69):**
+**Advanced agent fields:**
 - `skills:` — Preload specific skills into the agent for progressive disclosure
 - `memory:` — Persistent memory scope (`user`, `project`, or `local`)
 - `isolation: worktree` — Run in a temporary git worktree
 - `background: true` — Run asynchronously without blocking
 - `disallowedTools:` — Remove specific tools from inherited tool lists
+- `effort:` — Override reasoning effort (`low`, `medium`, `high`, `max`)
+- `initialPrompt:` — First message sent to the agent on startup
 
 ### Updating the Source URL Registry
 

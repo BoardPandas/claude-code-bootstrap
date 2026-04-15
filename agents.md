@@ -38,3 +38,10 @@ All custom agents for this project. Each agent is defined in `.claude/agents/` a
 - **Purpose:** Codebase exploration, online research, doc fetching, and context gathering. Always include a "why" when spawning -- not just what to find, but why you need it.
 - **When to use:** Before implementing features (understand existing patterns), when researching approaches, when gathering context for planning. Spin up multiple explorers in parallel for competing approaches.
 - **Model:** sonnet
+
+### ux-reviewer
+
+- **File:** `.claude/agents/ux-reviewer.md`
+- **Purpose:** UX-focused review evaluating UI code against Laws of UX and Gestalt principles. Produces severity-ranked findings with specific improvement recommendations.
+- **When to use:** Before shipping frontend features, after UI redesigns, when evaluating component usability, or when a UX audit is requested.
+- **Model:** sonnet
