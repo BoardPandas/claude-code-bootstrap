@@ -47,7 +47,8 @@ Skills support these optional fields:
 - `model: haiku|sonnet|opus` — Which model runs the skill. Step-by-step skills use haiku. Analysis skills use sonnet. Orchestration/planning skills use opus.
 - `context: fork` — Run skill in isolated subagent context (prevents context contamination).
 - `agent: <agent-name>` — Bind skill execution to a specific agent's persona and tools.
-- `effort: low|medium|high|max` — Override reasoning effort level for the skill.
+- `effort: low|medium|high|xhigh|max` — Override reasoning effort level. `xhigh` (Opus 4.7+) usually beats `max` on cost/quality.
+- `keep-coding-instructions: true` — Preserve coding-style instructions when the skill switches output styles.
 - `${CLAUDE_SKILL_DIR}` — Variable to reference the skill's own directory for relative file access.
 
 ## Agent Frontmatter
@@ -60,7 +61,7 @@ Beyond basics (name, description, model, permissionMode, tools), agents support:
 - `skills: [skill1, skill2]` — Restrict which skills the agent can invoke.
 - `maxTurns: N` — Cap agentic iterations (budget control).
 - `memory: user|project|local` — Persistent cross-session memory scope.
-- `effort: low|medium|high|max` — Override reasoning effort level.
+- `effort: low|medium|high|xhigh|max` — Override reasoning effort level.
 - `disallowedTools: [tool1, tool2]` — Remove specific tools from inherited tool lists.
 - `initialPrompt: <text>` — First message sent to the agent on startup.
 
@@ -88,7 +89,8 @@ Plan-repo only recommends language, frameworks, UI library, ORM, and tooling. In
 ## Hooks and Settings
 
 - Hooks fire on events: PreToolUse, PostToolUse, PostToolUseFailure, Stop, StopFailure, Notification, SubagentStart, SubagentStop, PreCompact, PostCompact, SessionStart, SessionEnd, UserPromptSubmit, PermissionRequest, PermissionDenied, TeammateIdle, TaskCompleted, TaskCreated, InstructionsLoaded, ConfigChange, WorktreeCreate, WorktreeRemove, CwdChanged, FileChanged, Elicitation, ElicitationResult, Setup. See init-repo skill for full list.
-- Hook types: `command` (shell), `http` (POST to URL), `prompt` (single-turn LLM yes/no), `agent` (multi-turn subagent with tools).
+- Hook types: `command` (shell), `http` (POST to URL), `prompt` (single-turn LLM yes/no), `agent` (multi-turn subagent with tools), `mcp_tool` (direct MCP tool invocation).
+- Hooks accept an optional `if:` field using permission-rule syntax (e.g., `Bash(git *)`) to fire only on matching tool calls.
 - Optional settings: `attribution.commit/pr`, `autoUpdatesChannel`, `sandbox.*`, `language`, `allowedHttpHookUrls`, `alwaysThinkingEnabled`, `autoMemoryDirectory`, `modelOverrides`, `includeGitInstructions`, `forceRemoteSettingsRefresh`. See init-repo skill for details.
 - `settings.local.json` for personal overrides (git-ignored). Supports `disableAllHooks` kill switch.
 

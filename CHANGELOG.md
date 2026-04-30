@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.6.0.1] - 2026-04-29
+
+### Added
+- Documented `mcp_tool` hook type and the conditional `if:` filter syntax for hooks (CLAUDE.md, instructions.md)
+- Documented `xhigh` effort tier and `keep-coding-instructions` skill frontmatter field (CLAUDE.md, instructions.md)
+- Agent-memory README guidance on explicit memory curation framing and topic partitioning when files grow
+- `Cost / token efficiency` audit section in the update-practices skill (effort tuning, model routing, cache preservation, input-format swaps, subagent delegation)
+- ProductCompass "stop hitting Claude Code limits" entry to the source URL registry
+
 ## [1.6.0.0] - 2026-04-16
 
 ### Changed

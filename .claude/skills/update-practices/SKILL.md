@@ -180,6 +180,16 @@ Check for new or updated settings:
 
 Also check if any new settings have been introduced in the latest Claude Code version.
 
+### Cost / token efficiency
+
+Audit the config for token-efficiency patterns. Do NOT recommend disabling the 1M context window (the 200K default is intentionally not used in this template).
+
+- **Per-prompt effort:** Are skills setting `effort:` in frontmatter where appropriate? Mechanical, step-by-step skills should use `low` or `medium`; analysis skills `medium`; orchestration/planning `high` or `max`. Flag skills missing `effort` where a non-default would save tokens.
+- **Model routing:** Are skills and agents assigned the cheapest model that fits? Step-by-step → haiku, analysis → sonnet, orchestration/planning → opus. Flag any opus assignment that could be sonnet/haiku.
+- **Cache preservation:** Skills and agents should not switch model mid-session unnecessarily (model switches invalidate the prompt cache). Flag skills that change model partway through a multi-step flow.
+- **Input format swaps:** Where the project ingests PDFs, web pages, or screenshots, prefer cheaper extractors (`pdftotext` for PDFs, an agent-browser / DOM read over screenshot capture, code knowledge graphs over raw repo dumps). Note any tool reference in `tools.md` that should be added.
+- **Subagent delegation:** Long mechanical work (log scans, repo-wide searches, doc fetches) should be delegated to subagents with cheaper models so the main session's cache stays intact.
+
 ## Step 4: Implement Changes
 
 For each NEW or UPDATED item:

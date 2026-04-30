@@ -1,6 +1,6 @@
 {
   "name": "claude-code-bootstrap",
-  "version": "1.6.0.0",
+  "version": "1.6.0.1",
   "private": true,
   "description": "Claude Code starter template with ready-to-use .claude/ configuration"
 }

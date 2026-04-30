@@ -22,6 +22,10 @@ This directory stores persistent, version-controlled knowledge that agents accum
 
 Agents with `memory: project` in their frontmatter will read this directory on startup. Any agent can write here to share knowledge with future sessions.
 
+**Curate explicitly.** Agents reliably maintain memory only when prompts say so directly: "Before starting, review your memory. After completing, update it." Passive accumulation degrades quality over time.
+
+**Partition when files grow.** When any file approaches ~200 lines, split by topic into sibling files (e.g., `patterns-frontend.md`, `patterns-backend.md`) rather than letting it grow unbounded.
+
 ## Scopes
 
 - **Project scope** (this directory): `.claude/agent-memory/` -- version-controlled, shared across the team.

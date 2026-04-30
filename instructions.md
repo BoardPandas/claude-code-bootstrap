@@ -301,7 +301,8 @@ allowed-tools:
 
 **Additional frontmatter fields:**
 - `context: fork` — Run skill in an isolated subagent, preventing context contamination
-- `effort: low|medium|high|max` — Override reasoning effort level for the skill
+- `effort: low|medium|high|xhigh|max` — Override reasoning effort level. `xhigh` (Opus 4.7+) typically beats `max` on cost/quality
+- `keep-coding-instructions: true` — Preserve coding-style instructions when the skill switches output styles
 - `${CLAUDE_SKILL_DIR}` — Reference the skill's own directory for relative file paths
 - Skills in nested `.claude/skills/` subdirectories are auto-discovered
 - Skill description length supports up to 1,536 characters
@@ -371,7 +372,9 @@ To add custom hooks, edit `.claude/settings.json`. Supported hook events:
 - `Elicitation` / `ElicitationResult` -- MCP structured input request events
 - `Setup` -- Triggered via `--init`, `--init-only`, or `--maintenance` flags
 
-Hook types: `command` (shell), `http` (POST JSON to URL), `prompt` (single-turn LLM), `agent` (multi-turn subagent).
+Hook types: `command` (shell), `http` (POST JSON to URL), `prompt` (single-turn LLM), `agent` (multi-turn subagent), `mcp_tool` (direct MCP tool invocation).
+
+Each hook entry accepts an optional `if:` field using permission-rule syntax (e.g., `Bash(git *)`) to filter when the hook fires. Reduces overhead on unrelated tool calls.
 
 ---
 
@@ -437,7 +440,7 @@ Update root CLAUDE.md with your project's stack, conventions, and standards. Kee
 - `isolation: worktree` — Run in a temporary git worktree
 - `background: true` — Run asynchronously without blocking
 - `disallowedTools:` — Remove specific tools from inherited tool lists
-- `effort:` — Override reasoning effort (`low`, `medium`, `high`, `max`)
+- `effort:` — Override reasoning effort (`low`, `medium`, `high`, `xhigh`, `max`)
 - `initialPrompt:` — First message sent to the agent on startup
 
 ### Updating the Source URL Registry

@@ -29,6 +29,7 @@ Both the `init-repo` and `update-practices` skills read this file to get the lis
 - https://raw.githubusercontent.com/ykdojo/claude-code-tips/main/GLOBAL-CLAUDE.md
 - https://ykdojo.github.io/claude-code-tips/content/boris-claude-code-tips.html
 - https://agenticcoding.substack.com/p/32-claude-code-tips-from-basics-to
+- https://www.productcompass.pm/p/stop-hitting-claude-code-limits
 
 ## Bootstrap Template
 
