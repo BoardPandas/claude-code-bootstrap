@@ -91,7 +91,7 @@ Plan-repo only recommends language, frameworks, UI library, ORM, and tooling. In
 - Hooks fire on events: PreToolUse, PostToolUse, PostToolUseFailure, Stop, StopFailure, Notification, SubagentStart, SubagentStop, PreCompact, PostCompact, SessionStart, SessionEnd, UserPromptSubmit, PermissionRequest, PermissionDenied, TeammateIdle, TaskCompleted, TaskCreated, InstructionsLoaded, ConfigChange, WorktreeCreate, WorktreeRemove, CwdChanged, FileChanged, Elicitation, ElicitationResult, Setup. See init-repo skill for full list.
 - Hook types: `command` (shell), `http` (POST to URL), `prompt` (single-turn LLM yes/no), `agent` (multi-turn subagent with tools), `mcp_tool` (direct MCP tool invocation).
 - Hooks accept an optional `if:` field using permission-rule syntax (e.g., `Bash(git *)`) to fire only on matching tool calls.
-- Optional settings: `attribution.commit/pr`, `autoUpdatesChannel`, `sandbox.*`, `language`, `allowedHttpHookUrls`, `alwaysThinkingEnabled`, `autoMemoryDirectory`, `modelOverrides`, `includeGitInstructions`, `forceRemoteSettingsRefresh`. See init-repo skill for details.
+- Optional settings: `attribution.commit/pr`, `autoUpdatesChannel`, `sandbox.*`, `worktree.bgIsolation/baseRef`, `language`, `allowedHttpHookUrls`, `alwaysThinkingEnabled`, `autoMemoryDirectory`, `modelOverrides`, `includeGitInstructions`, `forceRemoteSettingsRefresh`. See init-repo skill for details.
 - `settings.local.json` for personal overrides (git-ignored). Supports `disableAllHooks` kill switch.
 
 ## Planning
@@ -109,6 +109,7 @@ Plan-repo only recommends language, frameworks, UI library, ORM, and tooling. In
 - Use `/compact` proactively around 50% context.
 - Start fresh conversations for unrelated topics.
 - Begin complex tasks in plan mode before implementation.
+- **Preserve the prompt cache:** Lock the MCP/tool list and model at session start. Adding tools or switching models mid-session invalidates the cached prefix and inflates cost.
 - **Code bias fix:** If stuck in bad patterns, build the feature in isolation in a fresh folder, then port it in.
 - **Document failed attempts:** Write failed fixes to `.claude/agent-memory/debugging.md` before starting new sessions. Avoids repeating dead ends.
 - **Handoff docs:** Use `/handoff` to create a summary before ending a session. Load in fresh session as sole context.

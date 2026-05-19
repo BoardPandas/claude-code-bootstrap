@@ -327,6 +327,7 @@ allowed-tools:
 - Start fresh conversations for unrelated topics
 - Break tasks small enough to complete in under 50% context usage
 - System prompt + tools consume ~10% of context. Enable `ENABLE_TOOL_SEARCH: "true"` in settings to lazy-load MCP tools and save tokens.
+- Preserve the prompt cache: lock the MCP/tool list and model at the start of a session. Adding tools or switching models mid-session invalidates the cached prefix and inflates cost.
 
 ---
 

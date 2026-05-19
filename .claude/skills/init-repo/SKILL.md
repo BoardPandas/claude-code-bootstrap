@@ -231,16 +231,20 @@ For each agent, consider adding these frontmatter fields beyond the basics (name
 
 ### Recommended agent enhancements
 
-- **security** agent: Consider `isolation: worktree` to prevent analyzed code from influencing the agent's behavior.
-- **reviewer** agent: Consider `memory: agent-memory/patterns.md` so it reviews against discovered project patterns.
-- **explorer** agent: Consider `background: true` for long research tasks that shouldn't block the main session.
-- **architect** agent: Consider `skills: [plan-repo, spec-developer]` to give it access to planning skills.
+- **reviewer** agent: Add `memory: project` so it reads `.claude/agent-memory/` on startup and reviews against discovered project patterns and decisions.
+- **architect** agent: Add `memory: project` so it plans against recorded decisions without re-deriving them, and `skills: [plan-repo, spec-developer]` to give it access to planning skills.
+- **Implementer or file-writing agents** (if the project adds any): Consider `isolation: worktree` so their edits land in an isolated copy of the repo.
+
+Two cautions on fields that are easy to over-apply:
+
+- `background: true` is a per-spawn choice, not an agent default. Set it via the `run_in_background` parameter when spawning the agent, not in frontmatter. Baking it in forces async on every spawn and breaks workflows that need the agent's result inline (e.g. parallel explorers feeding a decision).
+- `isolation: worktree` only benefits agents that write files. Do not add it to read-only analysis agents (explorer, reviewer, security, performance, ux-reviewer) -- it adds worktree setup and teardown overhead with nothing to isolate.
 
 Only add these fields when they provide clear value for the project. Do not add them speculatively.
 
 ## Step 11: Configure Hooks
 
-### Available hook events (18)
+### Available hook events (27)
 
 Beyond the 3 currently configured (PreToolUse, Stop, Notification), these hook events are available:
 
@@ -264,6 +268,15 @@ Beyond the 3 currently configured (PreToolUse, Stop, Notification), these hook e
 | **ConfigChange** | When settings or skill files change | Audit logging, reload triggers |
 | **WorktreeCreate** | When an isolated worktree is created | Setup worktree-specific config |
 | **WorktreeRemove** | When a worktree is cleaned up | Cleanup, merge results |
+| **StopFailure** | When a turn ends due to an API error | Error alerting, failure logging |
+| **PostCompact** | After context compaction completes | Re-inject context, verify state |
+| **PermissionDenied** | When a permission request is denied | Audit logging, suggest alternative paths |
+| **TaskCreated** | When a background task is created | Task tracking, resource planning |
+| **CwdChanged** | When the working directory changes | Reload directory-scoped config |
+| **FileChanged** | When a watched file changes on disk | Reload triggers, external-edit detection |
+| **Elicitation** | When an MCP server requests structured input | Auto-fill known values, log requests |
+| **ElicitationResult** | After an MCP elicitation is answered | Post-process structured input |
+| **Setup** | On `--init`, `--init-only`, or `--maintenance` flags | One-time project setup, maintenance tasks |
 
 ### Hook types
 
@@ -271,6 +284,9 @@ Beyond the 3 currently configured (PreToolUse, Stop, Notification), these hook e
 2. **HTTP hooks**: `{ "type": "http", "url": "https://..." }` — Sends an HTTP POST to a URL. The request body contains the event payload. Requires the URL to be listed in `settings.json` under `allowedHttpHookUrls`.
 3. **Prompt hooks**: `{ "type": "prompt", "prompt": "..." }` — Single-turn LLM judgment (yes/no decision). Useful for validation gates.
 4. **Agent hooks**: `{ "type": "agent", "prompt": "..." }` — Multi-turn subagent with tool access. Useful for complex validation or post-processing.
+5. **MCP tool hooks**: `{ "type": "mcp_tool", "tool": "...", "arguments": {...} }` — Directly invokes an MCP tool as the hook action. Useful for posting to integrated services without a shell.
+
+Any hook entry accepts an optional `if:` field using permission-rule syntax (e.g., `Bash(git *)`) so the hook fires only on matching tool calls — reduces overhead on unrelated calls.
 
 ### Hooks to configure based on project needs
 
@@ -336,6 +352,8 @@ Update `.claude/settings.json` with all relevant settings. Deep-merge with exist
 | `autoUpdatesChannel` | `"stable"` or `"preview"` for Claude Code updates | `"stable"` for production repos, `"preview"` for template/experimental repos |
 | `sandbox.permissions` | Sandboxed execution permissions for tools | When running untrusted code analysis |
 | `sandbox.network` | Network access restrictions in sandbox | Security-sensitive projects |
+| `worktree.bgIsolation` | `"none"` lets background sessions edit the working copy directly instead of an isolated worktree | Background-agent workflows that should not branch |
+| `worktree.baseRef` | `"fresh"` branches worktrees from `origin/<default>`, `"head"` from local `HEAD` | Control where isolated worktrees branch from |
 | `language` | Preferred response language (e.g., `"en"`, `"ja"`) | Non-English teams |
 | `allowedHttpHookUrls` | Allowlist of URLs for HTTP hooks | When using HTTP hooks for webhooks |
 | `alwaysThinkingEnabled` | Always use extended thinking | Complex codebases that benefit from deeper reasoning |

@@ -161,18 +161,21 @@ Review each skill for new frontmatter fields:
 - Should HTTP hooks be added for team workflows?
 - Are matchers using the correct syntax?
 
-Available hook events (18 as of v2.1.70 -- check for new ones in fetched sources):
+Available hook events (27 as of Claude Code v2.1.144 -- check for new ones in fetched sources):
 SessionStart, SessionEnd, UserPromptSubmit, PreToolUse, PostToolUse, PostToolUseFailure,
-PermissionRequest, SubagentStart, SubagentStop, Stop, Notification, PreCompact,
-TeammateIdle, TaskCompleted, InstructionsLoaded, ConfigChange, WorktreeCreate, WorktreeRemove
+PermissionRequest, PermissionDenied, SubagentStart, SubagentStop, Stop, StopFailure,
+Notification, PreCompact, PostCompact, TeammateIdle, TaskCreated, TaskCompleted,
+InstructionsLoaded, ConfigChange, WorktreeCreate, WorktreeRemove, CwdChanged, FileChanged,
+Elicitation, ElicitationResult, Setup
 
-Hook types: command, http, prompt, agent
+Hook types: command, http, prompt, agent, mcp_tool
 
 ### Settings
 Check for new or updated settings:
 - `attribution.commit` / `attribution.pr` — commit/PR attribution
 - `autoUpdatesChannel` — stable or preview update channel
 - `sandbox.permissions` / `sandbox.network` — sandbox configuration
+- `worktree.bgIsolation` / `worktree.baseRef` — background-session worktree isolation and branch base
 - `language` — response language
 - `allowedHttpHookUrls` — HTTP hook URL allowlist
 - `alwaysThinkingEnabled` — extended thinking
@@ -289,7 +292,7 @@ FEATURES IN USE:
   - Path-scoped rules: <count> rules in .claude/rules/
   - Agent memory: <count> files in .claude/agent-memory/
   - Hook events: <list of configured events>
-  - Hook types: <command|http|prompt>
+  - Hook types: <command|http|prompt|agent|mcp_tool>
   - Advanced agent frontmatter: <agents using background/isolation/context/skills/memory>
   - Advanced skill frontmatter: <skills using context/agent>
   - Settings: <list of configured optional settings>
