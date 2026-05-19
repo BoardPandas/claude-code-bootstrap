@@ -9,6 +9,8 @@ You are adding a new entry to the LL-G lessons-learned knowledge base.
 **Repository:** `wellforce-brandon/LL-G` on GitHub
 **Raw URL base:** `https://raw.githubusercontent.com/wellforce-brandon/LL-G/main/`
 
+All GitHub operations use the `gh` CLI via the Bash tool. There is no GitHub MCP server -- do not call `mcp__github__*` tools, they do not exist and will hang the skill.
+
 ## Step 1: Collect information
 
 Ask the user for the following (you may ask all at once):
@@ -29,73 +31,104 @@ Severity legend:
 ## Step 2: Generate the slug
 
 Convert the title to a slug: lowercase, spaces and punctuation replaced with hyphens, no leading/trailing hyphens.
-Example: "Variable quoting in strings" → `quoting.md`
+Example: "Variable quoting in strings" -> `quoting.md`
 
 ## Step 3: Fetch current state from GitHub
 
-Use WebFetch to read the current master `llms.txt` and the relevant tech `llms.txt` (if the tech folder exists) so you know the current entry count and can avoid duplicates:
+Confirm `gh` is available and authenticated (run once):
 ```
-WebFetch https://raw.githubusercontent.com/wellforce-brandon/LL-G/main/llms.txt
-WebFetch https://raw.githubusercontent.com/wellforce-brandon/LL-G/main/kb/<tech>/llms.txt
+gh auth status
 ```
+If `gh` is not installed or not authenticated, stop and tell the user to run `gh auth login` first.
 
-## Step 4: Create the entry file via GitHub API
-
-Use the `mcp__github__create_or_update_file` tool to create `kb/<tech>/<slug>.md` on the `main` branch of `wellforce-brandon/LL-G`:
-
-Content format:
+Read the current master index and the relevant tech index so you know the entry count and can avoid duplicates:
 ```
----
-tech: <technology>
-tags: [tag1, tag2, tag3]
-severity: <high|medium|low>
----
-# <Title>
+gh api repos/wellforce-brandon/LL-G/contents/llms.txt --jq .content | base64 -d
+gh api repos/wellforce-brandon/LL-G/contents/kb/<tech>/llms.txt --jq .content | base64 -d
+```
+If the tech command fails with a `404`, the tech folder does not exist yet -- you will create it in Step 5.
 
-## PROBLEM
-<problem description>
-
-## WRONG
-```<language>
-<wrong code example>
+Capture each file's blob `sha` now -- you need it to update the file later:
+```
+gh api repos/wellforce-brandon/LL-G/contents/llms.txt --jq .sha
+gh api repos/wellforce-brandon/LL-G/contents/kb/<tech>/llms.txt --jq .sha
 ```
 
-## RIGHT
-```<language>
-<right code example>
-```
+## Step 4: Create the entry file via the GitHub API
 
-## NOTES
-<notes, or omit the section if none>
-```
+1. Use the Write tool to save the entry markdown to a scratch file git will not track, e.g. `.git/llg-entry.md` (git never tracks files inside `.git/`).
 
-Commit message: `Add <tech> gotcha: <title>`
+   Content format:
+   ```
+   ---
+   tech: <technology>
+   tags: [tag1, tag2, tag3]
+   severity: <high|medium|low>
+   ---
+   # <Title>
+
+   ## PROBLEM
+   <problem description>
+
+   ## WRONG
+   ```<language>
+   <wrong code example>
+   ```
+
+   ## RIGHT
+   ```<language>
+   <right code example>
+   ```
+
+   ## NOTES
+   <notes, or omit the section if none>
+   ```
+
+2. Create the file on `main`. The `content` field must be base64-encoded; `base64 -w0` encodes the scratch file with no line wrapping:
+```
+gh api repos/wellforce-brandon/LL-G/contents/kb/<tech>/<slug>.md \
+  --method PUT \
+  -f message="Add <tech> gotcha: <title>" \
+  -f branch=main \
+  -f content="$(base64 -w0 .git/llg-entry.md)"
+```
+This is a new file, so no `sha` is needed.
+
+3. Delete the scratch file: `rm .git/llg-entry.md`
 
 ## Step 5: Update the tech llms.txt
 
-Fetch the current content of `kb/<tech>/llms.txt` via GitHub API (`mcp__github__get_file_contents`), then update it with `mcp__github__create_or_update_file` (include the `sha` for update).
+Compute the new content of `kb/<tech>/llms.txt`:
+- If the tech folder already exists: take the content from Step 3 and append a new bullet under `## Entries`:
+  ```
+  - [<Title>](<slug>.md): <one-line description>. <SEVERITY>.
+  ```
+- If the tech folder does not exist: create the content fresh:
+  ```
+  # <Tech> Gotchas
 
-Append a new bullet under `## Entries`:
+  > Known <tech> patterns that cause silent failures or hard-to-debug errors.
+
+  ## Entries
+
+  - [<Title>](<slug>.md): <one-line description>. <SEVERITY>.
+  ```
+
+Write the full new file content to `.git/llg-index.md` with the Write tool, then push it:
 ```
-- [<Title>](<slug>.md): <one-line description>. <SEVERITY>.
+gh api repos/wellforce-brandon/LL-G/contents/kb/<tech>/llms.txt \
+  --method PUT \
+  -f message="Update <tech> index: add <slug>" \
+  -f branch=main \
+  -f content="$(base64 -w0 .git/llg-index.md)" \
+  -f sha="<sha from Step 3>"
 ```
-
-If the tech folder does not exist yet, create `kb/<tech>/llms.txt` with:
-```
-# <Tech> Gotchas
-
-> Known <tech> patterns that cause silent failures or hard-to-debug errors.
-
-## Entries
-
-- [<Title>](<slug>.md): <one-line description>. <SEVERITY>.
-```
-
-Commit message: `Update <tech> index: add <slug>`
+Omit the `-f sha=...` line only if the tech `llms.txt` did not exist (404 in Step 3).
+Then delete the scratch file: `rm .git/llg-index.md`
 
 ## Step 6: Update master llms.txt entry count
 
-Fetch the current `llms.txt` via GitHub API, find the bullet for this technology, and increment the entry count: `(N entries)` → `(N+1 entries)`.
+Take the master `llms.txt` content from Step 3. Find the bullet for this technology and increment the entry count: `(N entries)` -> `(N+1 entries)`.
 
 If this is a new technology, add a new section under `## Technologies`:
 ```
@@ -103,7 +136,16 @@ If this is a new technology, add a new section under `## Technologies`:
 - [<Tech> index](kb/<tech>/llms.txt): All <tech> gotchas (1 entry)
 ```
 
-Commit message: `Update master index: <tech> now has N+1 entries`
+Write the updated master content to `.git/llg-master.md`, then push it:
+```
+gh api repos/wellforce-brandon/LL-G/contents/llms.txt \
+  --method PUT \
+  -f message="Update master index: <tech> now has N+1 entries" \
+  -f branch=main \
+  -f content="$(base64 -w0 .git/llg-master.md)" \
+  -f sha="<master sha from Step 3>"
+```
+Then delete the scratch file: `rm .git/llg-master.md`
 
 ## Step 7: Confirm
 

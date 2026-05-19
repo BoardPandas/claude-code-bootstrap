@@ -18,9 +18,11 @@ Ask the user for any missing inputs.
 
 ## Step 2: Load the practice from GitHub
 
-Fetch the practice entry via GitHub API:
+This skill only reads from BP -- use `WebFetch` on the raw URL. Do not call `mcp__github__*` tools, they do not exist and will hang the skill.
+
+Fetch the practice entry:
 ```
-mcp__github__get_file_contents on wellforce-brandon/BP, path: practices/<concern>/<slug>.md
+WebFetch https://raw.githubusercontent.com/wellforce-brandon/BP/main/practices/<concern>/<slug>.md
 ```
 
 If the user doesn't know the exact slug, fetch the concern index first to show available practices:

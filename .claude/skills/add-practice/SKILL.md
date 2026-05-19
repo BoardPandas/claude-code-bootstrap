@@ -9,6 +9,8 @@ You are adding a new entry to the BP best practices knowledge base.
 **Repository:** `wellforce-brandon/BP` on GitHub
 **Raw URL base:** `https://raw.githubusercontent.com/wellforce-brandon/BP/main/`
 
+All GitHub operations use the `gh` CLI via the Bash tool. There is no GitHub MCP server -- do not call `mcp__github__*` tools, they do not exist and will hang the skill.
+
 ## Step 1: Collect information
 
 Ask the user for the following (you may ask all at once):
@@ -37,78 +39,108 @@ Example: "Hierarchical CLAUDE.md Structure" -> `hierarchical-claude-md.md`
 
 ## Step 3: Fetch current state from GitHub
 
-Use WebFetch to read the current master `llms.txt` and the relevant concern `llms.txt` (if the concern folder exists) so you know the current entry count and can avoid duplicates:
+Confirm `gh` is available and authenticated (run once):
 ```
-WebFetch https://raw.githubusercontent.com/wellforce-brandon/BP/main/llms.txt
-WebFetch https://raw.githubusercontent.com/wellforce-brandon/BP/main/practices/<concern>/llms.txt
+gh auth status
 ```
+If `gh` is not installed or not authenticated, stop and tell the user to run `gh auth login` first.
 
-## Step 4: Create the entry file via GitHub API
-
-Use the `mcp__github__create_or_update_file` tool to create `practices/<concern>/<slug>.md` on the `main` branch of `wellforce-brandon/BP`:
-
-Content format:
+Read the current master index and the relevant concern index so you know the entry count and can avoid duplicates:
 ```
----
-concern: <concern>
-tech: [tech1, tech2]
-priority: <foundational|recommended|optional>
-source-repo: <repo-name>
-applies-to: [tech1, tech2]
----
-# <Title>
+gh api repos/wellforce-brandon/BP/contents/llms.txt --jq .content | base64 -d
+gh api repos/wellforce-brandon/BP/contents/practices/<concern>/llms.txt --jq .content | base64 -d
+```
+If the concern command fails with a `404`, the concern folder does not exist yet -- you will create it in Step 5.
 
-## PATTERN
-<pattern description>
-
-## WHY
-<why this is better>
-
-## EXAMPLE
-<code or config examples with file paths>
-
-## CHECK
-How to verify if a repo already follows this:
-- [ ] Check condition 1
-- [ ] Check condition 2
-
-## IMPLEMENT
-Steps to adopt this in a repo that doesn't have it:
-1. Step one
-2. Step two
-
-## NOTES
-<notes, or omit the section if none>
+Capture each file's blob `sha` now -- you need it to update the file later:
+```
+gh api repos/wellforce-brandon/BP/contents/llms.txt --jq .sha
+gh api repos/wellforce-brandon/BP/contents/practices/<concern>/llms.txt --jq .sha
 ```
 
-Commit message: `Add <concern> practice: <title>`
+## Step 4: Create the entry file via the GitHub API
+
+1. Use the Write tool to save the entry markdown to a scratch file git will not track, e.g. `.git/bp-entry.md` (git never tracks files inside `.git/`).
+
+   Content format:
+   ```
+   ---
+   concern: <concern>
+   tech: [tech1, tech2]
+   priority: <foundational|recommended|optional>
+   source-repo: <repo-name>
+   applies-to: [tech1, tech2]
+   ---
+   # <Title>
+
+   ## PATTERN
+   <pattern description>
+
+   ## WHY
+   <why this is better>
+
+   ## EXAMPLE
+   <code or config examples with file paths>
+
+   ## CHECK
+   How to verify if a repo already follows this:
+   - [ ] Check condition 1
+   - [ ] Check condition 2
+
+   ## IMPLEMENT
+   Steps to adopt this in a repo that doesn't have it:
+   1. Step one
+   2. Step two
+
+   ## NOTES
+   <notes, or omit the section if none>
+   ```
+
+2. Create the file on `main`. The `content` field must be base64-encoded; `base64 -w0` encodes the scratch file with no line wrapping:
+```
+gh api repos/wellforce-brandon/BP/contents/practices/<concern>/<slug>.md \
+  --method PUT \
+  -f message="Add <concern> practice: <title>" \
+  -f branch=main \
+  -f content="$(base64 -w0 .git/bp-entry.md)"
+```
+This is a new file, so no `sha` is needed.
+
+3. Delete the scratch file: `rm .git/bp-entry.md`
 
 ## Step 5: Update the concern llms.txt
 
-Fetch the current content of `practices/<concern>/llms.txt` via GitHub API (`mcp__github__get_file_contents`), then update it with `mcp__github__create_or_update_file` (include the `sha` for update).
+Compute the new content of `practices/<concern>/llms.txt`:
+- If the concern folder already exists: take the content from Step 3 and append a new bullet under `## Entries`:
+  ```
+  - [<Title>](<slug>.md): <one-line description>. <PRIORITY>.
+  ```
+- If the concern folder does not exist: create the content fresh:
+  ```
+  # <Concern> Best Practices
 
-Append a new bullet under `## Entries`:
+  > Proven <concern> patterns.
 
+  ## Entries
+
+  - [<Title>](<slug>.md): <one-line description>. <PRIORITY>.
+  ```
+
+Write the full new file content to `.git/bp-index.md` with the Write tool, then push it:
 ```
-- [<Title>](<slug>.md): <one-line description>. <PRIORITY>.
+gh api repos/wellforce-brandon/BP/contents/practices/<concern>/llms.txt \
+  --method PUT \
+  -f message="Update <concern> index: add <slug>" \
+  -f branch=main \
+  -f content="$(base64 -w0 .git/bp-index.md)" \
+  -f sha="<sha from Step 3>"
 ```
-
-If the concern folder does not exist yet, create `practices/<concern>/llms.txt` with:
-```
-# <Concern> Best Practices
-
-> Proven <concern> patterns.
-
-## Entries
-
-- [<Title>](<slug>.md): <one-line description>. <PRIORITY>.
-```
-
-Commit message: `Update <concern> index: add <slug>`
+Omit the `-f sha=...` line only if the concern `llms.txt` did not exist (404 in Step 3).
+Then delete the scratch file: `rm .git/bp-index.md`
 
 ## Step 6: Update master llms.txt entry count
 
-Fetch the current `llms.txt` via GitHub API (`mcp__github__get_file_contents` on `wellforce-brandon/BP`), find the bullet for this concern, and increment the entry count in parentheses: `(N entries)` -> `(N+1 entries)`.
+Take the master `llms.txt` content from Step 3. Find the bullet for this concern and increment the entry count in parentheses: `(N entries)` -> `(N+1 entries)`.
 
 If this is a new concern, add a new section under `## Concerns`:
 ```
@@ -116,7 +148,16 @@ If this is a new concern, add a new section under `## Concerns`:
 - [<Concern> index](practices/<concern>/llms.txt): <description> (1 entry)
 ```
 
-Commit message: `Update master index: <concern> now has N+1 entries`
+Write the updated master content to `.git/bp-master.md`, then push it:
+```
+gh api repos/wellforce-brandon/BP/contents/llms.txt \
+  --method PUT \
+  -f message="Update master index: <concern> now has N+1 entries" \
+  -f branch=main \
+  -f content="$(base64 -w0 .git/bp-master.md)" \
+  -f sha="<master sha from Step 3>"
+```
+Then delete the scratch file: `rm .git/bp-master.md`
 
 ## Step 7: Confirm
 
