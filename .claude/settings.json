@@ -21,6 +21,11 @@
         "hooks": [
           {
             "type": "command",
+            "command": "bash .claude/scripts/check-commit-herestring.sh",
+            "statusMessage": "Checking commit message syntax..."
+          },
+          {
+            "type": "command",
             "command": "bash .claude/scripts/pre-commit-changelog-reminder.sh",
             "statusMessage": "Checking changelog update..."
           },
