@@ -69,8 +69,12 @@ For each `.claude/` path in the template tree:
    ```
    WebFetch https://raw.githubusercontent.com/BoardPandas/claude-code-bootstrap/main/<path>
    ```
-   Compare with the local version (Read the local file). If they differ → mark as **TEMPLATE-UPDATED**.
-   If identical → mark as **TEMPLATE-CURRENT** (no action needed).
+   **Read the FULL local file and the FULL template file and compare the actual text content**, not just file existence, size, or frontmatter. Do a real line-by-line comparison of the body:
+   - If the text is byte-for-byte identical → mark as **TEMPLATE-CURRENT** (no action needed).
+   - If the text differs in a few lines/sections (incremental edits) → mark as **TEMPLATE-UPDATED**.
+   - If the body has been substantially rewritten (most steps/sections changed, reordered, or replaced — e.g., the `add-lesson` skill was rewritten upstream) → mark as **TEMPLATE-REWRITTEN**. A rewrite is when a merge would produce a Frankenstein file; the template's version is the new canonical source.
+
+   Do not rely on quick heuristics like "the file exists, so it's current." A skill that exists locally can still be stale if its instructions were rewritten in the template. Always diff the prose.
 
 ### Files to sync (whitelist)
 
@@ -78,9 +82,9 @@ Only sync these categories of `.claude/` files from the template:
 
 | Category | Path pattern | Sync strategy |
 |----------|-------------|---------------|
-| Skills | `.claude/skills/*/SKILL.md` | Sync new skills entirely. For existing skills, merge new steps/sections but preserve project-specific customizations (e.g., custom matchers, stack-specific checks). |
-| Agents | `.claude/agents/*.md` | Sync new agents entirely. For existing agents, update frontmatter fields and instructions but preserve project-specific `context` or `skills` overrides. |
-| Rules | `.claude/rules/*.md` | Sync new rules entirely. For existing rules, update content but preserve custom `paths:` frontmatter if the project has different file structure. |
+| Skills | `.claude/skills/*/SKILL.md` | Sync new skills entirely. For **TEMPLATE-UPDATED** skills, merge new steps/sections but preserve project-specific customizations (e.g., custom matchers, stack-specific checks). For **TEMPLATE-REWRITTEN** skills, **replace the body wholesale with the template version**, then re-apply only the genuinely project-specific additions (custom stack checks, custom paths). Do not try to merge a rewrite line-by-line. |
+| Agents | `.claude/agents/*.md` | Sync new agents entirely. For **TEMPLATE-UPDATED** agents, update frontmatter fields and instructions but preserve project-specific `context` or `skills` overrides. For **TEMPLATE-REWRITTEN** agents, replace the body with the template version, preserving only project-specific `context`/`skills`/`tools` overrides. |
+| Rules | `.claude/rules/*.md` | Sync new rules entirely. For **TEMPLATE-UPDATED** rules, update content but preserve custom `paths:` frontmatter if the project has different file structure. For **TEMPLATE-REWRITTEN** rules, replace the body with the template version, preserving only the project's custom `paths:` frontmatter. |
 | Scripts | `.claude/scripts/*.sh` | Sync new scripts entirely. For existing scripts, replace with template version unless local version has project-specific logic (check for project-specific paths, env vars, or tool references). |
 | References | `.claude/references/source-urls.md` | Merge: add any new URLs from template that aren't already present. Never remove existing URLs. |
 | References | `.claude/references/infrastructure.md` | Do NOT sync — infrastructure is project-specific. |
@@ -103,7 +107,11 @@ For each **TEMPLATE-NEW** file:
 For each **TEMPLATE-UPDATED** file:
 - Apply the sync strategy from the table above.
 - When merging, use the non-destructive rules: never remove project-specific content, append/merge rather than replace.
-- If a skill or agent has significant structural changes (new sections, rewritten steps), prefer the template version but port over any project-specific additions.
+
+For each **TEMPLATE-REWRITTEN** file:
+- The upstream body is the new canonical source. Replace the local body with the template version per the sync strategy above.
+- Before replacing, scan the local file for genuinely project-specific content (custom stack checks, custom paths, custom `paths:`/`context`/`skills` frontmatter). Re-apply ONLY those after pulling in the rewrite.
+- Do not attempt a line-by-line merge of a rewrite — that produces an incoherent hybrid. Take the template body whole, then graft back the small project-specific pieces.
 
 ### Track template version
 
@@ -270,7 +278,8 @@ BOOTSTRAP TEMPLATE SYNC:
   Template repo: BoardPandas/claude-code-bootstrap
   Template commit: <SHA from tree API>
   [TEMPLATE-NEW] Added <path> -- <description>
-  [TEMPLATE-UPDATED] Updated <path> -- <what changed>
+  [TEMPLATE-UPDATED] Updated <path> -- <what changed (incremental merge)>
+  [TEMPLATE-REWRITTEN] Replaced body of <path> -- <upstream rewrite; project-specific bits re-applied: ...>
   [TEMPLATE-CURRENT] No changes needed: <list>
   [TEMPLATE-SKIPPED] Skipped <path> -- <reason, e.g., project-specific>
 
