@@ -68,8 +68,8 @@ Beyond basics (name, description, model, permissionMode, tools), agents support:
 ## Fixed Infrastructure
 
 All projects use this hosting stack (see `.claude/references/infrastructure.md`):
-- **Cloudflare Pages** (frontend) + **Northflank** (backend containers, Postgres, Redis, cron)
-- **Cloudflare R2** (object storage) + **Better Auth** (auth within API) + **Resend/SES** (email)
+- **Northflank** (frontend + backend containers, Postgres, Redis, cron)
+- **Cloudflare** (R2 object storage + orange-cloud proxy/CDN/WAF in front of the Northflank frontend) + **Better Auth** (auth within API) + **Resend** (email)
 
 Plan-repo only recommends language, frameworks, UI library, ORM, and tooling. Infrastructure is locked.
 

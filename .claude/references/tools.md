@@ -81,8 +81,8 @@ This section is populated by plan-repo or init-repo based on the project's stack
 ### Deployment Tools
 | Tool | Check | Install | Use When |
 |------|-------|---------|----------|
-| wrangler | `npx wrangler --version` | `npm i -D wrangler` | Cloudflare Pages & R2 |
-| northflank | `northflank --version` | `npm i -g @northflank/cli` | Northflank backend, Postgres, Redis |
+| wrangler | `npx wrangler --version` | `npm i -D wrangler` | Cloudflare R2 & DNS/CDN (not Pages -- frontend is on Northflank) |
+| northflank | `northflank --version` | `npm i -g @northflank/cli` | Northflank frontend, backend, Postgres, Redis |
 
 ## Available MCP Servers
 
