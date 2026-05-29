@@ -88,7 +88,7 @@ Plan-repo only recommends language, frameworks, UI library, ORM, and tooling. In
 
 ## Hooks and Settings
 
-- Hooks fire on events: PreToolUse, PostToolUse, PostToolUseFailure, Stop, StopFailure, Notification, SubagentStart, SubagentStop, PreCompact, PostCompact, SessionStart, SessionEnd, UserPromptSubmit, PermissionRequest, PermissionDenied, TeammateIdle, TaskCompleted, TaskCreated, InstructionsLoaded, ConfigChange, WorktreeCreate, WorktreeRemove, CwdChanged, FileChanged, Elicitation, ElicitationResult, Setup. See init-repo skill for full list.
+- Hooks fire on events: PreToolUse, PostToolUse, PostToolUseFailure, Stop, StopFailure, Notification, MessageDisplay, SubagentStart, SubagentStop, PreCompact, PostCompact, SessionStart, SessionEnd, UserPromptSubmit, PermissionRequest, PermissionDenied, TeammateIdle, TaskCompleted, TaskCreated, InstructionsLoaded, ConfigChange, WorktreeCreate, WorktreeRemove, CwdChanged, FileChanged, Elicitation, ElicitationResult, Setup. See init-repo skill for full list.
 - Hook types: `command` (shell), `http` (POST to URL), `prompt` (single-turn LLM yes/no), `agent` (multi-turn subagent with tools), `mcp_tool` (direct MCP tool invocation).
 - Hooks accept an optional `if:` field using permission-rule syntax (e.g., `Bash(git *)`) to fire only on matching tool calls.
 - Optional settings: `attribution.commit/pr`, `autoUpdatesChannel`, `sandbox.*`, `worktree.bgIsolation/baseRef`, `language`, `allowedHttpHookUrls`, `alwaysThinkingEnabled`, `autoMemoryDirectory`, `modelOverrides`, `includeGitInstructions`, `forceRemoteSettingsRefresh`. See init-repo skill for details.
@@ -126,7 +126,6 @@ Best practices must reflect the current date. Always check the current date -- d
 | init-repo | "initialize repo" | Build or rebuild .claude/ folder with best practices |
 | update-practices | "update practices" | Fetch latest best practices and update config |
 | spec-developer | "spec developer" | Interview-driven feature spec saved to /tasks |
-| code-review | "code review" | Full codebase review with severity levels |
 | security-scan | "security scan" | OWASP-style security audit |
 | performance-review | "performance review" | Performance analysis with fix recommendations |
 | dependency-audit | "dependency audit" | Check dependencies for updates and vulnerabilities |

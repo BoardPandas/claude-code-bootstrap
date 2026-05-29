@@ -50,7 +50,6 @@ plan repo  →  initialize repo  →  (build features)  →  update practices
 | init-repo | "initialize repo" | Build or rebuild the .claude/ folder with best practices |
 | update-practices | "update practices" | Fetch latest best practices and update config |
 | spec-developer | "spec developer" | Interview-driven feature spec saved to /tasks |
-| code-review | "code review" | Full codebase review with severity-ranked findings |
 | security-scan | "security scan" | OWASP Top 10, secrets detection, dependency audit |
 | performance-review | "performance review" | Bottleneck analysis with impact-ranked fixes |
 | dependency-audit | "dependency audit" | Outdated, vulnerable, and unused dependency detection |

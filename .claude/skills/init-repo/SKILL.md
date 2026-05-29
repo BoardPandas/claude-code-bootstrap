@@ -244,7 +244,7 @@ Only add these fields when they provide clear value for the project. Do not add 
 
 ## Step 11: Configure Hooks
 
-### Available hook events (27)
+### Available hook events (28)
 
 Beyond the 3 currently configured (PreToolUse, Stop, Notification), these hook events are available:
 
@@ -261,6 +261,7 @@ Beyond the 3 currently configured (PreToolUse, Stop, Notification), these hook e
 | **SubagentStop** | When a subagent completes | Aggregate results, trigger follow-up tasks |
 | **Stop** | When Claude finishes a response | Notification sounds, auto-formatting, status updates |
 | **Notification** | When Claude sends a notification | Alert sounds, desktop notifications, webhook pings |
+| **MessageDisplay** | As assistant message text is displayed | Transform or hide message text, redact secrets in output |
 | **PreCompact** | Before context compaction (matcher: `manual` or `auto`) | Save important state, create summaries |
 | **TeammateIdle** | When a teammate agent is idle | Coordination, load balancing |
 | **TaskCompleted** | When a background task completes | Status updates, follow-up actions |

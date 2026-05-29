@@ -169,10 +169,10 @@ Review each skill for new frontmatter fields:
 - Should HTTP hooks be added for team workflows?
 - Are matchers using the correct syntax?
 
-Available hook events (27 as of Claude Code v2.1.144 -- check for new ones in fetched sources):
+Available hook events (28 as of Claude Code v2.1.156 -- check for new ones in fetched sources):
 SessionStart, SessionEnd, UserPromptSubmit, PreToolUse, PostToolUse, PostToolUseFailure,
 PermissionRequest, PermissionDenied, SubagentStart, SubagentStop, Stop, StopFailure,
-Notification, PreCompact, PostCompact, TeammateIdle, TaskCreated, TaskCompleted,
+Notification, MessageDisplay, PreCompact, PostCompact, TeammateIdle, TaskCreated, TaskCompleted,
 InstructionsLoaded, ConfigChange, WorktreeCreate, WorktreeRemove, CwdChanged, FileChanged,
 Elicitation, ElicitationResult, Setup
 
@@ -216,7 +216,7 @@ For each NEW or UPDATED item:
 
 Ensure these skills still exist and are current:
 - plan-repo, init-repo, update-practices
-- spec-developer, code-review, security-scan
+- spec-developer, security-scan
 - performance-review, dependency-audit, test-scaffold
 - doc-sync, mermaid-diagram
 

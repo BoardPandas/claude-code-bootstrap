@@ -32,7 +32,6 @@ This repository provides a pre-configured `.claude/` folder that gives Claude Co
     init-repo/SKILL.md     # Repository initialization
     update-practices/SKILL.md  # Best practice updates
     spec-developer/SKILL.md   # Interview-driven feature specs
-    code-review/SKILL.md   # Code review
     security-scan/SKILL.md # Security scanning
     performance-review/SKILL.md  # Performance analysis
     dependency-audit/SKILL.md    # Dependency checking
@@ -118,12 +117,6 @@ All planning uses phases, never dates or time estimates:
 - **When to use:** For any feature larger than a single file change.
 - **Key concept:** Plan only -- does not implement. Start a fresh session to execute.
 - **Variant:** If retrying after a failed implementation, it documents previous attempts to avoid dead ends.
-
-### code-review
-
-- **Trigger:** "code review", "review code", "full code review"
-- **What it does:** Scans for correctness, naming, DRY violations, error handling, type safety, test coverage, dead code, TODO/FIXME, and consistency. Severity-ranked report.
-- **Scope:** Optionally pass a file or directory path.
 
 ### security-scan
 
@@ -362,6 +355,7 @@ To add custom hooks, edit `.claude/settings.json`. Supported hook events:
 - `Stop` / `StopFailure` -- Turn completion (success / API error)
 - `SubagentStart` / `SubagentStop` -- Subagent lifecycle
 - `Notification` -- System notifications
+- `MessageDisplay` -- As assistant message text is displayed (transform or hide output, redact secrets)
 - `PreCompact` / `PostCompact` -- Before/after context compaction
 - `UserPromptSubmit` -- Before user prompt processing
 - `InstructionsLoaded` -- When CLAUDE.md or `.claude/rules/*.md` files load
