@@ -5,8 +5,8 @@ description: Add a new best practice entry to the BP knowledge base
 
 You are adding a new entry to the BP best practices knowledge base.
 
-**Repository:** `wellforce-brandon/BP` on GitHub
-**Raw URL base:** `https://raw.githubusercontent.com/wellforce-brandon/BP/main/`
+**Repository:** `BoardPandas/BP` on GitHub
+**Raw URL base:** `https://raw.githubusercontent.com/BoardPandas/BP/main/`
 
 All GitHub operations use the `gh` CLI via the Bash tool. There is no GitHub MCP server -- do not call `mcp__github__*` tools, they do not exist and will hang the skill.
 
@@ -46,15 +46,15 @@ If `gh` is not installed or not authenticated, stop and tell the user to run `gh
 
 Read the current master index and the relevant concern index so you know the entry count and can avoid duplicates:
 ```
-gh api repos/wellforce-brandon/BP/contents/llms.txt --jq .content | base64 -d
-gh api repos/wellforce-brandon/BP/contents/practices/<concern>/llms.txt --jq .content | base64 -d
+gh api repos/BoardPandas/BP/contents/llms.txt --jq .content | base64 -d
+gh api repos/BoardPandas/BP/contents/practices/<concern>/llms.txt --jq .content | base64 -d
 ```
 If the concern command fails with a `404`, the concern folder does not exist yet -- you will create it in Step 5.
 
 Capture each file's blob `sha` now -- you need it to update the file later:
 ```
-gh api repos/wellforce-brandon/BP/contents/llms.txt --jq .sha
-gh api repos/wellforce-brandon/BP/contents/practices/<concern>/llms.txt --jq .sha
+gh api repos/BoardPandas/BP/contents/llms.txt --jq .sha
+gh api repos/BoardPandas/BP/contents/practices/<concern>/llms.txt --jq .sha
 ```
 
 ## Step 4: Create the entry file via the GitHub API
@@ -97,7 +97,7 @@ gh api repos/wellforce-brandon/BP/contents/practices/<concern>/llms.txt --jq .sh
 
 2. Create the file on `main`. The `content` field must be base64-encoded; `base64 -w0` encodes the scratch file with no line wrapping:
 ```
-gh api repos/wellforce-brandon/BP/contents/practices/<concern>/<slug>.md \
+gh api repos/BoardPandas/BP/contents/practices/<concern>/<slug>.md \
   --method PUT \
   -f message="Add <concern> practice: <title>" \
   -f branch=main \
@@ -127,7 +127,7 @@ Compute the new content of `practices/<concern>/llms.txt`:
 
 Write the full new file content to `.git/bp-index.md` with the Write tool, then push it:
 ```
-gh api repos/wellforce-brandon/BP/contents/practices/<concern>/llms.txt \
+gh api repos/BoardPandas/BP/contents/practices/<concern>/llms.txt \
   --method PUT \
   -f message="Update <concern> index: add <slug>" \
   -f branch=main \
@@ -149,7 +149,7 @@ If this is a new concern, add a new section under `## Concerns`:
 
 Write the updated master content to `.git/bp-master.md`, then push it:
 ```
-gh api repos/wellforce-brandon/BP/contents/llms.txt \
+gh api repos/BoardPandas/BP/contents/llms.txt \
   --method PUT \
   -f message="Update master index: <concern> now has N+1 entries" \
   -f branch=main \

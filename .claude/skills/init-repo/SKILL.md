@@ -42,7 +42,7 @@ Before fetching any best practices, check the current date. All recommendations 
 
 **3a. Load BP (Best Practices knowledge base) -- PRIMARY SOURCE**
 
-1. Fetch `https://raw.githubusercontent.com/wellforce-brandon/BP/main/llms.txt` to get all concern categories.
+1. Fetch `https://raw.githubusercontent.com/BoardPandas/BP/main/llms.txt` to get all concern categories.
 2. Identify which concerns are relevant based on the detected tech stack from Step 2.
 3. Fetch each relevant concern's `llms.txt` index (e.g., `practices/claude-config/llms.txt`, `practices/safety/llms.txt`).
 4. Read ALL FOUNDATIONAL entries -- these apply to every repo regardless of stack.
@@ -64,7 +64,7 @@ Key BP practices to apply during init:
 
 **3b. Load LL-G (Lessons Learned & Gotchas)**
 
-1. Fetch `https://raw.githubusercontent.com/wellforce-brandon/LL-G/main/llms.txt` to get all technologies.
+1. Fetch `https://raw.githubusercontent.com/BoardPandas/LL-G/main/llms.txt` to get all technologies.
 2. For each technology matching this project's stack, fetch its sub-index.
 3. Note any HIGH-severity gotchas relevant to the config being generated (e.g., TypeScript strict mode, Drizzle version pinning, Better Auth import paths).
 4. Include relevant gotchas as warnings in the generated CLAUDE.md or agent-memory/debugging.md.
@@ -467,7 +467,7 @@ If LL-G had HIGH-severity entries matching this project's tech stack (from Step 
 ## Known Gotchas (from LL-G)
 
 These are HIGH-severity gotchas for this project's tech stack.
-See LL-G for full details: https://github.com/wellforce-brandon/LL-G
+See LL-G for full details: https://github.com/BoardPandas/LL-G
 
 - [Gotcha title]: brief summary (tech, severity)
 ```

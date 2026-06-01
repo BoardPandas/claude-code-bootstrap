@@ -161,7 +161,7 @@ See `agents.md` in the repo root for the full agent registry. Key agents:
 **At the start of any session involving scripting, API calls, or automation -- before writing a single line -- fetch the LL-G index and load relevant entries.**
 
 ```
-Step 1: Fetch https://raw.githubusercontent.com/wellforce-brandon/LL-G/main/llms.txt
+Step 1: Fetch https://raw.githubusercontent.com/BoardPandas/LL-G/main/llms.txt
 Step 2: For each technology you will use, fetch its sub-index (e.g., kb/ninjaone/llms.txt)
 Step 3: Read ALL HIGH-severity entries for those technologies
 Step 4: Read any MEDIUM entry whose title matches your specific task
@@ -176,7 +176,7 @@ This applies to every session, every technician, every developer. Not optional.
 Every plan file MUST end with a **Lessons Learned / Gotchas** section. After implementation, route any new discoveries to LL-G -- not to local agent-memory or local pattern files only.
 
 - Preferred: run `/add-lesson` from any session (uses GitHub API, no local clone needed)
-- Manual: create `kb/<tech>/<slug>.md`, update `kb/<tech>/llms.txt`, update the master `llms.txt` in the `wellforce-brandon/LL-G` repo
+- Manual: create `kb/<tech>/<slug>.md`, update `kb/<tech>/llms.txt`, update the master `llms.txt` in the `BoardPandas/LL-G` repo
 
 Lessons stored locally stay local. Lessons in LL-G benefit every repo and every technician.
 
@@ -185,7 +185,7 @@ Lessons stored locally stay local. Lessons in LL-G benefit every repo and every 
 **When onboarding a repo, starting a new feature, or setting up tooling -- load the BP index and check applicable best practices.**
 
 ```
-Step 1: Fetch https://raw.githubusercontent.com/wellforce-brandon/BP/main/llms.txt
+Step 1: Fetch https://raw.githubusercontent.com/BoardPandas/BP/main/llms.txt
 Step 2: For each concern relevant to your task, read its llms.txt index
 Step 3: Load all FOUNDATIONAL entries (these apply to every repo)
 Step 4: Load RECOMMENDED entries whose tech tags match the current project

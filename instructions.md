@@ -155,13 +155,13 @@ All planning uses phases, never dates or time estimates:
 ### add-lesson
 
 - **Trigger:** "add lesson", "add gotcha", "add to LL-G"
-- **What it does:** Adds a gotcha or lesson learned to the LL-G knowledge base (`wellforce-brandon/LL-G` repo) via GitHub API. No local clone needed.
+- **What it does:** Adds a gotcha or lesson learned to the LL-G knowledge base (`BoardPandas/LL-G` repo) via GitHub API. No local clone needed.
 - **When to use:** After discovering a non-obvious failure pattern during implementation.
 
 ### add-practice
 
 - **Trigger:** "add practice", "add best practice", "add to BP"
-- **What it does:** Adds a new best practice entry to the BP knowledge base (`wellforce-brandon/BP` repo) via GitHub API.
+- **What it does:** Adds a new best practice entry to the BP knowledge base (`BoardPandas/BP` repo) via GitHub API.
 - **When to use:** When establishing a proven pattern that should apply across repos.
 
 ### apply-practice

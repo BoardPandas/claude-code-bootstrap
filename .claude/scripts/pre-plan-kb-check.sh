@@ -8,11 +8,11 @@ cat <<'EOF'
 Before creating this plan, you MUST consult both knowledge bases for relevant entries:
 
 1. LL-G (Lessons Learned / Gotchas):
-   WebFetch https://raw.githubusercontent.com/wellforce-brandon/LL-G/main/llms.txt
+   WebFetch https://raw.githubusercontent.com/BoardPandas/LL-G/main/llms.txt
    Then fetch sub-indexes for each technology in your plan.
 
 2. BP (Best Practices):
-   WebFetch https://raw.githubusercontent.com/wellforce-brandon/BP/main/llms.txt
+   WebFetch https://raw.githubusercontent.com/BoardPandas/BP/main/llms.txt
    Then fetch concern indexes relevant to your plan.
 
 Load ALL HIGH-severity LL-G entries and ALL FOUNDATIONAL BP entries for matched technologies.

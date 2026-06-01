@@ -12,14 +12,14 @@ Before writing or editing any file matching the paths above, you MUST consult th
 
 1. **Fetch the master index:**
    ```
-   WebFetch https://raw.githubusercontent.com/wellforce-brandon/LL-G/main/llms.txt
+   WebFetch https://raw.githubusercontent.com/BoardPandas/LL-G/main/llms.txt
    ```
 
 2. **Identify relevant technologies** from the file you're about to write (e.g., Next.js, TypeScript, Better Auth, Tailwind, etc.).
 
 3. **Fetch each relevant tech index:**
    ```
-   WebFetch https://raw.githubusercontent.com/wellforce-brandon/LL-G/main/kb/<tech>/llms.txt
+   WebFetch https://raw.githubusercontent.com/BoardPandas/LL-G/main/kb/<tech>/llms.txt
    ```
 
 4. **Read ALL HIGH-severity entries** for matched technologies.

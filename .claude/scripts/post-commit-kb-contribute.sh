@@ -12,12 +12,12 @@ echo ""
 cat <<'EOF'
 Review the work you just committed and evaluate:
 
-1. LL-G (Lessons Learned / Gotchas) -- wellforce-brandon/LL-G
+1. LL-G (Lessons Learned / Gotchas) -- BoardPandas/LL-G
    Did you discover any gotchas, silent failures, or non-obvious behaviors?
    Did you hit a bug that wasted time and others should know about?
    If YES: ask the user if they'd like to run /add-lesson to contribute it.
 
-2. BP (Best Practices) -- wellforce-brandon/BP
+2. BP (Best Practices) -- BoardPandas/BP
    Did you establish a new proven pattern worth replicating across repos?
    Did you implement something that took research to get right?
    If YES: ask the user if they'd like to run /add-practice to contribute it.

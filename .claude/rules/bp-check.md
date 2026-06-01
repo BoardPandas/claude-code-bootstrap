@@ -12,14 +12,14 @@ Before creating or modifying infrastructure, tooling, or configuration files mat
 
 1. **Fetch the master index:**
    ```
-   WebFetch https://raw.githubusercontent.com/wellforce-brandon/BP/main/llms.txt
+   WebFetch https://raw.githubusercontent.com/BoardPandas/BP/main/llms.txt
    ```
 
 2. **Identify relevant concerns** from the file you're about to write (e.g., testing config -> testing, Dockerfile -> deployment, CLAUDE.md -> claude-config).
 
 3. **Fetch each relevant concern index:**
    ```
-   WebFetch https://raw.githubusercontent.com/wellforce-brandon/BP/main/practices/<concern>/llms.txt
+   WebFetch https://raw.githubusercontent.com/BoardPandas/BP/main/practices/<concern>/llms.txt
    ```
 
 4. **Read ALL FOUNDATIONAL entries** for matched concerns.

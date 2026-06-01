@@ -5,8 +5,8 @@ description: Apply a specific best practice from BP to a target repository
 
 You are applying a specific best practice from the BP knowledge base to a target repository.
 
-**Repository:** `wellforce-brandon/BP` on GitHub
-**Raw URL base:** `https://raw.githubusercontent.com/wellforce-brandon/BP/main/`
+**Repository:** `BoardPandas/BP` on GitHub
+**Raw URL base:** `https://raw.githubusercontent.com/BoardPandas/BP/main/`
 
 ## Step 1: Identify inputs
 
@@ -22,17 +22,17 @@ This skill only reads from BP -- use `WebFetch` on the raw URL. Do not call `mcp
 
 Fetch the practice entry:
 ```
-WebFetch https://raw.githubusercontent.com/wellforce-brandon/BP/main/practices/<concern>/<slug>.md
+WebFetch https://raw.githubusercontent.com/BoardPandas/BP/main/practices/<concern>/<slug>.md
 ```
 
 If the user doesn't know the exact slug, fetch the concern index first to show available practices:
 ```
-WebFetch https://raw.githubusercontent.com/wellforce-brandon/BP/main/practices/<concern>/llms.txt
+WebFetch https://raw.githubusercontent.com/BoardPandas/BP/main/practices/<concern>/llms.txt
 ```
 
 Or fetch the master index to show all concerns:
 ```
-WebFetch https://raw.githubusercontent.com/wellforce-brandon/BP/main/llms.txt
+WebFetch https://raw.githubusercontent.com/BoardPandas/BP/main/llms.txt
 ```
 
 ## Step 3: Run CHECK steps

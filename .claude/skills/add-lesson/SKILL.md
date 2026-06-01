@@ -5,8 +5,8 @@ description: Add a new gotcha or lesson learned to the LL-G knowledge base
 
 You are adding a new entry to the LL-G lessons-learned knowledge base.
 
-**Repository:** `wellforce-brandon/LL-G` on GitHub
-**Raw URL base:** `https://raw.githubusercontent.com/wellforce-brandon/LL-G/main/`
+**Repository:** `BoardPandas/LL-G` on GitHub
+**Raw URL base:** `https://raw.githubusercontent.com/BoardPandas/LL-G/main/`
 
 All GitHub operations use the `gh` CLI via the Bash tool. There is no GitHub MCP server -- do not call `mcp__github__*` tools, they do not exist and will hang the skill.
 
@@ -42,15 +42,15 @@ If `gh` is not installed or not authenticated, stop and tell the user to run `gh
 
 Read the current master index and the relevant tech index so you know the entry count and can avoid duplicates:
 ```
-gh api repos/wellforce-brandon/LL-G/contents/llms.txt --jq .content | base64 -d
-gh api repos/wellforce-brandon/LL-G/contents/kb/<tech>/llms.txt --jq .content | base64 -d
+gh api repos/BoardPandas/LL-G/contents/llms.txt --jq .content | base64 -d
+gh api repos/BoardPandas/LL-G/contents/kb/<tech>/llms.txt --jq .content | base64 -d
 ```
 If the tech command fails with a `404`, the tech folder does not exist yet -- you will create it in Step 5.
 
 Capture each file's blob `sha` now -- you need it to update the file later:
 ```
-gh api repos/wellforce-brandon/LL-G/contents/llms.txt --jq .sha
-gh api repos/wellforce-brandon/LL-G/contents/kb/<tech>/llms.txt --jq .sha
+gh api repos/BoardPandas/LL-G/contents/llms.txt --jq .sha
+gh api repos/BoardPandas/LL-G/contents/kb/<tech>/llms.txt --jq .sha
 ```
 
 ## Step 4: Create the entry file via the GitHub API
@@ -85,7 +85,7 @@ gh api repos/wellforce-brandon/LL-G/contents/kb/<tech>/llms.txt --jq .sha
 
 2. Create the file on `main`. The `content` field must be base64-encoded; `base64 -w0` encodes the scratch file with no line wrapping:
 ```
-gh api repos/wellforce-brandon/LL-G/contents/kb/<tech>/<slug>.md \
+gh api repos/BoardPandas/LL-G/contents/kb/<tech>/<slug>.md \
   --method PUT \
   -f message="Add <tech> gotcha: <title>" \
   -f branch=main \
@@ -115,7 +115,7 @@ Compute the new content of `kb/<tech>/llms.txt`:
 
 Write the full new file content to `.git/llg-index.md` with the Write tool, then push it:
 ```
-gh api repos/wellforce-brandon/LL-G/contents/kb/<tech>/llms.txt \
+gh api repos/BoardPandas/LL-G/contents/kb/<tech>/llms.txt \
   --method PUT \
   -f message="Update <tech> index: add <slug>" \
   -f branch=main \
@@ -137,7 +137,7 @@ If this is a new technology, add a new section under `## Technologies`:
 
 Write the updated master content to `.git/llg-master.md`, then push it:
 ```
-gh api repos/wellforce-brandon/LL-G/contents/llms.txt \
+gh api repos/BoardPandas/LL-G/contents/llms.txt \
   --method PUT \
   -f message="Update master index: <tech> now has N+1 entries" \
   -f branch=main \
