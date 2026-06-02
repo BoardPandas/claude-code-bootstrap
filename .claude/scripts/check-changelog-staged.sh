@@ -1,6 +1,22 @@
 #!/usr/bin/env bash
 # Pre-commit hook: verify CHANGELOG.md is in staged changes
 # Exit 0 = pass, Exit 2 = block with message
+#
+# Escape hatches (exit 0 without requiring CHANGELOG.md):
+#   - Merge commits (MERGE_HEAD exists) -- the merged branches carry their own entries.
+#   - SKIP_CHANGELOG=1 in the environment -- for reverts, hotfixes, or trivial commits
+#     where a changelog entry is genuinely not warranted.
+
+# Merge commit: no changelog entry expected.
+if git rev-parse -q --verify MERGE_HEAD >/dev/null 2>&1; then
+  exit 0
+fi
+
+# Explicit opt-out.
+if [ "${SKIP_CHANGELOG:-}" = "1" ]; then
+  echo "SKIP_CHANGELOG=1 set -- bypassing changelog staged check."
+  exit 0
+fi
 
 staged=$(git diff --cached --name-only 2>/dev/null)
 
@@ -8,5 +24,6 @@ if echo "$staged" | grep -q "^CHANGELOG.md$"; then
   exit 0
 else
   echo "BLOCKED: CHANGELOG.md is not staged. Update the changelog and version before committing."
+  echo "(Merge commits are exempt. For a genuinely trivial commit, set SKIP_CHANGELOG=1 to bypass.)"
   exit 2
 fi

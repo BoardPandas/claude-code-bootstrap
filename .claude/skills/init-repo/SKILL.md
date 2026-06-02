@@ -244,18 +244,20 @@ Only add these fields when they provide clear value for the project. Do not add 
 
 ## Step 11: Configure Hooks
 
-### Available hook events (28)
+### Available hook events (30)
 
-Beyond the 3 currently configured (PreToolUse, Stop, Notification), these hook events are available:
+Beyond the 4 currently configured (SessionStart, PreToolUse, Stop, Notification), these hook events are available:
 
 | Event | Fires When | Use Cases |
 |-------|-----------|-----------|
 | **SessionStart** | When a new session begins | Welcome message, status check, re-inject context after compaction (matcher: `compact`) |
 | **SessionEnd** | When a session ends | Save state, create handoff doc |
 | **UserPromptSubmit** | When user submits a prompt | Input validation, prompt logging |
+| **UserPromptExpansion** | When a slash command expands | Inspect/rewrite expanded command, block disallowed commands |
 | **PreToolUse** | Before any tool call | Validate tool args, block dangerous commands, log activity |
 | **PostToolUse** | After any tool call completes | Post-processing, validation of results, auto-lint |
 | **PostToolUseFailure** | When a tool call fails | Error logging, fallback actions, retry logic |
+| **PostToolBatch** | After a parallel tool batch resolves | Aggregate batch results, enforce post-batch invariants, block |
 | **PermissionRequest** | When a tool requests permission | Auto-approve safe reads, log permission decisions |
 | **SubagentStart** | When a subagent launches | Log subagent activity, resource tracking |
 | **SubagentStop** | When a subagent completes | Aggregate results, trigger follow-up tasks |
@@ -292,8 +294,9 @@ Any hook entry accepts an optional `if:` field using permission-rule syntax (e.g
 ### Hooks to configure based on project needs
 
 **Always configure:**
+- `SessionStart` — surface the LL-G / BP knowledge-base reminder once per session
 - `PreToolUse` with `Bash(git commit*)` matcher — validation before commits
-- `Stop` — notification sound
+- `Stop` — notification sound (use `printf '\a'`, not `echo '\a'` — `echo` prints a literal `\a` in most shells)
 - `Notification` — notification sound
 
 **Recommended for active development:**

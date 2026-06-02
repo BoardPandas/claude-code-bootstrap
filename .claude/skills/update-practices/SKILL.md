@@ -169,12 +169,12 @@ Review each skill for new frontmatter fields:
 - Should HTTP hooks be added for team workflows?
 - Are matchers using the correct syntax?
 
-Available hook events (28 as of Claude Code v2.1.156 -- check for new ones in fetched sources):
-SessionStart, SessionEnd, UserPromptSubmit, PreToolUse, PostToolUse, PostToolUseFailure,
-PermissionRequest, PermissionDenied, SubagentStart, SubagentStop, Stop, StopFailure,
-Notification, MessageDisplay, PreCompact, PostCompact, TeammateIdle, TaskCreated, TaskCompleted,
-InstructionsLoaded, ConfigChange, WorktreeCreate, WorktreeRemove, CwdChanged, FileChanged,
-Elicitation, ElicitationResult, Setup
+Available hook events (30 as of Claude Code v2.1.159 -- check for new ones in fetched sources):
+SessionStart, SessionEnd, UserPromptSubmit, UserPromptExpansion, PreToolUse, PostToolUse,
+PostToolUseFailure, PostToolBatch, PermissionRequest, PermissionDenied, SubagentStart,
+SubagentStop, Stop, StopFailure, Notification, MessageDisplay, PreCompact, PostCompact,
+TeammateIdle, TaskCreated, TaskCompleted, InstructionsLoaded, ConfigChange, WorktreeCreate,
+WorktreeRemove, CwdChanged, FileChanged, Elicitation, ElicitationResult, Setup
 
 Hook types: command, http, prompt, agent, mcp_tool
 

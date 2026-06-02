@@ -1,7 +1,13 @@
 ---
 description: Enforce LL-G knowledge base check before writing code
-globs: ["src/**", "lib/**", "app/**", "worker/**", "api/**", "scripts/**", "middleware.*"]
-alwaysApply: false
+paths:
+  - "src/**"
+  - "lib/**"
+  - "app/**"
+  - "worker/**"
+  - "api/**"
+  - "scripts/**"
+  - "middleware.*"
 ---
 
 # RULE 1 Enforcement: Check LL-G Before Writing Code

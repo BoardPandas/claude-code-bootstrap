@@ -3,6 +3,14 @@
 # Fires before check-changelog-staged.sh so Claude gets the instructions first
 # Always exits 0 (advisory) -- the staged check hook handles enforcement
 
+# Merge commits and explicit opt-outs are exempt (mirrors check-changelog-staged.sh)
+if git rev-parse -q --verify MERGE_HEAD >/dev/null 2>&1; then
+  exit 0
+fi
+if [ "${SKIP_CHANGELOG:-}" = "1" ]; then
+  exit 0
+fi
+
 staged=$(git diff --cached --name-only 2>/dev/null)
 
 # If CHANGELOG.md is already staged, no reminder needed

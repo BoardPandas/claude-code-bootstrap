@@ -1,6 +1,5 @@
 ---
 description: Update changelog and version before committing
-alwaysApply: true
 ---
 
 # Pre-Commit: Changelog & Version Update
@@ -21,17 +20,16 @@ Before every `git commit`, you MUST:
 
 ## 2. Bump Version in package.json
 
-Version format: **Major.Minor.Patch.Build** (e.g., `1.0.0.1`)
+Version format: **Major.Minor.Patch** (SemVer, e.g., `0.0.1`)
 
 | Segment | When to increment | Resets | Example |
 |---|---|---|---|
-| **Major** (1st) | Breaking changes — API contract changes, database schema migrations that break compatibility, authentication flow changes, removal of public endpoints | Minor, Patch, Build → 0 | 1.2.3.4 → 2.0.0.0 |
-| **Minor** (2nd) | New features or enhancements — new pages, new API endpoints, new dashboard widgets, new integrations, new worker jobs | Patch, Build → 0 | 1.2.3.4 → 1.3.0.0 |
-| **Patch** (3rd) | Bug fixes, security patches, performance improvements, dependency updates that fix issues | Build → 0 | 1.2.3.4 → 1.2.4.0 |
-| **Build** (4th) | Every commit — docs, refactors, config changes, test additions, chores, styling tweaks, any change not covered above | Nothing | 1.2.3.4 → 1.2.3.5 |
+| **Major** (1st) | Breaking changes — API contract changes, database schema migrations that break compatibility, authentication flow changes, removal of public endpoints | Minor, Patch → 0 | 1.2.3 → 2.0.0 |
+| **Minor** (2nd) | New features or enhancements — new pages, new API endpoints, new dashboard widgets, new integrations, new worker jobs | Patch → 0 | 1.2.3 → 1.3.0 |
+| **Patch** (3rd) | Bug fixes, security patches, performance improvements, dependency updates, docs, refactors, config changes, chores, and any other change not covered above | Nothing | 1.2.3 → 1.2.4 |
 
 Rules:
-- The **Build** number increments on every single commit, no exceptions.
+- Every commit bumps at least the **Patch** segment, no exceptions.
 - When a higher segment increments, all lower segments reset to 0.
 - If a commit includes both a feature and a bug fix, use the **highest** applicable bump (Minor in that case).
 - **NEVER bump Major autonomously.** Always ask the user for guidance before incrementing the Major version, even if the changes appear to be breaking. The user decides when a Major bump happens.

@@ -12,9 +12,32 @@
       "WebSearch",
       "Bash(git clone:*)"
     ],
-    "deny": []
+    "deny": [
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Read(~/.azure/**)",
+      "Read(~/.kube/**)",
+      "Read(~/.docker/config.json)",
+      "Read(~/.npmrc)",
+      "Read(~/.git-credentials)",
+      "Read(~/.config/gh/**)",
+      "Edit(~/.bashrc)",
+      "Edit(~/.zshrc)",
+      "Edit(~/.profile)"
+    ]
   },
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/scripts/session-start-kb-check.sh",
+            "statusMessage": "Surfacing LL-G / BP knowledge-base reminder..."
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Bash(git commit*)",
@@ -64,7 +87,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo '\\a'"
+            "command": "printf '\\a'"
           }
         ]
       }
@@ -74,7 +97,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo '\\a'"
+            "command": "printf '\\a'"
           }
         ]
       }

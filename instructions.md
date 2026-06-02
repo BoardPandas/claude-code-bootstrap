@@ -344,13 +344,17 @@ Guardrails cover: component patterns, styling conventions, accessibility require
 
 The template includes hooks in `.claude/settings.json`:
 
-- **PreToolUse (git commit):** Logs a notification when commits are made.
+- **SessionStart:** Surfaces the LL-G / BP knowledge-base reminder once per session.
+- **PreToolUse (git commit):** Blocks PowerShell here-string syntax, reminds about the changelog/version bump, and blocks commits that do not stage `CHANGELOG.md` (merge commits and `SKIP_CHANGELOG=1` are exempt).
+- **PreToolUse (EnterPlanMode):** Prompts a knowledge-base check before planning.
+- **PostToolUse (git commit):** Prompts evaluation of whether the committed work should be contributed back to LL-G or BP.
 - **Stop:** Bell sound when Claude finishes a task (useful with multiple sessions).
 - **Notification:** Bell sound when Claude needs attention.
 
 To add custom hooks, edit `.claude/settings.json`. Supported hook events:
 
 - `PreToolUse` / `PostToolUse` / `PostToolUseFailure` -- Before/after/on-failure tool execution
+- `PostToolBatch` -- After a parallel tool batch resolves
 - `SessionStart` / `SessionEnd` -- Session lifecycle
 - `Stop` / `StopFailure` -- Turn completion (success / API error)
 - `SubagentStart` / `SubagentStop` -- Subagent lifecycle
@@ -358,6 +362,7 @@ To add custom hooks, edit `.claude/settings.json`. Supported hook events:
 - `MessageDisplay` -- As assistant message text is displayed (transform or hide output, redact secrets)
 - `PreCompact` / `PostCompact` -- Before/after context compaction
 - `UserPromptSubmit` -- Before user prompt processing
+- `UserPromptExpansion` -- When a slash command expands
 - `InstructionsLoaded` -- When CLAUDE.md or `.claude/rules/*.md` files load
 - `ConfigChange` -- When configuration files change during session
 - `WorktreeCreate` / `WorktreeRemove` -- Git worktree operations
