@@ -19,9 +19,24 @@ model: sonnet
 
 You are responsible for keeping `Docs/` aligned with the codebase. This skill produces thorough, evidence-based documentation, not surface-level notes. Treat `Docs/` as the canonical project wiki.
 
+## Resolve the docs root (do this first)
+
+Before any mode runs, determine the canonical documentation folder and reuse that exact name for the entire run. Do NOT assume `Docs/` exists just because a case-insensitive check passes.
+
+1. List the repo-root entries and look for an existing docs folder **case-insensitively**: match `Docs`, `docs`, `DOCS`, or any other casing. On Windows and macOS the filesystem is case-insensitive, so `Docs/` and `docs/` resolve to the same directory; on Linux and in git they do not. Use `git ls-files` to see the case git actually tracks:
+   ```bash
+   git ls-files | grep -iE '^docs/' | head -n 1
+   ```
+   If that returns a path, the segment before the first `/` (e.g. `docs`) is the **tracked, canonical** casing. Prefer it over whatever the local filesystem reports.
+2. Set a single variable `DOCS_ROOT` to the resolved name:
+   - If a docs folder already exists (any casing), `DOCS_ROOT` = its existing/tracked name. Never rename it and never create a second folder in a different case.
+   - If none exists, `DOCS_ROOT` = `Docs` (the default for new repos).
+3. For the rest of this skill, every reference to `Docs/` means `{DOCS_ROOT}/`. When the existing folder is lowercase `docs/`, write to `docs/_toc.yaml`, `docs/README.md`, `docs/_meta/...`, etc. Match the existing case exactly so git, CI, and case-sensitive hosts see one consistent folder.
+4. State the resolved `DOCS_ROOT` in your first status message so the user knows which folder you are writing to.
+
 ## Output Conventions
 
-- All generated documentation lives under `Docs/` (capital D) at the repo root.
+- All generated documentation lives under the resolved docs root (`DOCS_ROOT`, default `Docs/`) at the repo root. The paths below are written as `Docs/` for brevity but always mean `{DOCS_ROOT}/`.
 - A single `Docs/_toc.yaml` is the source of truth for page IDs, source-file mappings, sections, and diagram requirements.
 - Every generated page carries stable `<!-- PAGE_ID: ... -->` and `<!-- BEGIN:AUTOGEN ... -->` / `<!-- END:AUTOGEN ... -->` markers so that incremental updates only rewrite generated regions, never manual notes.
 - Generation metadata lives in `Docs/_meta/GENERATION.md` (commit hash, branch, timestamp) and `Docs/_meta/SUMMARY.md` (coverage report).
@@ -50,15 +65,15 @@ Omit folders that have no relevant pages. Add other folders only when the repo d
 
 ## Three Modes
 
-The skill operates in one of three modes. Detect the mode from the user's argument, the state of `Docs/`, and the recency of generation metadata.
+The skill operates in one of three modes. Detect the mode from the user's argument, the state of the resolved docs root (`DOCS_ROOT`, see "Resolve the docs root" above), and the recency of generation metadata. Resolve `DOCS_ROOT` first — all existence checks below run against that folder, regardless of its case.
 
 | Mode | When to use | Output |
 |------|------|--------|
-| **init** | `Docs/` does not exist, or `Docs/_toc.yaml` is missing | Full repo scan → TOC design → page generation → validation → index |
-| **update** | `Docs/_toc.yaml` exists; user changed code since last generation | Git diff → affected pages → regenerate only those AUTOGEN sections |
+| **init** | No docs folder exists in any case, or `{DOCS_ROOT}/_toc.yaml` is missing | Full repo scan → TOC design → page generation → validation → index |
+| **update** | `{DOCS_ROOT}/_toc.yaml` exists; user changed code since last generation | Git diff → affected pages → regenerate only those AUTOGEN sections |
 | **audit** | User asks to "audit" / "check" docs, or wants a stale-references report only | Inventory + cross-reference + report; no rewrites |
 
-If the argument is empty: pick **init** when no `Docs/_toc.yaml`, otherwise **update**.
+If the argument is empty: pick **init** when no `{DOCS_ROOT}/_toc.yaml`, otherwise **update**.
 
 ---
 
@@ -97,7 +112,7 @@ Each template defines required sections and minimum content expectations. Do not
    - Entry points: `**/main.{ts,js,py,go,rs}`, `**/index.{ts,js,tsx}`, `**/cmd/**/main.go`
    - Config: `package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`, `Dockerfile*`, `docker-compose*`, `*.tf`, `.env.example`
    - Build/CI: `Makefile`, `.github/workflows/*`, `turbo.json`, `nx.json`
-   - Existing docs: `README*`, `**/*.md` outside `Docs/` and `node_modules/`
+   - Existing docs: `README*`, `**/*.md` outside the docs root (`{DOCS_ROOT}/`, matched case-insensitively) and `node_modules/`
 3. Read `README.md`, `package.json` (or equivalent), and 2-3 entry-point files to understand purpose, stack, and structure.
 4. Identify language(s), frameworks, key services, and module boundaries.
 
@@ -241,7 +256,7 @@ Write `Docs/_meta/SUMMARY.md` listing: commit range, pages updated, sections reg
 Use the legacy lightweight workflow. Do not rewrite anything.
 
 ### Step 1: Inventory
-- Glob `Docs/**/*.md` and any `**/*.md` outside `Docs/`.
+- Glob `{DOCS_ROOT}/**/*.md` (the resolved docs root) and any `**/*.md` outside it.
 - Categorize: API, setup, architecture, user, changelog.
 
 ### Step 2: Cross-reference
@@ -299,7 +314,7 @@ For update mode, single-page jobs are usually fine without subagents. Spawn suba
 - NEVER invent line numbers, file paths, function names, or behavior. If a claim has no source, write `_TBD_` with a one-line reason.
 - NEVER modify content outside `BEGIN:AUTOGEN` / `END:AUTOGEN` markers in update mode.
 - NEVER skip the AUTOGEN markers — they are the contract that makes incremental updates safe.
-- NEVER write to a path outside `Docs/` (the legacy README at the repo root is left alone unless the user asks).
+- NEVER write to a path outside the resolved docs root `{DOCS_ROOT}/` (the legacy README at the repo root is left alone unless the user asks). Never create a second docs folder in a different case than the one that already exists.
 - ALWAYS use `graph TD` for flowcharts, quote all Mermaid node text, and validate diagrams when `mmdc` is available.
 - ALWAYS update `Docs/_meta/GENERATION.md` after a successful run so the next update knows the base commit.
 - ALWAYS keep `Docs/_toc.yaml` and `Docs/README.md` in sync — every TOC page must appear in the README index, and every README link must point to a TOC-tracked file.
