@@ -1,5 +1,6 @@
 ---
 name: apply-practice
+effort: medium
 description: Apply a specific best practice from BP to a target repository
 ---
 

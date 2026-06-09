@@ -7,6 +7,8 @@ allowed-tools:
   - Bash
   - AskUserQuestion
 model: sonnet
+effort: medium
+disable-model-invocation: true
 ---
 
 You consolidate all outstanding work into the repository's main branch, push it, then tear down the worktrees and branches you merged. **This is destructive and irreversible once branches are force-deleted.** Move deliberately, confirm before the point of no return, and never plow through a merge conflict or dirty tree.

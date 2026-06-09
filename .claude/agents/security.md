@@ -2,6 +2,7 @@
 name: security
 description: Use PROACTIVELY for security-focused analysis covering OWASP Top 10, secrets detection, dependency vulnerabilities, and input validation gaps.
 model: opus
+effort: high
 permissionMode: plan
 tools:
   - Read

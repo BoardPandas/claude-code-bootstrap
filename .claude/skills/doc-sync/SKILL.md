@@ -11,8 +11,9 @@ allowed-tools:
   - Grep
   - Bash
   - WebFetch
-  - Task
+  - Agent
 model: sonnet
+effort: medium
 ---
 
 # Documentation Sync

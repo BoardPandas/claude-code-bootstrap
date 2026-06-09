@@ -2,6 +2,7 @@
 name: explorer
 description: Use PROACTIVELY to explore codebases, research approaches, fetch documentation, and gather context. Always include WHY you need the information. Spin up multiple explorers in parallel for competing approaches.
 model: sonnet
+effort: medium
 permissionMode: plan
 tools:
   - Read

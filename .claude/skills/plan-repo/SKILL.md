@@ -1,5 +1,6 @@
 ---
 name: plan-repo
+effort: high
 description: Analyze project requirements and recommend the best tech stack for the current year. Infrastructure (Northflank frontend + backend, Cloudflare R2/CDN, Better Auth, Postgres, Redis) is fixed. Researches languages, frameworks, UI libraries, and tooling, then generates README, design guardrails, and tools reference. Run this before init-repo.
 user-invocable: true
 argument-hint: [optional: project name or description]

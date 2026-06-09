@@ -1,5 +1,6 @@
 ---
 name: add-practice
+effort: low
 description: Add a new best practice entry to the BP knowledge base
 ---
 

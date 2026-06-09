@@ -1,5 +1,6 @@
 ---
 name: update-practices
+effort: high
 description: Fetch latest Claude Code best practices and update the .claude/ folder configuration. Safe to run repeatedly.
 user-invocable: true
 argument-hint: (no arguments needed)

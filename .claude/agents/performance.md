@@ -2,6 +2,7 @@
 name: performance
 description: Use PROACTIVELY for performance analysis covering query optimization, memory leaks, bundle size, caching, and algorithmic efficiency.
 model: sonnet
+effort: medium
 permissionMode: plan
 tools:
   - Read

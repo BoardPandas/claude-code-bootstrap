@@ -1,5 +1,6 @@
 ---
 name: spec-developer
+effort: high
 description: Interview-driven spec generation. Asks 20+ clarifying questions, then produces a detailed implementation plan saved to /tasks. Use for any feature larger than a single file change.
 user-invocable: true
 argument-hint: <feature name or description>

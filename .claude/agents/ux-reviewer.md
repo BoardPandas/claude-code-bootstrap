@@ -2,6 +2,7 @@
 name: ux-reviewer
 description: UX-focused review agent. Evaluates UI code against Laws of UX and Gestalt principles. Produces severity-ranked findings with specific improvement recommendations.
 model: sonnet
+effort: medium
 permissionMode: plan
 tools:
   - Read

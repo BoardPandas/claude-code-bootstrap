@@ -1,5 +1,6 @@
 ---
 name: init-repo
+effort: high
 description: Build or rebuild the .claude/ folder with best practices. Use when setting up Claude Code in a new or existing repository. Run plan-repo first for new projects.
 user-invocable: true
 argument-hint: (no arguments needed)

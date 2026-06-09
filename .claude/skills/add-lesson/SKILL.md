@@ -1,5 +1,6 @@
 ---
 name: add-lesson
+effort: low
 description: Add a new gotcha or lesson learned to the LL-G knowledge base
 ---
 

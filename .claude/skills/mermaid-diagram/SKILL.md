@@ -1,5 +1,6 @@
 ---
 name: mermaid-diagram
+effort: low
 description: Generate Mermaid diagrams to visualize data flow, architecture, or state machines. Use for debugging, documentation, or understanding complex systems.
 user-invocable: true
 disable-model-invocation: true

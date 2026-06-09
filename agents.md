@@ -10,6 +10,7 @@ All custom agents for this project. Each agent is defined in `.claude/agents/` a
 - **Purpose:** Phase-based planning, tech stack decisions, file structure design, and architectural review. Uses phase-based planning (Foundation → Core → Polish → Ship), never timeline-based.
 - **When to use:** Starting a new feature, restructuring a codebase, evaluating technology choices, or designing system architecture.
 - **Model:** opus
+- **Effort:** high
 
 ### reviewer
 
@@ -17,6 +18,7 @@ All custom agents for this project. Each agent is defined in `.claude/agents/` a
 - **Purpose:** Code review focused on correctness, maintainability, naming, DRY violations, and adherence to project standards.
 - **When to use:** Before merging PRs, after completing a feature, or when requesting a second opinion on code quality.
 - **Model:** sonnet
+- **Effort:** medium
 
 ### security
 
@@ -24,6 +26,7 @@ All custom agents for this project. Each agent is defined in `.claude/agents/` a
 - **Purpose:** Security-focused analysis covering OWASP Top 10, secrets detection, dependency vulnerabilities, and input validation gaps.
 - **When to use:** Before releases, after adding authentication or authorization logic, or when handling user input or external data.
 - **Model:** opus
+- **Effort:** high
 
 ### performance
 
@@ -31,6 +34,7 @@ All custom agents for this project. Each agent is defined in `.claude/agents/` a
 - **Purpose:** Performance-focused analysis covering query optimization, memory leaks, bundle size, caching, and algorithmic efficiency.
 - **When to use:** When response times degrade, before scaling, or when optimizing resource-intensive operations.
 - **Model:** sonnet
+- **Effort:** medium
 
 ### explorer
 
@@ -38,6 +42,7 @@ All custom agents for this project. Each agent is defined in `.claude/agents/` a
 - **Purpose:** Codebase exploration, online research, doc fetching, and context gathering. Always include a "why" when spawning -- not just what to find, but why you need it.
 - **When to use:** Before implementing features (understand existing patterns), when researching approaches, when gathering context for planning. Spin up multiple explorers in parallel for competing approaches.
 - **Model:** sonnet
+- **Effort:** medium
 
 ### ux-reviewer
 
@@ -45,3 +50,4 @@ All custom agents for this project. Each agent is defined in `.claude/agents/` a
 - **Purpose:** UX-focused review evaluating UI code against Laws of UX and Gestalt principles. Produces severity-ranked findings with specific improvement recommendations.
 - **When to use:** Before shipping frontend features, after UI redesigns, when evaluating component usability, or when a UX audit is requested.
 - **Model:** sonnet
+- **Effort:** medium
