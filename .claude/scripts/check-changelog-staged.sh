@@ -7,6 +7,15 @@
 #   - SKIP_CHANGELOG=1 in the environment -- for reverts, hotfixes, or trivial commits
 #     where a changelog entry is genuinely not warranted.
 
+# Self-filter: only act on actual git commit invocations. The "if" rule in
+# settings.json fires conservatively on commands containing opaque command
+# substitutions (e.g. "$(base64 file)"), so the hook can run for unrelated
+# commands. The hook input JSON carries the unexpanded command text.
+input=$(cat)
+if ! printf '%s' "$input" | grep -qE 'git[[:space:]]+commit'; then
+  exit 0
+fi
+
 # Merge commit: no changelog entry expected.
 if git rev-parse -q --verify MERGE_HEAD >/dev/null 2>&1; then
   exit 0
@@ -22,7 +31,6 @@ fi
 # "git add CHANGELOG.md package.json && git commit ..." stages the changelog
 # as part of the same call, so the staged check below cannot see it yet.
 # Allow any command that stages CHANGELOG.md itself.
-input=$(cat)
 if printf '%s' "$input" | grep -qE 'git add [^&|;]*CHANGELOG\.md'; then
   exit 0
 fi

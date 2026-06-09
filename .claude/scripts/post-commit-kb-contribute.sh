@@ -2,6 +2,13 @@
 # Post-commit hook: remind Claude to evaluate if committed work should be contributed to LLG or BP
 # Always exits 0 (advisory) -- outputs the diff summary and reminder for Claude to evaluate
 
+# Self-filter: only act on actual git commit invocations (the settings.json
+# "if" rule fires conservatively on commands with opaque substitutions).
+input=$(cat)
+if ! printf '%s' "$input" | grep -qE '"command"[^}]*git[[:space:]]+commit'; then
+  exit 0
+fi
+
 echo "=== KNOWLEDGE BASE CONTRIBUTION CHECK ==="
 echo ""
 echo "Committed changes summary:"

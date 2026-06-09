@@ -13,6 +13,12 @@
 
 input=$(cat)
 
+# Self-filter: only act on actual git commit invocations (the settings.json
+# "if" rule fires conservatively on commands with opaque substitutions).
+if ! printf '%s' "$input" | grep -qE 'git[[:space:]]+commit'; then
+  exit 0
+fi
+
 if printf '%s' "$input" | grep -qF "@'" || printf '%s' "$input" | grep -qF "'@"; then
   {
     echo "BLOCKED: this git commit uses PowerShell here-string syntax (@'...'@)."

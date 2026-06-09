@@ -3,6 +3,13 @@
 # Fires before check-changelog-staged.sh so Claude gets the instructions first
 # Always exits 0 (advisory) -- the staged check hook handles enforcement
 
+# Self-filter: only act on actual git commit invocations (the settings.json
+# "if" rule fires conservatively on commands with opaque substitutions).
+input=$(cat)
+if ! printf '%s' "$input" | grep -qE 'git[[:space:]]+commit'; then
+  exit 0
+fi
+
 # Merge commits and explicit opt-outs are exempt (mirrors check-changelog-staged.sh)
 if git rev-parse -q --verify MERGE_HEAD >/dev/null 2>&1; then
   exit 0
