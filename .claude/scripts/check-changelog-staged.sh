@@ -18,6 +18,15 @@ if [ "${SKIP_CHANGELOG:-}" = "1" ]; then
   exit 0
 fi
 
+# This hook fires BEFORE the command runs. A compound command like
+# "git add CHANGELOG.md package.json && git commit ..." stages the changelog
+# as part of the same call, so the staged check below cannot see it yet.
+# Allow any command that stages CHANGELOG.md itself.
+input=$(cat)
+if printf '%s' "$input" | grep -qE 'git add [^&|;]*CHANGELOG\.md'; then
+  exit 0
+fi
+
 staged=$(git diff --cached --name-only 2>/dev/null)
 
 if echo "$staged" | grep -q "^CHANGELOG.md$"; then

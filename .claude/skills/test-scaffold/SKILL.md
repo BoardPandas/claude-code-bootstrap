@@ -8,7 +8,7 @@ allowed-tools:
   - Write
   - Glob
   - Grep
-  - Task
+  - Agent
 ---
 
 # Test Scaffolding

@@ -8,7 +8,7 @@ allowed-tools:
   - Read
   - Glob
   - Grep
-  - Task
+  - Agent
 ---
 
 # Performance Review

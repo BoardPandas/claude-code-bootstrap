@@ -17,6 +17,7 @@ This repository provides a pre-configured `.claude/` folder that gives Claude Co
     security.md            # Security analysis agent
     performance.md         # Performance analysis agent
     explorer.md            # Codebase exploration and research agent
+    ux-reviewer.md         # UX review against Laws of UX and Gestalt principles
   agent-memory/            # Persistent cross-session knowledge
     README.md              # Conventions and usage guide
     patterns.md            # Recurring patterns and conventions
@@ -41,10 +42,13 @@ This repository provides a pre-configured `.claude/` folder that gives Claude Co
     add-lesson/SKILL.md         # Add gotcha to LL-G knowledge base
     add-practice/SKILL.md       # Add best practice to BP knowledge base
     apply-practice/SKILL.md     # Apply BP practice to a target repo
+    ux-review/SKILL.md          # UX review against Laws of UX
+    merge-worktrees/SKILL.md    # Merge worktrees/branches into main, clean up
   references/
     source-urls.md         # URL registry for fetching best practices
     infrastructure.md      # Fixed infrastructure stack (do not modify)
     tools.md               # CLI tools reference (auto-populated per stack)
+    ux-laws.md             # Laws of UX / Gestalt reference for ux-review
     design-guardrails.md   # UI/design SLA (generated for frontend projects)
   settings.json            # Project-level Claude Code settings
 CLAUDE.md                  # Master project rules for Claude Code
@@ -170,6 +174,18 @@ All planning uses phases, never dates or time estimates:
 - **What it does:** Applies a specific best practice from the BP knowledge base to the current or a target repository.
 - **When to use:** When onboarding a repo or setting up tooling that should follow established patterns.
 
+### ux-review
+
+- **Trigger:** "ux review", "review UX", "usability review"
+- **What it does:** Reviews UI code against Laws of UX and Gestalt principles (via the ux-reviewer agent and `.claude/references/ux-laws.md`). Produces severity-ranked findings with specific improvement recommendations.
+- **Scope:** Optionally pass a file, directory, or component name.
+
+### merge-worktrees
+
+- **Trigger:** "merge worktrees", "merge and clean up branches"
+- **What it does:** Inventories every worktree and local branch, shows a plan and asks for confirmation, commits pending work, merges every branch into main with `--no-ff`, pushes, then removes the worktrees and deletes the merged branches. Merge conflicts are hard stops; nothing is deleted until the merge is pushed.
+- **When to use:** To consolidate all outstanding work into main and tear down the leftovers.
+
 ---
 
 ## Agents Reference
@@ -210,6 +226,13 @@ All agents are registered in [agents.md](agents.md) at the repo root. This file 
 - **Model:** sonnet
 - **Mode:** plan
 - **Purpose:** Codebase exploration, online research, doc fetching, context gathering. Always include a "why" when spawning.
+
+### ux-reviewer
+
+- **File:** `.claude/agents/ux-reviewer.md`
+- **Model:** sonnet
+- **Mode:** plan
+- **Purpose:** UX review of UI code against Laws of UX and Gestalt principles, producing severity-ranked findings.
 
 ---
 
@@ -278,7 +301,7 @@ Skills support optional fields for model and invocation control:
 name: my-skill
 description: What this skill does
 user-invocable: true
-disable_model_invocation: true   # Only manual /skillname invocation
+disable-model-invocation: true   # Only manual /skillname invocation
 model: haiku                      # Which model runs this skill
 context: fork                     # Run in isolated subagent context
 allowed-tools:
@@ -422,7 +445,7 @@ Update root CLAUDE.md with your project's stack, conventions, and standards. Kee
 
 1. Create a folder in `.claude/skills/` with your skill name.
 2. Create `SKILL.md` inside with YAML frontmatter (`name`, `description`, `user-invocable: true`).
-3. Add optional frontmatter: `disable_model_invocation`, `model`, `agent`.
+3. Add optional frontmatter: `disable-model-invocation`, `model`, `agent`.
 4. Write step-by-step instructions in the markdown body.
 5. Update the skill table in CLAUDE.md and this instructions.md file.
 

@@ -35,13 +35,8 @@ venv/
 .ruff_cache/
 htmlcov/
 
-# Rust
+# Rust (Cargo.lock is intentionally NOT ignored -- commit lockfiles)
 target/
-Cargo.lock
-
-# Go
-bin/
-pkg/
 
 # Java/Kotlin
 *.class
@@ -49,7 +44,6 @@ pkg/
 *.war
 *.ear
 .gradle/
-build/
 
 # IDE
 .vscode/

@@ -40,20 +40,23 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "Bash(git commit*)",
+        "matcher": "Bash",
         "hooks": [
           {
             "type": "command",
+            "if": "Bash(git commit*)",
             "command": "bash .claude/scripts/check-commit-herestring.sh",
             "statusMessage": "Checking commit message syntax..."
           },
           {
             "type": "command",
+            "if": "Bash(git commit*)",
             "command": "bash .claude/scripts/pre-commit-changelog-reminder.sh",
             "statusMessage": "Checking changelog update..."
           },
           {
             "type": "command",
+            "if": "Bash(git commit*)",
             "command": "bash .claude/scripts/check-changelog-staged.sh",
             "statusMessage": "Verifying changelog is staged..."
           }
@@ -72,10 +75,11 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "Bash(git commit*)",
+        "matcher": "Bash",
         "hooks": [
           {
             "type": "command",
+            "if": "Bash(git commit*)",
             "command": "bash .claude/scripts/post-commit-kb-contribute.sh",
             "statusMessage": "Checking for knowledge base contributions..."
           }
