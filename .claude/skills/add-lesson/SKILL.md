@@ -1,7 +1,13 @@
 ---
 name: add-lesson
+model: haiku
 effort: low
-description: Add a new gotcha or lesson learned to the LL-G knowledge base
+description: Add a new gotcha, lesson learned, or "thing to avoid" to the shared LL-G knowledge base. Use this whenever the user says "add a lesson", "record this gotcha", "save this to LL-G", "document this dead end", or describes a non-obvious failure, a silent-wrong-output bug, or a hard-won fix that future sessions should not have to rediscover -- even if they don't say "LL-G" explicitly.
+user-invocable: true
+argument-hint: (optional) the lesson title or a short description of the gotcha
+allowed-tools:
+  - Bash
+  - Write
 ---
 
 You are adding a new entry to the LL-G lessons-learned knowledge base.
@@ -9,7 +15,9 @@ You are adding a new entry to the LL-G lessons-learned knowledge base.
 **Repository:** `BoardPandas/LL-G` on GitHub
 **Raw URL base:** `https://raw.githubusercontent.com/BoardPandas/LL-G/main/`
 
-All GitHub operations use the `gh` CLI via the Bash tool. There is no GitHub MCP server -- do not call `mcp__github__*` tools, they do not exist and will hang the skill.
+All GitHub operations use the `gh` CLI via the Bash tool. Do not switch to the GitHub MCP server for these operations even if one is connected -- `gh` is already authenticated and consistent, and pulling in MCP tool schemas mid-skill bloats the context window for no benefit.
+
+The fragile parts of writing to the contents API (capturing each file's blob SHA, base64-encoding without the GNU-only `-w0` flag, and choosing create-vs-update) are handled by `.claude/scripts/kb-upsert.sh`. You compute the new file contents; the script pushes them.
 
 ## Step 1: Collect information
 
@@ -46,15 +54,9 @@ Read the current master index and the relevant tech index so you know the entry 
 gh api repos/BoardPandas/LL-G/contents/llms.txt --jq .content | base64 -d
 gh api repos/BoardPandas/LL-G/contents/kb/<tech>/llms.txt --jq .content | base64 -d
 ```
-If the tech command fails with a `404`, the tech folder does not exist yet -- you will create it in Step 5.
+If the tech command fails with a `404`, the tech folder does not exist yet -- you will create it in Step 5. You do NOT need to capture blob SHAs by hand; `kb-upsert.sh` reads the current SHA itself immediately before each write.
 
-Capture each file's blob `sha` now -- you need it to update the file later:
-```
-gh api repos/BoardPandas/LL-G/contents/llms.txt --jq .sha
-gh api repos/BoardPandas/LL-G/contents/kb/<tech>/llms.txt --jq .sha
-```
-
-## Step 4: Create the entry file via the GitHub API
+## Step 4: Create the entry file
 
 1. Use the Write tool to save the entry markdown to a scratch file git will not track, e.g. `.git/llg-entry.md` (git never tracks files inside `.git/`).
 
@@ -84,15 +86,10 @@ gh api repos/BoardPandas/LL-G/contents/kb/<tech>/llms.txt --jq .sha
    <notes, or omit the section if none>
    ```
 
-2. Create the file on `main`. The `content` field must be base64-encoded; `base64 -w0` encodes the scratch file with no line wrapping:
+2. Push it (the script base64-encodes and creates the file):
 ```
-gh api repos/BoardPandas/LL-G/contents/kb/<tech>/<slug>.md \
-  --method PUT \
-  -f message="Add <tech> gotcha: <title>" \
-  -f branch=main \
-  -f content="$(base64 -w0 .git/llg-entry.md)"
+.claude/scripts/kb-upsert.sh BoardPandas/LL-G kb/<tech>/<slug>.md .git/llg-entry.md "Add <tech> gotcha: <title>"
 ```
-This is a new file, so no `sha` is needed.
 
 3. Delete the scratch file: `rm .git/llg-entry.md`
 
@@ -116,15 +113,9 @@ Compute the new content of `kb/<tech>/llms.txt`:
 
 Write the full new file content to `.git/llg-index.md` with the Write tool, then push it:
 ```
-gh api repos/BoardPandas/LL-G/contents/kb/<tech>/llms.txt \
-  --method PUT \
-  -f message="Update <tech> index: add <slug>" \
-  -f branch=main \
-  -f content="$(base64 -w0 .git/llg-index.md)" \
-  -f sha="<sha from Step 3>"
+.claude/scripts/kb-upsert.sh BoardPandas/LL-G kb/<tech>/llms.txt .git/llg-index.md "Update <tech> index: add <slug>"
 ```
-Omit the `-f sha=...` line only if the tech `llms.txt` did not exist (404 in Step 3).
-Then delete the scratch file: `rm .git/llg-index.md`
+The script creates the file if it didn't exist (new tech) or updates it in place otherwise -- you don't pass a SHA. Then delete the scratch file: `rm .git/llg-index.md`
 
 ## Step 6: Update master llms.txt entry count
 
@@ -138,18 +129,13 @@ If this is a new technology, add a new section under `## Technologies`:
 
 Write the updated master content to `.git/llg-master.md`, then push it:
 ```
-gh api repos/BoardPandas/LL-G/contents/llms.txt \
-  --method PUT \
-  -f message="Update master index: <tech> now has N+1 entries" \
-  -f branch=main \
-  -f content="$(base64 -w0 .git/llg-master.md)" \
-  -f sha="<master sha from Step 3>"
+.claude/scripts/kb-upsert.sh BoardPandas/LL-G llms.txt .git/llg-master.md "Update master index: <tech> now has N+1 entries"
 ```
 Then delete the scratch file: `rm .git/llg-master.md`
 
 ## Step 7: Confirm
 
 Output:
-- The GitHub URL of the created entry file
+- The GitHub URL of the created entry file (printed by `kb-upsert.sh`)
 - Confirmation that both index files were updated
 - The entry's severity level

@@ -1,5 +1,6 @@
 ---
 name: update-practices
+model: opus
 effort: high
 description: Fetch latest Claude Code best practices and update the .claude/ folder configuration. Safe to run repeatedly.
 user-invocable: true
@@ -38,7 +39,7 @@ Check the current date FIRST. All best practices must be verified as current as 
 
 ## Step 2: Fetch Latest Practices
 
-Spin up parallel Explore subagents to fetch and analyze sources:
+Spin up parallel `explorer` agents to fetch and analyze sources. Use the custom `explorer` agent (defined in `.claude/agents/`), never the built-in `Explore` type -- the built-in loads every MCP tool schema and blows the context window.
 
 1. **Official sources subagent:** "Fetch all official Anthropic sources from the source URL registry. Extract: current Claude Code version, new features, deprecated features, new recommended settings/skills/agents/hooks, folder structure changes, new frontmatter fields for agents and skills, new hook events, new settings options. WHY: We need to know what changed officially to update the config accurately."
 
@@ -88,6 +89,7 @@ Only sync these categories of `.claude/` files from the template:
 | Rules | `.claude/rules/*.md` | Sync new rules entirely. For **TEMPLATE-UPDATED** rules, update content but preserve custom `paths:` frontmatter if the project has different file structure. For **TEMPLATE-REWRITTEN** rules, replace the body with the template version, preserving only the project's custom `paths:` frontmatter. |
 | Scripts | `.claude/scripts/*.sh` | Sync new scripts entirely. For existing scripts, replace with template version unless local version has project-specific logic (check for project-specific paths, env vars, or tool references). |
 | References | `.claude/references/source-urls.md` | Merge: add any new URLs from template that aren't already present. Never remove existing URLs. |
+| References | `.claude/references/hooks-and-settings.md` | Generic catalog, not project-specific. Replace with the template version unless the local copy has project-specific notes appended, in which case merge new rows in. |
 | References | `.claude/references/infrastructure.md` | Do NOT sync — infrastructure is project-specific. |
 | References | `.claude/references/tools.md` | Do NOT sync — tools depend on project stack. |
 | References | `.claude/references/design-guardrails.md` | Do NOT sync — guardrails depend on project stack. |
@@ -170,27 +172,10 @@ Review each skill for new frontmatter fields:
 - Should HTTP hooks be added for team workflows?
 - Are matchers using the correct syntax?
 
-Available hook events (30 as of Claude Code v2.1.159 -- check for new ones in fetched sources):
-SessionStart, SessionEnd, UserPromptSubmit, UserPromptExpansion, PreToolUse, PostToolUse,
-PostToolUseFailure, PostToolBatch, PermissionRequest, PermissionDenied, SubagentStart,
-SubagentStop, Stop, StopFailure, Notification, MessageDisplay, PreCompact, PostCompact,
-TeammateIdle, TaskCreated, TaskCompleted, InstructionsLoaded, ConfigChange, WorktreeCreate,
-WorktreeRemove, CwdChanged, FileChanged, Elicitation, ElicitationResult, Setup
-
-Hook types: command, http, prompt, agent, mcp_tool
+The full event catalog, hook types, and matcher syntax live in `.claude/references/hooks-and-settings.md` — check configured hooks against it. When the fetched sources reveal a hook event or type not yet in that reference, add it there (not into a skill body), so the catalog stays in one place.
 
 ### Settings
-Check for new or updated settings:
-- `attribution.commit` / `attribution.pr` — commit/PR attribution
-- `autoUpdatesChannel` — stable or preview update channel
-- `sandbox.permissions` / `sandbox.network` — sandbox configuration
-- `worktree.bgIsolation` / `worktree.baseRef` — background-session worktree isolation and branch base
-- `language` — response language
-- `allowedHttpHookUrls` — HTTP hook URL allowlist
-- `alwaysThinkingEnabled` — extended thinking
-- `disableAllHooks` — hook kill switch (for settings.local.json)
-
-Also check if any new settings have been introduced in the latest Claude Code version.
+Check configured settings against the optional-settings catalog in `.claude/references/hooks-and-settings.md` (`attribution.*`, `autoUpdatesChannel`, `sandbox.*`, `worktree.*`, `language`, `allowedHttpHookUrls`, `alwaysThinkingEnabled`, `disableAllHooks`). If the latest Claude Code version introduces a new setting, add it to that reference too.
 
 ### Cost / token efficiency
 

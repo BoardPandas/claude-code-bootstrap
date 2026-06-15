@@ -1,7 +1,18 @@
 ---
 name: apply-practice
+model: sonnet
 effort: medium
-description: Apply a specific best practice from BP to a target repository
+description: Apply a specific best practice from the BP knowledge base to a target repository. Use this whenever the user says "apply a practice", "apply <slug> to this repo", "adopt the BP pattern for X", "bring this repo up to the BP standard", or wants a proven convention/config/workflow from BP installed into the current project -- even if they don't say "BP" explicitly.
+user-invocable: true
+argument-hint: (optional) the practice slug (e.g. testing/vitest-monorepo-config) and/or target repo path
+allowed-tools:
+  - Read
+  - Glob
+  - Grep
+  - Bash
+  - Edit
+  - Write
+  - WebFetch
 ---
 
 You are applying a specific best practice from the BP knowledge base to a target repository.
@@ -19,7 +30,7 @@ Ask the user for any missing inputs.
 
 ## Step 2: Load the practice from GitHub
 
-This skill only reads from BP -- use `WebFetch` on the raw URL. Do not call `mcp__github__*` tools, they do not exist and will hang the skill.
+This skill only reads from BP -- use `WebFetch` on the raw URL. Don't switch to the GitHub MCP server even if one is connected: a raw `WebFetch` is a plain read, and pulling in MCP tool schemas mid-skill bloats the context window for no benefit.
 
 Fetch the practice entry:
 ```

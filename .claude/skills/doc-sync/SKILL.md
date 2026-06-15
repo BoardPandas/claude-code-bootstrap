@@ -157,7 +157,7 @@ For each page in `_toc.yaml`:
    - Use real line numbers from Read output; never invent
 6. Generate Mermaid diagrams per `references/mermaid-policy.md` when `diagrams_needed: true`. Use `graph TD`, quote all node text, no special chars in subgraph names.
 
-For large repos, generate pages in parallel by spawning explorer subagents per page. Each subagent receives: the page entry from TOC, the resolved source files, and the template path. Wait for all to complete before validation.
+For large repos, generate pages in parallel by spawning `explorer` agents per page (the custom agent in `.claude/agents/`, never the built-in `Explore` type -- the built-in loads every MCP tool schema and blows the context window). Each subagent receives: the page entry from TOC, the resolved source files, and the template path. Wait for all to complete before validation.
 
 ### Step 4: Generate the README index
 
@@ -297,7 +297,7 @@ Write the audit report to stdout (not to a file unless asked). Format:
 
 ## Subagent usage
 
-For init mode on medium/large repos, fan out page generation to explorer subagents in parallel. Each subagent prompt must include:
+For init mode on medium/large repos, fan out page generation to `explorer` agents in parallel (the custom agent, never the built-in `Explore` type). Each subagent prompt must include:
 - The page's TOC entry (id, title, sections, source_files, diagrams_needed)
 - Absolute path of the matching template
 - Absolute paths of the reference files (page-template, citation-policy, mermaid-policy)

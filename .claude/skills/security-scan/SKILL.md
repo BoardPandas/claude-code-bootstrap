@@ -10,7 +10,6 @@ allowed-tools:
   - Glob
   - Grep
   - Bash
-  - Agent
 ---
 
 # Security Scan

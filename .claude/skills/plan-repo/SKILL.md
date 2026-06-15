@@ -1,5 +1,6 @@
 ---
 name: plan-repo
+model: opus
 effort: high
 description: Analyze project requirements and recommend the best tech stack for the current year. Infrastructure (Northflank frontend + backend, Cloudflare R2/CDN, Better Auth, Postgres, Redis) is fixed. Researches languages, frameworks, UI libraries, and tooling, then generates README, design guardrails, and tools reference. Run this before init-repo.
 user-invocable: true
@@ -65,7 +66,7 @@ Do NOT ask about timelines. Planning is phase-based, not date-based.
 
 ## Step 2: Research Current Options
 
-Based on answers, spin up parallel Explore subagents to research the layers that are NOT locked. Each subagent must use WebSearch to get information current as of today's date.
+Based on answers, spin up parallel `explorer` agents to research the layers that are NOT locked. Each subagent must use WebSearch to get information current as of today's date. Use the custom `explorer` agent (defined in `.claude/agents/`), never the built-in `Explore` type -- the built-in loads every MCP tool schema and blows the context window.
 
 ### Language & Runtime Subagent
 "Research the current state of [relevant languages] for a full-stack web app where both the frontend and backend run in containers on Northflank, fronted by a Cloudflare proxy (CDN/WAF) as of today's date. The backend must support Better Auth and connect to Postgres and Redis. Compare: ecosystem maturity, Better Auth SDK support, container build/startup quality, Northflank container support, developer tooling quality. WHY: We need the best language that works with our fixed infrastructure (Northflank containers + Cloudflare CDN/R2 + Better Auth + Postgres + Redis)."

@@ -1,5 +1,6 @@
 ---
 name: init-repo
+model: opus
 effort: high
 description: Build or rebuild the .claude/ folder with best practices. Use when setting up Claude Code in a new or existing repository. Run plan-repo first for new projects.
 user-invocable: true
@@ -73,7 +74,7 @@ Key BP practices to apply during init:
 **3c. Fetch from web sources**
 
 1. Read the source URL registry at `.claude/references/source-urls.md`.
-2. Spin up parallel Explore subagents to fetch and analyze sources:
+2. Spin up parallel `explorer` agents to fetch and analyze sources. Use the custom `explorer` agent (defined in `.claude/agents/`), never the built-in `Explore` type -- the built-in loads every MCP tool schema and blows the context window.
    - **Subagent 1:** "Fetch official Anthropic sources and extract current Claude Code version, features, and recommended patterns. WHY: We need the latest official conventions to generate an up-to-date config."
    - **Subagent 2:** "Fetch community sources and extract practical tips, skill patterns, and agent patterns. WHY: Community sources have battle-tested patterns not in official docs."
 3. For URLs that fail to fetch, log the failure and continue. Do not halt.
@@ -245,78 +246,9 @@ Only add these fields when they provide clear value for the project. Do not add 
 
 ## Step 11: Configure Hooks
 
-### Available hook events (30)
+Read `.claude/references/hooks-and-settings.md` for the full catalog: every hook event, the five hook types (command, http, prompt, agent, mcp_tool), the `if:` field, matcher syntax, and the "Hooks to configure based on project needs" recommendations. That file is the single source of truth — do not re-paste the event table into any skill or CLAUDE.md.
 
-Beyond the 4 currently configured (SessionStart, PreToolUse, Stop, Notification), these hook events are available:
-
-| Event | Fires When | Use Cases |
-|-------|-----------|-----------|
-| **SessionStart** | When a new session begins | Welcome message, status check, re-inject context after compaction (matcher: `compact`) |
-| **SessionEnd** | When a session ends | Save state, create handoff doc |
-| **UserPromptSubmit** | When user submits a prompt | Input validation, prompt logging |
-| **UserPromptExpansion** | When a slash command expands | Inspect/rewrite expanded command, block disallowed commands |
-| **PreToolUse** | Before any tool call | Validate tool args, block dangerous commands, log activity |
-| **PostToolUse** | After any tool call completes | Post-processing, validation of results, auto-lint |
-| **PostToolUseFailure** | When a tool call fails | Error logging, fallback actions, retry logic |
-| **PostToolBatch** | After a parallel tool batch resolves | Aggregate batch results, enforce post-batch invariants, block |
-| **PermissionRequest** | When a tool requests permission | Auto-approve safe reads, log permission decisions |
-| **SubagentStart** | When a subagent launches | Log subagent activity, resource tracking |
-| **SubagentStop** | When a subagent completes | Aggregate results, trigger follow-up tasks |
-| **Stop** | When Claude finishes a response | Notification sounds, auto-formatting, status updates |
-| **Notification** | When Claude sends a notification | Alert sounds, desktop notifications, webhook pings |
-| **MessageDisplay** | As assistant message text is displayed | Transform or hide message text, redact secrets in output |
-| **PreCompact** | Before context compaction (matcher: `manual` or `auto`) | Save important state, create summaries |
-| **TeammateIdle** | When a teammate agent is idle | Coordination, load balancing |
-| **TaskCompleted** | When a background task completes | Status updates, follow-up actions |
-| **InstructionsLoaded** | When a CLAUDE.md or rules file loads | Audit logging, rule tracking |
-| **ConfigChange** | When settings or skill files change | Audit logging, reload triggers |
-| **WorktreeCreate** | When an isolated worktree is created | Setup worktree-specific config |
-| **WorktreeRemove** | When a worktree is cleaned up | Cleanup, merge results |
-| **StopFailure** | When a turn ends due to an API error | Error alerting, failure logging |
-| **PostCompact** | After context compaction completes | Re-inject context, verify state |
-| **PermissionDenied** | When a permission request is denied | Audit logging, suggest alternative paths |
-| **TaskCreated** | When a background task is created | Task tracking, resource planning |
-| **CwdChanged** | When the working directory changes | Reload directory-scoped config |
-| **FileChanged** | When a watched file changes on disk | Reload triggers, external-edit detection |
-| **Elicitation** | When an MCP server requests structured input | Auto-fill known values, log requests |
-| **ElicitationResult** | After an MCP elicitation is answered | Post-process structured input |
-| **Setup** | On `--init`, `--init-only`, or `--maintenance` flags | One-time project setup, maintenance tasks |
-
-### Hook types
-
-1. **Command hooks** (current): `{ "type": "command", "command": "..." }` — Runs a shell command. Exit code 0 = allow, 2 = block (PreToolUse), non-zero = error.
-2. **HTTP hooks**: `{ "type": "http", "url": "https://..." }` — Sends an HTTP POST to a URL. The request body contains the event payload. Requires the URL to be listed in `settings.json` under `allowedHttpHookUrls`.
-3. **Prompt hooks**: `{ "type": "prompt", "prompt": "..." }` — Single-turn LLM judgment (yes/no decision). Useful for validation gates.
-4. **Agent hooks**: `{ "type": "agent", "prompt": "..." }` — Multi-turn subagent with tool access. Useful for complex validation or post-processing.
-5. **MCP tool hooks**: `{ "type": "mcp_tool", "tool": "...", "arguments": {...} }` — Directly invokes an MCP tool as the hook action. Useful for posting to integrated services without a shell.
-
-Any hook entry accepts an optional `if:` field using permission-rule syntax (e.g., `Bash(git *)`) so the hook fires only on matching tool calls — reduces overhead on unrelated calls.
-
-### Hooks to configure based on project needs
-
-**Always configure:**
-- `SessionStart` — surface the LL-G / BP knowledge-base reminder once per session
-- `PreToolUse` with `Bash(git commit*)` matcher — validation before commits
-- `Stop` — notification sound (use `printf '\a'`, not `echo '\a'` — `echo` prints a literal `\a` in most shells)
-- `Notification` — notification sound
-
-**Recommended for active development:**
-- `PostToolUse` with `Write(*)` or `Edit(*)` matcher — auto-lint after file changes (if linter is configured)
-- `PreToolUse` with `Bash(rm -rf*)` matcher — block dangerous delete commands
-- `SubagentStop` — notification when long-running subagents complete
-
-**Recommended for team projects using HTTP hooks:**
-- `Stop` with HTTP hook — ping team webhook (Slack, Discord) when Claude finishes a task
-- `Error` with HTTP hook — send error reports to monitoring
-
-**Ask the user** which additional hooks they want before configuring beyond the defaults.
-
-### Matcher syntax
-- `Bash(pattern)` — matches Bash tool calls where the command matches the glob pattern
-- `Write(pattern)` — matches Write tool calls where the file path matches
-- `Edit(pattern)` — matches Edit tool calls where the file path matches
-- `Read(pattern)` — matches Read tool calls where the file path matches
-- No matcher = fires for all tool calls of that event type
+For init, configure the always-on defaults from that reference (`SessionStart` knowledge-base reminder, `PreToolUse` `Bash(git commit*)`, `Stop` and `Notification` sounds), then **ask the user** which of the recommended development/team hooks they want before adding more.
 
 ## Step 12: Configure Settings
 
@@ -348,35 +280,9 @@ Update `.claude/settings.json` with all relevant settings. Deep-merge with exist
 }
 ```
 
-### Optional settings to evaluate and configure
+### Optional settings and settings.local.json
 
-| Setting | Purpose | When to enable |
-|---------|---------|---------------|
-| `attribution.commit` | Add "Generated by Claude Code" to commit messages | Team projects for audit trail |
-| `attribution.pr` | Add Claude attribution to PR descriptions | Team projects for transparency |
-| `autoUpdatesChannel` | `"stable"` or `"preview"` for Claude Code updates | `"stable"` for production repos, `"preview"` for template/experimental repos |
-| `sandbox.permissions` | Sandboxed execution permissions for tools | When running untrusted code analysis |
-| `sandbox.network` | Network access restrictions in sandbox | Security-sensitive projects |
-| `worktree.bgIsolation` | `"none"` lets background sessions edit the working copy directly instead of an isolated worktree | Background-agent workflows that should not branch |
-| `worktree.baseRef` | `"fresh"` branches worktrees from `origin/<default>`, `"head"` from local `HEAD` | Control where isolated worktrees branch from |
-| `language` | Preferred response language (e.g., `"en"`, `"ja"`) | Non-English teams |
-| `allowedHttpHookUrls` | Allowlist of URLs for HTTP hooks | When using HTTP hooks for webhooks |
-| `alwaysThinkingEnabled` | Always use extended thinking | Complex codebases that benefit from deeper reasoning |
-| `disableAllHooks` | Kill switch for all hooks | For `settings.local.json` — lets individuals disable hooks locally |
-
-### settings.json vs settings.local.json
-
-- **`.claude/settings.json`** — Version-controlled, shared team settings. Put everything the team agrees on here.
-- **`.claude/settings.local.json`** — Git-ignored, personal overrides. Document this in instructions.md so developers know they can create it.
-
-Recommend creating a `.claude/settings.local.json.example` file showing common personal overrides:
-```json
-{
-  "disableAllHooks": false,
-  "alwaysThinkingEnabled": true,
-  "language": "en"
-}
-```
+The full optional-settings catalog (`attribution.*`, `autoUpdatesChannel`, `sandbox.*`, `worktree.*`, `language`, `allowedHttpHookUrls`, `alwaysThinkingEnabled`, `disableAllHooks`), the `settings.json` vs `settings.local.json` split, and the `.claude/settings.local.json.example` template all live in `.claude/references/hooks-and-settings.md`. Read it, then create `settings.local.json.example` from the template there.
 
 **Ask the user** about attribution, language, and autoUpdatesChannel preferences before setting them. Configure the rest based on project analysis.
 

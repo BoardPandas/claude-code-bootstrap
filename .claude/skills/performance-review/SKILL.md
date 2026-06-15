@@ -9,7 +9,6 @@ allowed-tools:
   - Read
   - Glob
   - Grep
-  - Agent
 ---
 
 # Performance Review
