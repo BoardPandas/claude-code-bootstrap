@@ -1,33 +1,36 @@
 # Agent Memory
 
-This directory stores persistent, version-controlled knowledge that agents accumulate during work. Unlike conversation context (ephemeral) or CLAUDE.md (static rules), agent memory captures evolving patterns, decisions, and debugging insights.
+This directory stores persistent, version-controlled knowledge that agents build up through execution. Unlike skills (static, loaded at startup), agent memory is dynamic and evolves with the project.
 
-## Files
-
-| File | Purpose |
-|------|---------|
-| `patterns.md` | Recurring code patterns, conventions, and architectural choices observed in this project |
-| `decisions.md` | Key technical decisions with rationale, so future sessions understand "why" without re-deriving |
-| `debugging.md` | Failed approaches and dead ends, so agents avoid repeating them in new sessions |
+Curate it deliberately. Agents reliably maintain memory only when prompts say so directly, so prefer explicit, hand-tended entries over passive accumulation.
 
 ## Conventions
 
-- **Append, don't overwrite.** Add new entries at the top of each file.
-- **Date each entry.** Use `## YYYY-MM-DD: Title` format.
-- **Keep entries concise.** A few sentences per entry. Link to files or commits for detail.
-- **Prune periodically.** Remove entries that are no longer relevant (e.g., patterns for deleted code).
-- **Never store secrets.** No API keys, tokens, or credentials.
+- **patterns.md** -- Recurring code patterns, architectural decisions, and conventions discovered during implementation.
+- **decisions.md** -- Key technical decisions with rationale. Helps future sessions understand "why" without re-deriving.
+- **debugging.md** -- Failed approaches and dead ends. Prevents future sessions from repeating the same mistakes.
 
-## How Agents Use This
+## Entry Format
 
-Agents with `memory: project` in their frontmatter will read this directory on startup. Any agent can write here to share knowledge with future sessions.
+Use `YYYY-MM-DD: Title` headers. Keep each entry to a few sentences with links to relevant files or commits for deeper investigation. Never store secrets, API keys, or tokens in memory files.
 
-**Curate explicitly.** Agents reliably maintain memory only when prompts say so directly: "Before starting, review your memory. After completing, update it." Passive accumulation degrades quality over time.
+## Scope Levels
 
-**Partition when files grow.** When any file approaches ~200 lines, split by topic into sibling files (e.g., `patterns-frontend.md`, `patterns-backend.md`) rather than letting it grow unbounded.
+Memory operates across three distinct scopes (in addition to this directory):
 
-## Scopes
+- **Project scope** (`.claude/agent-memory/`): team-shared, version-controlled. Default.
+- **User scope** (`~/.claude/agent-memory/<agent-name>/`): personal, cross-project.
+- **Local scope** (`.claude/agent-memory-local/<agent-name>/`): personal, project-specific, git-ignored.
 
-- **Project scope** (this directory): `.claude/agent-memory/` -- version-controlled, shared across the team.
-- **User scope**: `~/.claude/agent-memory/<agent-name>/` -- personal, cross-project.
-- **Local scope**: `.claude/agent-memory-local/<agent-name>/` -- personal, project-specific (git-ignored).
+## Activation
+
+Agents pick up files from this directory either by listing them explicitly in `memory:` frontmatter (preferred, e.g., `architect.md` references `agent-memory/decisions.md`) or by setting `memory: project` to auto-load the standard files.
+
+## Rules
+
+1. Never overwrite existing entries -- append new findings.
+2. Each entry should include a date and brief context.
+3. Only the first 200 lines of any memory file are injected into agent context at startup. Keep the most important entries at the top.
+4. When a file exceeds 200 lines, split by topic (e.g., `react-patterns.md`, `auth-decisions.md`) -- topic partitioning beats date partitioning.
+5. Remove entries that are contradicted by current code or no longer relevant.
+6. This directory is version-controlled -- commit changes so the whole team benefits.
