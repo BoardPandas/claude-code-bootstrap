@@ -147,6 +147,8 @@ See `agents.md` in the repo root for the full agent registry. Key agents:
 - **security** -- security-focused analysis and vulnerability detection
 - **performance** -- performance-focused analysis and optimization
 - **explorer** -- codebase exploration, research, and context gathering
+- **builder** -- implementation engineer; turns a plan into working, tested code (the implementation-capable agent for parallel team work)
+- **tester** -- runs the project's tests and reports actionable pass/fail results
 - **ux-reviewer** -- UX-focused review against Laws of UX and Gestalt principles
 
 ## Workflow

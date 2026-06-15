@@ -36,6 +36,22 @@ All custom agents for this project. Each agent is defined in `.claude/agents/` a
 - **Model:** sonnet
 - **Effort:** medium
 
+### builder
+
+- **File:** `.claude/agents/builder.md`
+- **Purpose:** Implementation engineer. Turns a plan, spec, or task into working, tested code that matches existing conventions. The implementation-capable agent for parallel team work, with a scoped tool list (no banned built-in `general-purpose` type).
+- **When to use:** Executing a plan produced by `architect`, fixing a bug, or owning one file set / layer of a feature in an agent team. Spawn one builder per independent file set to avoid edit conflicts.
+- **Model:** sonnet
+- **Effort:** high
+
+### tester
+
+- **File:** `.claude/agents/tester.md`
+- **Purpose:** Test runner and failure analyst. Detects the project's test runner, executes the relevant suite, and reports pass/fail with actionable failure detail. Verifies behavior; does not implement fixes.
+- **When to use:** Verifying a change, pairing with `builder` in a cross-layer team (one builds, one verifies), or checking a suite before merge.
+- **Model:** sonnet
+- **Effort:** medium
+
 ### explorer
 
 - **File:** `.claude/agents/explorer.md`
