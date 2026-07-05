@@ -12,9 +12,6 @@ For features: say **"spec developer"** to generate a detailed plan, then start a
 
 ## Coding Standards
 
-- Write clear, concise code. Prefer readability over cleverness.
-- Use descriptive names for variables, functions, and files.
-- Keep functions small and focused on a single responsibility.
 - Handle errors explicitly -- never swallow exceptions silently.
 - Validate inputs at system boundaries (user input, API responses, file I/O).
 - Avoid premature abstraction. Three similar lines are better than a forced helper.
@@ -28,6 +25,7 @@ CLAUDE.md files load top-down: root user level, then project level, then subfold
 - Root `CLAUDE.md` — Project-wide rules, stack, global conventions (this file).
 - Subfolder `CLAUDE.md` — Only when subfolder has distinct conventions (e.g., `frontend/CLAUDE.md` for UI rules, `backend/CLAUDE.md` for API rules).
 - `.claude/rules/*.md` — Conditional instructions with `paths:` frontmatter. Only load when working with matching file paths.
+- Nested `.claude/` directories are first-class: `subdir/.claude/skills|agents|workflows/` load automatically when working in that subfolder; the closest one wins on name collision (disambiguated as `<dir>:<name>`).
 - Keep each file focused. Prune after every model update -- remove what the model handles natively.
 - Do NOT bloat CLAUDE.md with generic advice the model already knows.
 
@@ -38,12 +36,14 @@ Always and aggressively offload to subagents: online research, doc fetching, log
 - **Always include a "why"** in every subagent prompt. Not just what to find, but why you need it. "How auth works for rate limiting because we're improving rate limiting" beats "how auth works."
 - **Parallel exploration:** When torn between approaches, spin up parallel Explore subagents for each, pass results back, let the main session decide.
 - **Subagents are resumable.** You can resume a specific subagent to continue its research.
+- **Subagents run in the background by default** (the main session keeps working and is notified on completion) and can nest up to 5 levels deep.
 
 ## Skill Frontmatter
 
 Skills support these optional fields:
 
 - `disable-model-invocation: true` — Prevents auto-loading; invoke manually with /skillname.
+- `user-invocable: false` — Hides the skill from the / menu but keeps it as background knowledge Claude can draw on.
 - `model: haiku|sonnet|opus` — Which model runs the skill. Step-by-step skills use haiku. Analysis skills use sonnet. Orchestration/planning skills use opus.
 - `context: fork` — Run skill in isolated subagent context (prevents context contamination).
 - `agent: <agent-name>` — Bind skill execution to a specific agent's persona and tools.
@@ -64,6 +64,7 @@ Beyond basics (name, description, model, permissionMode, tools), agents support:
 - `effort: low|medium|high|xhigh|max` — Override reasoning effort level.
 - `disallowedTools: [tool1, tool2]` — Remove specific tools from inherited tool lists.
 - `initialPrompt: <text>` — First message sent to the agent on startup.
+- `Agent(agent_type)` inside a `tools:` allowlist — restrict which specific subagents the agent may spawn.
 
 ## Fixed Infrastructure
 
@@ -88,10 +89,10 @@ Plan-repo only recommends language, frameworks, UI library, ORM, and tooling. In
 
 ## Hooks and Settings
 
-- Hooks fire on events: PreToolUse, PostToolUse, PostToolUseFailure, PostToolBatch, Stop, StopFailure, Notification, MessageDisplay, SubagentStart, SubagentStop, PreCompact, PostCompact, SessionStart, SessionEnd, UserPromptSubmit, UserPromptExpansion, PermissionRequest, PermissionDenied, TeammateIdle, TaskCompleted, TaskCreated, InstructionsLoaded, ConfigChange, WorktreeCreate, WorktreeRemove, CwdChanged, FileChanged, Elicitation, ElicitationResult, Setup. See init-repo skill for full list.
+- Hooks fire on events: PreToolUse, PostToolUse, PostToolUseFailure, PostToolBatch, Stop, StopFailure, Notification, MessageDisplay, SubagentStart, SubagentStop, PreCompact, PostCompact, SessionStart, SessionEnd, UserPromptSubmit, UserPromptExpansion, PermissionRequest, PermissionDenied, TeammateIdle, TaskCompleted, TaskCreated, InstructionsLoaded, ConfigChange, WorktreeCreate, WorktreeRemove, CwdChanged, FileChanged, Elicitation, ElicitationResult, Setup. Full catalog: `.claude/references/hooks-and-settings.md`.
 - Hook types: `command` (shell), `http` (POST to URL), `prompt` (single-turn LLM yes/no), `agent` (multi-turn subagent with tools), `mcp_tool` (direct MCP tool invocation).
 - Hooks accept an optional `if:` field using permission-rule syntax (e.g., `Bash(git *)`) to fire only on matching tool calls.
-- Optional settings: `attribution.commit/pr`, `autoUpdatesChannel`, `sandbox.*`, `worktree.bgIsolation/baseRef`, `language`, `allowedHttpHookUrls`, `alwaysThinkingEnabled`, `autoMemoryDirectory`, `modelOverrides`, `includeGitInstructions`, `forceRemoteSettingsRefresh`. See init-repo skill for details.
+- Optional settings: `attribution.*`, `autoUpdatesChannel`, `sandbox.*`, `worktree.*`, `language`, `allowedHttpHookUrls`, `alwaysThinkingEnabled`, `defaultMode` (value `"default"` renamed to `"manual"` in v2.1.200), `fallbackModel`, `enforceAvailableModels`, `disableBundledSkills`, `requiresMinimumVersion`. Full catalog: `.claude/references/hooks-and-settings.md`.
 - `settings.local.json` for personal overrides (git-ignored). Supports `disableAllHooks` kill switch.
 
 ## Planning

@@ -18,11 +18,14 @@ This repository provides a pre-configured `.claude/` folder that gives Claude Co
     performance.md         # Performance analysis agent
     explorer.md            # Codebase exploration and research agent
     ux-reviewer.md         # UX review against Laws of UX and Gestalt principles
+    builder.md             # Implementation engineer for parallel team work
+    tester.md              # Test runner and failure analyst
   agent-memory/            # Persistent cross-session knowledge
     README.md              # Conventions and usage guide
     patterns.md            # Recurring patterns and conventions
     decisions.md           # Technical decisions with rationale
     debugging.md           # Failed approaches and dead ends
+    builder/               # Per-agent memory (MEMORY.md + topic files)
   rules/                   # Conditional instructions (paths: frontmatter)
     llg-check.md           # LL-G knowledge base check before code changes
     bp-check.md            # BP best practices check before config changes
@@ -44,13 +47,16 @@ This repository provides a pre-configured `.claude/` folder that gives Claude Co
     apply-practice/SKILL.md     # Apply BP practice to a target repo
     ux-review/SKILL.md          # UX review against Laws of UX
     merge-worktrees/SKILL.md    # Merge worktrees/branches into main, clean up
+    agy-execute-plan/SKILL.md   # Hand a plan to the Antigravity CLI, then verify
   references/
     source-urls.md         # URL registry for fetching best practices
     infrastructure.md      # Fixed infrastructure stack (do not modify)
     tools.md               # CLI tools reference (auto-populated per stack)
     ux-laws.md             # Laws of UX / Gestalt reference for ux-review
+    hooks-and-settings.md  # Canonical hook/settings catalog
     design-guardrails.md   # UI/design SLA (generated for frontend projects)
   settings.json            # Project-level Claude Code settings
+  settings.local.json.example  # Template for personal (git-ignored) overrides
 CLAUDE.md                  # Master project rules for Claude Code
 agents.md                  # Agent registry (see agents.md docs below)
 instructions.md            # This file
@@ -186,6 +192,12 @@ All planning uses phases, never dates or time estimates:
 - **What it does:** Inventories every worktree and local branch, shows a plan and asks for confirmation, commits pending work, merges every branch into main with `--no-ff`, pushes, then removes the worktrees and deletes the merged branches. Merge conflicts are hard stops; nothing is deleted until the merge is pushed.
 - **When to use:** To consolidate all outstanding work into main and tear down the leftovers.
 
+### agy-execute-plan
+
+- **Trigger:** "have AGY run the plan", "let Antigravity build this", "agy the plan then double-check it"
+- **What it does:** Hands an existing Claude-written plan to the Antigravity CLI (`agy`) for autonomous end-to-end execution, then independently verifies the result against the plan via tests and the git diff (not AGY's self-reported log), fixes whatever AGY left incomplete or broke, and reports an honest blocked/partial/complete status.
+- **When to use:** When a plan in `tasks/` should be carried out by AGY rather than by Claude directly.
+
 ---
 
 ## Agents Reference
@@ -234,6 +246,19 @@ All agents are registered in [agents.md](agents.md) at the repo root. This file 
 - **Mode:** plan
 - **Purpose:** UX review of UI code against Laws of UX and Gestalt principles, producing severity-ranked findings.
 
+### builder
+
+- **File:** `.claude/agents/builder.md`
+- **Model:** sonnet
+- **Mode:** acceptEdits
+- **Purpose:** Implementation engineer. Turns a plan, spec, or task into working, tested code matching existing conventions. Spawn one builder per independent file set to avoid edit conflicts.
+
+### tester
+
+- **File:** `.claude/agents/tester.md`
+- **Model:** sonnet
+- **Purpose:** Detects the project's test runner, executes the relevant suite, and reports pass/fail with actionable failure detail. Verifies behavior; does not implement fixes.
+
 ---
 
 ## Hierarchical CLAUDE.md Architecture
@@ -244,11 +269,12 @@ CLAUDE.md files are loaded top-down: root user level → project level → subfo
 
 1. **Root CLAUDE.md** contains project-wide rules, stack info, global conventions.
 2. **Subfolder CLAUDE.md** files only exist where subfolder-specific rules differ from root (e.g., `frontend/CLAUDE.md` for UI conventions).
-3. **`.claude/rules/*.md`** files with `paths:` frontmatter provide conditional instructions that only load when working with matching file paths. Use these instead of subfolder CLAUDE.md files for fine-grained scoping.
-4. A landing page task never loads your backend CLAUDE.md. Context stays narrow.
-5. Keep each file focused and under 200 lines.
-6. Prune after every model update -- remove what the model handles natively.
-7. Do NOT bloat CLAUDE.md with generic advice the model already knows.
+3. **`.claude/rules/*.md`** files with `paths:` frontmatter provide conditional instructions that only load when working with matching file paths. Use these instead of subfolder CLAUDE.md files for fine-grained scoping. Rules without `paths:` load every session.
+4. **Nested `.claude/` directories** are natively supported: `subdir/.claude/skills/`, `agents/`, and `workflows/` load automatically when working in that subfolder. The closest directory wins on a name collision, disambiguated as `<dir>:<name>`.
+5. A landing page task never loads your backend CLAUDE.md. Context stays narrow.
+6. Keep each file focused and under 200 lines.
+7. Prune after every model update -- remove what the model handles natively.
+8. Do NOT bloat CLAUDE.md with generic advice the model already knows.
 
 ### When to Create Subfolder CLAUDE.md
 
@@ -290,6 +316,10 @@ When torn between implementation approaches, spin up parallel Explorer subagents
 
 You can resume a specific subagent to continue its research. Use this to drill deeper without starting over.
 
+### Background by Default
+
+Subagents run in the background by default (v2.1.198+): the main session keeps working and is notified on completion. Subagents can spawn nested subagents up to 5 levels deep. To restrict which subagents an agent may spawn, list `Agent(agent_type)` entries in its `tools:` allowlist instead of allowing the whole Agent tool.
+
 ---
 
 ## Skill Frontmatter
@@ -316,12 +346,13 @@ allowed-tools:
 - `opus` — Orchestration and planning skills (spec developer, architect)
 
 **Additional frontmatter fields:**
+- `user-invocable: false` — Hide the skill from the / menu while keeping it as background knowledge Claude can still draw on (distinct from `disable-model-invocation`, which blocks auto-triggering but keeps manual invocation)
 - `context: fork` — Run skill in an isolated subagent, preventing context contamination
 - `effort: low|medium|high|xhigh|max` — Override reasoning effort level. `xhigh` (Opus 4.7+) typically beats `max` on cost/quality
 - `keep-coding-instructions: true` — Preserve coding-style instructions when the skill switches output styles
 - `${CLAUDE_SKILL_DIR}` — Reference the skill's own directory for relative file paths
 - Skills in nested `.claude/skills/` subdirectories are auto-discovered
-- Skill description length supports up to 1,536 characters
+- Put the most important trigger phrases in the first 250 characters of `description` — recent releases truncate skill descriptions around that length in some surfaces
 
 ---
 
@@ -344,6 +375,7 @@ allowed-tools:
 - Break tasks small enough to complete in under 50% context usage
 - System prompt + tools consume ~10% of context. Enable `ENABLE_TOOL_SEARCH: "true"` in settings to lazy-load MCP tools and save tokens.
 - Preserve the prompt cache: lock the MCP/tool list and model at the start of a session. Adding tools or switching models mid-session invalidates the cached prefix and inflates cost.
+- For long-running sessions, set `ENABLE_PROMPT_CACHING_1H` to extend the prompt-cache TTL from 5 minutes to 1 hour.
 
 ---
 
@@ -381,7 +413,7 @@ To add custom hooks, edit `.claude/settings.json`. Supported hook events:
 - `SessionStart` / `SessionEnd` -- Session lifecycle
 - `Stop` / `StopFailure` -- Turn completion (success / API error)
 - `SubagentStart` / `SubagentStop` -- Subagent lifecycle
-- `Notification` -- System notifications
+- `Notification` -- System notifications, including background-agent events (`agent_needs_input`, `agent_completed`)
 - `MessageDisplay` -- As assistant message text is displayed (transform or hide output, redact secrets)
 - `PreCompact` / `PostCompact` -- Before/after context compaction
 - `UserPromptSubmit` -- Before user prompt processing
@@ -397,7 +429,9 @@ To add custom hooks, edit `.claude/settings.json`. Supported hook events:
 
 Hook types: `command` (shell), `http` (POST JSON to URL), `prompt` (single-turn LLM), `agent` (multi-turn subagent), `mcp_tool` (direct MCP tool invocation).
 
-Each hook entry accepts an optional `if:` field using permission-rule syntax (e.g., `Bash(git *)`) to filter when the hook fires. Reduces overhead on unrelated tool calls.
+Each hook entry accepts an optional `if:` field using permission-rule syntax (e.g., `Bash(git *)`) to filter when the hook fires. Reduces overhead on unrelated tool calls. Matchers can also target tool input parameters with `Tool(param:value)` syntax (e.g., `Agent(model:opus)`).
+
+Hooks can return structured output beyond allow/block: `PostToolUse` can rewrite any tool's output (`hookSpecificOutput.updatedToolOutput`), `Stop`/`SubagentStop` can feed text back and continue the turn (`hookSpecificOutput.additionalContext`), and `SessionStart` can rescan skill directories (`reloadSkills: true`) or set the session title. See `.claude/references/hooks-and-settings.md` for the full catalog, including a `PermissionRequest` prompt-hook pattern that auto-approves known-safe operations.
 
 ---
 
@@ -445,7 +479,7 @@ Update root CLAUDE.md with your project's stack, conventions, and standards. Kee
 
 1. Create a folder in `.claude/skills/` with your skill name.
 2. Create `SKILL.md` inside with YAML frontmatter (`name`, `description`, `user-invocable: true`).
-3. Add optional frontmatter: `disable-model-invocation`, `model`, `agent`.
+3. Add optional frontmatter: `disable-model-invocation`, `model`, `agent`, `effort`, `context: fork`.
 4. Write step-by-step instructions in the markdown body.
 5. Update the skill table in CLAUDE.md and this instructions.md file.
 
@@ -459,12 +493,14 @@ Update root CLAUDE.md with your project's stack, conventions, and standards. Kee
 
 **Advanced agent fields:**
 - `skills:` — Preload specific skills into the agent for progressive disclosure
-- `memory:` — Persistent memory scope (`user`, `project`, or `local`)
+- `memory:` — Persistent memory scope (`user`, `project`, or `local`; local lives in git-ignored `.claude/agent-memory-local/<agent-name>/`)
+- `context:` — Additional instructions injected into the agent's system prompt
 - `isolation: worktree` — Run in a temporary git worktree
 - `background: true` — Run asynchronously without blocking
 - `disallowedTools:` — Remove specific tools from inherited tool lists
 - `effort:` — Override reasoning effort (`low`, `medium`, `high`, `xhigh`, `max`)
 - `initialPrompt:` — First message sent to the agent on startup
+- `Agent(agent_type)` in `tools:` — Restrict which specific subagents this agent may spawn
 
 ### Updating the Source URL Registry
 
@@ -480,7 +516,7 @@ Create `.claude/settings.local.json` for personal settings (git-ignored). Overri
 
 - **Skill not triggering:** Check `user-invocable: true` in SKILL.md frontmatter.
 - **Agent not found:** Ensure the agent file is in `.claude/agents/` and registered in [agents.md](agents.md).
-- **Settings not applied:** Hierarchy: CLI flags → settings.local.json → settings.json → global settings.
+- **Settings not applied:** Precedence (highest wins): managed-settings.json (org policy) → CLI flags → `.claude/settings.local.json` → `.claude/settings.json` → `~/.claude/settings.local.json` → `~/.claude/settings.json`. Deny rules always win regardless of tier.
 - **Hooks not running:** Verify hook event name and matcher in settings.json. Run `/doctor`.
 - **Stale practices:** Run "update practices" -- it checks today's date and fetches current recommendations.
 - **Context overload:** Use `/compact`, break into smaller tasks, or start a fresh session.
