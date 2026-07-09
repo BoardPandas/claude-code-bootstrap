@@ -26,7 +26,7 @@ All custom agents for this project. Each agent is defined in `.claude/agents/` a
 - **Purpose:** Security-focused analysis covering OWASP Top 10, secrets detection, dependency vulnerabilities, and input validation gaps.
 - **When to use:** Before releases, after adding authentication or authorization logic, or when handling user input or external data.
 - **Model:** opus
-- **Effort:** high
+- **Effort:** xhigh
 
 ### performance
 
@@ -40,7 +40,7 @@ All custom agents for this project. Each agent is defined in `.claude/agents/` a
 
 - **File:** `.claude/agents/builder.md`
 - **Purpose:** Implementation engineer. Turns a plan, spec, or task into working, tested code that matches existing conventions. The implementation-capable agent for parallel team work, with a scoped tool list (no banned built-in `general-purpose` type).
-- **When to use:** Executing a plan produced by `architect`, fixing a bug, or owning one file set / layer of a feature in an agent team. Spawn one builder per independent file set to avoid edit conflicts.
+- **When to use:** Executing a plan produced by `architect`, fixing a bug, or owning one file set / layer of a feature in an agent team. Spawn one builder per independent file set; each builder runs in an isolated git worktree, so parallel builders cannot conflict (merge back with the merge-worktrees skill).
 - **Model:** sonnet
 - **Effort:** high
 

@@ -55,6 +55,8 @@ This repository provides a pre-configured `.claude/` folder that gives Claude Co
     ux-laws.md             # Laws of UX / Gestalt reference for ux-review
     hooks-and-settings.md  # Canonical hook/settings catalog
     design-guardrails.md   # UI/design SLA (generated for frontend projects)
+    template-sync-ignore.md    # Template files this project deliberately removed (update-practices skips them)
+    template-sync-state.json   # Last-synced template commit + dead-URL strikes (written by update-practices)
   settings.json            # Project-level Claude Code settings
   settings.local.json.example  # Template for personal (git-ignored) overrides
 CLAUDE.md                  # Master project rules for Claude Code

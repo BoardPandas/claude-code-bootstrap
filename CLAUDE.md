@@ -76,12 +76,14 @@ Plan-repo only recommends language, frameworks, UI library, ORM, and tooling. In
 
 ## File Organization
 
-- Keep the `.claude/` folder self-contained. No absolute paths, no references outside the repo except CLAUDE.md, agents.md, and README.md.
+- Keep the `.claude/` folder self-contained. No absolute paths, no references outside the repo except CLAUDE.md, agents.md, README.md, and instructions.md.
 - Skills live in `.claude/skills/<skill-name>/SKILL.md`.
 - Agents live in `.claude/agents/<agent-name>.md`.
+- Hook scripts live in `.claude/scripts/*.sh`. Hooks in settings.json call them by relative path, so the scripts folder must travel with settings.json when copying the template.
 - Path-scoped rules live in `.claude/rules/*.md` (conditional on `paths:` frontmatter).
 - Agent memory lives in `.claude/agent-memory/` (version-controlled, team-shared evolving knowledge).
 - Source URLs for fetching best practices live in `.claude/references/source-urls.md`.
+- Template sync state lives in `.claude/references/template-sync-state.json`, and deliberate removals in `template-sync-ignore.md` (both managed by update-practices).
 - Infrastructure definition lives in `.claude/references/infrastructure.md` (locked, do not modify per-project).
 - CLI tools reference lives in `.claude/references/tools.md`.
 - Design guardrails (UI projects) live in `.claude/references/design-guardrails.md`.
@@ -160,6 +162,16 @@ See `agents.md` in the repo root for the full agent registry. Key agents:
 3. Do not over-engineer. Only make changes that are directly requested or clearly necessary.
 4. Use the source URL registry at `.claude/references/source-urls.md` when fetching best practices -- never hardcode URLs in skills.
 5. Check `.claude/references/tools.md` for available CLI tools before running commands. Offer to install missing tools.
+
+## RULE 0: Read-Only First (MANDATORY)
+
+**Gather information before taking action. Read-only commands first. Modifications only with user approval.**
+
+- Always safe: diagnostics and read-only operations (`Get-*`, `Test-*`, queries, list/read API calls).
+- Requires user approval: state-changing commands (`Set-*`, `Remove-*`, `Stop-*`, writes to shared systems).
+- Never without explicit request: destructive operations (recursive deletions, credential resets, formatting).
+
+Production systems (M365 tenants, shared infrastructure) face hard-to-reverse damage from accidental modifications. Validate intent before any state change. (From BP `safety/read-only-first-rule`.)
 
 ## RULE 1 -- Check LL-G Before Scripting (MANDATORY)
 
