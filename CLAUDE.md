@@ -128,6 +128,7 @@ Best practices must reflect the current date. Always check the current date -- d
 | update-practices | "update practices" | Fetch latest best practices and update config |
 | spec-developer | "spec developer" | Interview-driven feature spec saved to /tasks |
 | security-scan | "security scan" | OWASP-style security audit |
+| repo-review | "repo review" | General code health review of the whole repo with fix recommendations |
 | performance-review | "performance review" | Performance analysis with fix recommendations |
 | dependency-audit | "dependency audit" | Check dependencies for updates and vulnerabilities |
 | test-scaffold | "scaffold tests" | Generate test files for untested modules |
