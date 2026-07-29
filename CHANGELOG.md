@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.8.0] - 2026-07-29
+
+Ran the BP `claude-config/claude-wiring-audit` checklist against this repo and fixed what it found. The theme: enforcement that looked correct but had never run.
+
+### Added
+- **`.claude/` wiring is now verified in CI.** New `scripts/check-claude-wiring.mjs` (`npm run check:claude`, dependency-free, node built-ins only) asserts the properties that otherwise fail silently: rule frontmatter uses `paths:` and not Cursor's `globs:`/`alwaysApply:`, every glob matches at least one real file, hook matchers are bare tool names, referenced hook scripts exist, no hook silences both stderr and its exit code, blocking hooks write to stderr, no hook interpolates the nonexistent `$CLAUDE_FILE_PATH`, frontmatter keys are hyphenated, and the always-on context budget stays under ceiling. Every assertion was verified to actually fail on the defect it targets. A new GitHub Actions workflow runs it before any install step, plus a `bash -n` syntax check on the shipped hook scripts.
+- **Deliberately-dead globs are now recorded, not silent.** `.claude/references/wiring-exemptions.json` holds the template-only globs (`src/**`, `Dockerfile*`, …) that match nothing in this repo but do match in projects cloned from it, each with a reason. An exemption that stops being needed fails the guard instead of rotting.
+
+### Fixed
+- **Blocked commits explained themselves for the first time.** `check-changelog-staged.sh` wrote its `BLOCKED:` message to stdout before exiting 2, and a blocking hook's stdout is discarded — so every refusal since the hook landed arrived with no reason attached (the harness reported literally "No stderr output"). The message now goes to stderr and includes the four steps to unblock.
+- **The commit hooks no longer fire on commands that merely mention a commit.** All four shared a self-filter that grepped the whole hook payload, so `grep -r 'git commit' docs/` was blocked outright and any command whose *output* mentioned a commit tripped the post-commit hook. The filter now reads `tool_input.command` only and ignores quoted text. It lives in one place (`.claude/scripts/_git-commit-filter.sh`) rather than four slightly-different copies — the drift between those copies is what hid the stderr bug.
+- **The LL-G rule could never fire.** `llg-check.md` was scoped to `src/`, `lib/`, `app/`, `worker/`, `api/`, `scripts/`, `middleware.*` — none of which exist here — and omitted `.claude/**`, so editing a hook script triggered no knowledge-base check in this repo or in any project cloned from it. Now scoped to `.claude/**` and `scripts/**` as well. `bp-check.md` gained `.github/**` and `package.json`, and lost a duplicated `.github/**` entry.
+- **`kb/claude-code/` is now in the RULE 1 technology list.** The one LL-G shelf most relevant to a repo whose entire content is `.claude/` configuration was missing from it — and it already documented the stderr bug above, along with the worktree and byte-budget gotchas also fixed in this release.
+- **Four skills documented triggers that cannot work.** plan-repo, spec-developer, mermaid-diagram and merge-worktrees set `disable-model-invocation: true`, so the advertised phrases ("plan repo", "spec developer", …) never started them — including the repo's headline workflow. The skills table and workflow section now show the `/command` form.
+- **The builder agent can no longer silently report success against stale files.** It runs with `isolation: worktree`, so uncommitted work in the main tree is invisible to it; it now orients with `git rev-parse`/`status`/`log` first and stops rather than reporting "already compliant" against content it cannot see.
+- **CLAUDE.md is budgeted in bytes, not lines.** The stated "under 200 lines" limit was both wrong (the file was 211) and unenforceable — long lines game a line count while the real token cost grows. Now a 16 KB ceiling checked by `npm run check:claude`. Also corrected: rules are described accurately (a rule with no `paths:` loads in every session), and `template-sync-state.json` / `design-guardrails.md` are marked as generated-on-demand rather than implied to exist.
+
 ## [0.7.0] - 2026-07-08
 
 ### Changed

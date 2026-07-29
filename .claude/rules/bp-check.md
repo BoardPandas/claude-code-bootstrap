@@ -3,6 +3,8 @@ description: Enforce BP best practices check before starting new work
 paths:
   - "CLAUDE.md"
   - ".claude/**"
+  - ".github/**"
+  - "package.json"
   - "Dockerfile*"
   - "docker-compose*"
   - "biome.*"
@@ -11,7 +13,6 @@ paths:
   - "vitest.config.*"
   - "playwright.config.*"
   - "jest.config.*"
-  - ".github/**"
 ---
 
 # RULE 3 Enforcement: Check BP Before Configuration Work
