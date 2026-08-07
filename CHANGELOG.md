@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.11.0] - 2026-08-07
+
+### Added
+- **The knowledge-base check now fires at the moment a file is written, not only at the start of a session.** A new `PreToolUse` hook on `Write|Edit` inspects the file about to be written and names the exact LL-G shelves for its technology (`.ps1` to `powershell`, `.tsx` under `app/` to `typescript` + `nextjs` + `react`, anything under `.claude/` to `claude-code`, and so on) rather than restating the generic mandate. Files with no shelf coverage -- prose, JSON, lockfiles, assets -- produce nothing. This closes the gap between the SessionStart nudge, which fires once before any technology is known, and `.claude/rules/llg-check.md`, which states the rule but never fires at the write itself.
+
+  The reminder is de-duplicated per session and per shelf set, so it appears once for PowerShell work rather than on every edit. Session identity comes from the hook payload; sessions no longer share state.
+
+- **Plan documents written outside plan mode are now caught.** The same hook recognizes a plan by its path (`tasks/`, or a filename containing `plan`, `spec`, or `roadmap`) and asks for both LL-G and BP before the document is written. Previously the only planning check hung off `EnterPlanMode`, so a plan written by `/spec-developer` straight into `tasks/` got no check at all.
+
+- **`ExitPlanMode` is now a second planning checkpoint.** `pre-plan-kb-check.sh` fires on entry and on exit, with wording specific to each: entry asks for the knowledge bases up front, exit asks Claude to confirm it consulted them and to revise before presenting if it did not. Both are advisory -- gating every plan on a network fetch would be worse than a skipped check.
+
+### Fixed
+- **Hook scripts silently extracted nothing from their JSON payload on Windows.** The scripts selected a parser with `command -v python3`, which on Windows resolves to the WindowsApps Store stub: the lookup succeeds, the stub exits without output, and every field comes back empty with no error. The effect on the new write hook would have been that `session_id` never resolved and all sessions shared one de-duplication file, so the reminder fired once ever and then went quiet. Parser selection now probes candidates by *running* one against a payload of known shape and keeping the first that answers correctly, preferring `node`, with a `sed` extraction as a last resort so the check degrades loudly rather than disappearing.
+
+- **The wiring guard failed any hook script that mentioned `$CLAUDE_FILE_PATH` in a comment.** Check 7 tested the raw file text, so citing the gotcha at the point it applies -- which is this repo's documented convention -- tripped the very warning being documented. It now strips whole-line comments before testing. Trailing inline comments are deliberately still flagged, since a real use and a trailing note cannot be told apart without a shell parser. Verified that a genuine `prettier --write "$CLAUDE_FILE_PATH"` is still caught.
+
 ## [0.10.0] - 2026-08-07
 
 ### Added

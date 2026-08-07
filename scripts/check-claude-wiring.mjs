@@ -233,9 +233,16 @@ for (const file of hookScripts) {
 // no-op: `prettier --write ""` walks the entire repo.
 for (const file of [...hookScripts, ...(existsSync(SETTINGS) ? [SETTINGS] : [])]) {
   const text = read(file);
-  if (!/CLAUDE_FILE_PATH/.test(text)) continue;
+  // Naming the variable in a comment is documentation, not a use, and the repo's
+  // convention is to cite the LL-G slug at the point it applies. Strip whole-line
+  // comments first so writing the warning down does not trip the warning.
+  // Trailing inline comments are deliberately NOT stripped -- conservative, since
+  // a real use and a trailing note are indistinguishable without a shell parser.
+  // (JSON has no # comments, so this is a no-op for settings.json.)
+  const code = text.replace(/^[ \t]*#.*$/gm, "");
+  if (!/CLAUDE_FILE_PATH/.test(code)) continue;
   // Using it as a fallback alongside stdin parsing is defensive and correct.
-  const isFallback = /CLAUDE_FILE_PATH:-/.test(text) && /tool_input/.test(text);
+  const isFallback = /CLAUDE_FILE_PATH:-/.test(code) && /tool_input/.test(code);
   if (!isFallback) {
     errors.push(
       `${rel(file)}: uses $CLAUDE_FILE_PATH, which does not exist. It expands to "" and an empty ` +
