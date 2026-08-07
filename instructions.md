@@ -47,6 +47,7 @@ This repository provides a pre-configured `.claude/` folder that gives Claude Co
     apply-practice/SKILL.md     # Apply BP practice to a target repo
     ux-review/SKILL.md          # UX review against Laws of UX
     merge-worktrees/SKILL.md    # Merge worktrees/branches into main, clean up
+    triage-issues/SKILL.md      # Fix open GitHub issues via builder subagents
     agy-execute-plan/SKILL.md   # Hand a plan to the Antigravity CLI, then verify
   references/
     source-urls.md         # URL registry for fetching best practices
@@ -113,6 +114,7 @@ All planning uses phases, never dates or time estimates:
 - **Trigger:** "initialize repo", "init repo", "set up claude code"
 - **What it does:** Reads the plan (if available), detects the stack, fetches best practices, and builds or updates all configuration files. Generates hierarchical CLAUDE.md files and stack-specific design guardrails. Non-destructive merge with existing config.
 - **When to use:** After plan-repo, after copying `.claude/` into an existing project, or to rebuild from scratch.
+- **Changelog reset:** A project cloned from this template inherits the template's `CHANGELOG.md` and version. Init detects that inherited history and resets it to a clean `0.0.1` baseline. A changelog holding your project's own entries is classified as project-owned and left untouched, so re-running init never wipes real release history.
 - **Output:** Summary of all files created or modified.
 
 ### update-practices
@@ -193,6 +195,13 @@ All planning uses phases, never dates or time estimates:
 - **Trigger:** "merge worktrees", "merge and clean up branches"
 - **What it does:** Inventories every worktree and local branch, shows a plan and asks for confirmation, commits pending work, merges every branch into main with `--no-ff`, pushes, then removes the worktrees and deletes the merged branches. Merge conflicts are hard stops; nothing is deleted until the merge is pushed.
 - **When to use:** To consolidate all outstanding work into main and tear down the leftovers.
+
+### triage-issues
+
+- **Trigger:** `/triage-issues` (slash command only -- it commits and pushes autonomously, so a plain-English phrase will not start it)
+- **What it does:** Reads the open GitHub issues, groups duplicates that share a root cause, and dispatches one worktree-isolated `builder` subagent per unit to implement and verify the fix. The main session then merges each finished branch one at a time, re-verifies on the merged tree, updates CHANGELOG/version, commits, pushes to the main branch, and closes the issues. Anything a subagent could not resolve comes back as a blocker with a concrete recommendation and gets a `claude-blocked` label so the next default run skips it.
+- **Scope:** Blank for every open issue, specific numbers (`284 290`), or `all` to retry previously blocked issues.
+- **Hard stops:** a dirty working tree, a protected main branch, a merge conflict, a failed verification, or a rejected push. It never force-pushes and never closes an issue before the fix is pushed.
 
 ### agy-execute-plan
 

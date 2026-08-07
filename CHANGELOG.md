@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.9.0] - 2026-08-07
+
+### Added
+- **New `triage-issues` skill.** `/triage-issues` reads the open GitHub issues, groups duplicates that share a root cause, and dispatches one worktree-isolated `builder` subagent per unit to implement and verify the fix. The session then lands each finished branch one at a time -- merge, re-verify on the merged tree, update CHANGELOG and version, commit, push, close the issues -- and reports anything a subagent could not resolve as a blocker with a concrete recommended next step. Blocked issues get a `claude-blocked` label so the next default run skips them; `/triage-issues all` retries them.
+
+  The skill is repo-agnostic: it detects the main branch, stack, package manager, and verification commands from the target repository rather than assuming any of them. It only dispatches agents at issues with an identifiable code root cause -- data problems, product decisions, and unreproducible reports are reported back instead, because a confident wrong fix on the main branch is worse than an untouched issue.
+
+  Guardrails: a dirty working tree, a protected main branch, a merge conflict, a failed verification, or a rejected push each stop the run. It never force-pushes, and never closes an issue before the fix is pushed. Subagents are barred from touching `CHANGELOG.md`, the version, the main branch, and the issues themselves -- the coordinating session owns all four, which is what keeps parallel agents from conflicting on every unit.
+
+  Set `disable-model-invocation: true`: it commits and pushes autonomously, so it runs only from the explicit slash command.
+
 ## [0.8.0] - 2026-07-29
 
 Ran the BP `claude-config/claude-wiring-audit` checklist against this repo and fixed what it found. The theme: enforcement that looked correct but had never run.

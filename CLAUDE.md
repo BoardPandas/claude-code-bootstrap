@@ -144,6 +144,7 @@ Best practices must reflect the current date. Always check the current date -- d
 | add-practice | "add practice" | Add a best practice entry to the BP knowledge base |
 | apply-practice | "apply practice" | Apply a BP best practice to a target repository |
 | merge-worktrees | `/merge-worktrees` | Merge all worktrees and branches into main, push, then remove worktrees and delete branches |
+| triage-issues | `/triage-issues` | Fix open GitHub issues via one builder subagent each, land them on main, report blockers |
 
 ## Available Agents
 
