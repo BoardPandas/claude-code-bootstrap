@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.10.0] - 2026-08-07
+
+### Added
+- **`update-practices` and `init-repo` now run a live web search alongside the fixed source list.** It is gated twice, and both gates are hard filters: a result needs a visible publish date within the last seven days, and it has to be tied to the current Claude Code version's minor line. Undated pages fail on the first gate by design, since that is most of what a best-practices query returns. Finding nothing is a normal run and gets reported as such -- the skills are told not to widen the window to manufacture results. Surviving results are treated as claims, not sources: one only reaches the config if an official source or the installed CLI confirms it, and everything else is reported to you instead.
+- **The source registry now states what qualifies as a source**, with the two `curl` checks that decide it -- a repo's `pushed_at`, and a version-anchored grep for trackers. The loose version of that grep matches minified JS and misreports live pages as dead, so the pattern is spelled out.
+
+### Removed
+- **Eight frozen sources dropped from the registry** (30 URLs down to 22). One was a plain 404. Two were `anthropics/courses`, untouched since November 2025. Four were dated one-off posts -- two Substack articles, a Product Compass post, and a conference-talk transcript -- each pinned to whatever version was current when it was written. The last was the `claudefa.st` changelog mirror, stopped at 2.1.128 while Claude Code shipped 2.1.224.
+
+### Fixed
+- **The Anthropic cookbook URL pointed at a renamed repo.** `anthropics/anthropic-cookbook` became `anthropics/claude-cookbooks`; the old address answered only through a redirect. Repaired rather than dropped -- that repo is still updated daily.
+
 ## [0.9.1] - 2026-08-07
 
 ### Fixed

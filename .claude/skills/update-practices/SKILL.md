@@ -48,7 +48,11 @@ Spin up parallel `explorer` agents to fetch and analyze sources. Use the custom 
 
 3. **Stack freshness subagent:** "Check the project's detected stack (from CLAUDE.md or dependency manifests) against current versions and best practices as of today's date. WHY: We need to ensure tools.md and design guardrails reflect the latest stable versions."
 
+4. **Live web search subagent:** "Search the web for Claude Code best practices published in the last seven days, following the Live Web Search section of the source URL registry exactly. Resolve today's date and the current Claude Code version first, then apply both gates as hard filters: discard anything without a visible publish date on or after (today - 7 days), and discard anything not tied to the current version's minor line. Report kept and discarded counts, and mark every surviving result as corroborated or uncorroborated against the official sources. WHY: The registry only covers sources that update on their own cadence; this catches changed behavior in the current release that no listed source has written up yet."
+
 Each subagent must report any registry URL that is unreachable (404, DNS failure, repo gone) so Step 4 can track it. Wait for all subagents, then proceed.
+
+**The web search subagent's findings are claims, not sources.** Apply one only if an official source corroborates it, or you can verify it directly against the installed CLI. Everything else surfaces in the Step 8 report as a suggestion and is not written into config. Zero surviving results is a normal outcome, not a failed run: never widen the window or relax a gate to produce findings.
 
 ## Step 2b: Sync from Bootstrap Template
 
@@ -333,6 +337,13 @@ FEATURES IN USE:
 
 FEATURES AVAILABLE BUT NOT CONFIGURED:
   <list any features that could be enabled but aren't, with instructions>
+
+WEB SEARCH:
+  Window: <cutoff date> to <today's date> (7 days)
+  Version gate: <current Claude Code version>
+  <N> of <total> results passed both gates
+  [CORROBORATED] <finding>: applied to <file> (confirmed by <official source>)
+  [UNCORROBORATED] <finding> (<url>, published <date>): reported only, not applied
 
 CLAUDE CODE VERSION: <version from claude --version>
 CURRENT DATE: <today's date>
