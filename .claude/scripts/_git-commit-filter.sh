@@ -21,16 +21,49 @@ read_hook_input() {
   HOOK_INPUT=$(cat)
   HOOK_COMMAND=""
 
-  if command -v python3 >/dev/null 2>&1; then
-    HOOK_COMMAND=$(printf '%s' "$HOOK_INPUT" | python3 -c 'import sys, json
+  # Pick a parser by RUNNING one, not by looking one up. On Windows,
+  # `command -v python3` finds the WindowsApps Store stub: the lookup SUCCEEDS,
+  # the stub writes its "Python was not found" notice to stderr (swallowed by
+  # 2>/dev/null) and prints nothing to stdout. HOOK_COMMAND then comes back
+  # empty, is_git_commit returns false, and all four commit hooks exit 0 --
+  # every gate silently allowing everything, with the over-eager fallback below
+  # unreachable because the `command -v` guard already reported success.
+  # Probe once with a payload of known shape.
+  # (LL-G kb/claude-code/hook-env-vars-do-not-exist.md)
+  local cand probe parser=""
+  for cand in node python3 python; do
+    command -v "$cand" >/dev/null 2>&1 || continue
+    case "$cand" in
+      node)   probe=$(printf '{"a":"ok"}' | node -e \
+                'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{process.stdout.write(String(JSON.parse(s).a||""))}catch(e){}})' 2>/dev/null) ;;
+      *)      probe=$(printf '{"a":"ok"}' | "$cand" -c \
+                'import sys,json
+try: sys.stdout.write(json.load(sys.stdin).get("a",""))
+except Exception: pass' 2>/dev/null) ;;
+    esac
+    if [ "$probe" = "ok" ]; then parser="$cand"; break; fi
+  done
+
+  case "$parser" in
+    node)
+      HOOK_COMMAND=$(printf '%s' "$HOOK_INPUT" | node -e \
+        'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{
+           const v=(JSON.parse(s).tool_input||{}).command;process.stdout.write(typeof v==="string"?v:"")
+         }catch(e){}})' 2>/dev/null) ;;
+    python3|python)
+      HOOK_COMMAND=$(printf '%s' "$HOOK_INPUT" | "$parser" -c 'import sys,json
 try:
-    print(json.load(sys.stdin).get("tool_input", {}).get("command", ""))
+    v = json.load(sys.stdin).get("tool_input", {}).get("command", "")
+    sys.stdout.write(v if isinstance(v, str) else "")
 except Exception:
-    print("")' 2>/dev/null)
-  else
-    # Degraded path: no python3. Fall back to the whole payload, which is
-    # over-eager but never under-eager -- a blocking hook must not go quiet
-    # just because a parser is missing.
+    pass' 2>/dev/null) ;;
+  esac
+
+  # Degraded path: no working parser, or a parser that returned nothing for a
+  # payload that clearly carries a command. Fall back to the whole payload,
+  # which is over-eager but never under-eager -- a blocking hook must not go
+  # quiet just because a parser is missing.
+  if [ -z "$HOOK_COMMAND" ] && printf '%s' "$HOOK_INPUT" | grep -q '"command"'; then
     HOOK_COMMAND="$HOOK_INPUT"
   fi
 }

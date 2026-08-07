@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.12.0] - 2026-08-07
+
+### Added
+- **`update-practices` now audits the health of the `.claude/` folder, not just its currency.** Syncing keeps the config *up to date*; the new Step 2c checks whether it actually *works*. Those come apart quietly: a hook that never fires, a skill whose documented trigger cannot start it, an agent nothing can reach, a memory entry the code contradicts. None of that raises an error, it just stops helping.
+
+  The audit runs the wiring guard first and explicitly does not re-implement it -- if a property is mechanically checkable it belongs in CI, not in a skill someone has to remember to run. On top of that it verifies hooks **behaviorally**, by running each script against a synthetic payload and asserting both directions: that it fires when it should, *and* that it stays silent when it should not. Only the second direction catches an over-broad filter. It also checks that skills are startable (a `disable-model-invocation: true` skill must be documented as `/command`), that every agent named by a skill or `Agent()` allowlist resolves, that memory entries are still true and that gotchas were routed to LL-G, and that the CLAUDE.md hierarchy stays lean and non-duplicating.
+
+  Findings are classified BROKEN / DEGRADED / SUGGESTION / HEALTHY. New agents are only ever *suggested*, with the evidence that motivated them, and never created -- an unused agent is permanent context cost. A check that could not be run is reported as its own finding rather than counted as healthy.
+
+### Fixed
+- **All four git-commit hooks were dead on Windows, and had been since they were written.** `_git-commit-filter.sh` chose its JSON parser with `command -v python3`. On Windows that resolves to the WindowsApps Store stub: the lookup *succeeds*, the stub writes "Python was not found" to stderr (swallowed by the customary `2>/dev/null`) and prints nothing to stdout. `HOOK_COMMAND` came back empty, `is_git_commit` returned false, and every one of the four hooks exited 0 -- the changelog gate, the here-string check, the changelog reminder, and the post-commit knowledge-base prompt all silently allowing everything. The over-eager fallback written to prevent exactly this was unreachable, because the `command -v` guard had already reported success.
+
+  This is the same defect fixed in the other hook scripts in 0.11.0; the shared helper was missed, which is why it survived. Parser selection now probes a candidate by running it against a payload of known shape, and the fallback also triggers when a parser returns nothing for a payload that plainly carries a command. Found by the new health audit on its first run, and verified in three directions: blocks a commit with no changelog staged, allows one with it staged, and stays silent on a command that merely mentions `git commit`.
+
+- **The wiring guard now catches this parser defect** (check 7b), so it cannot return through another script. A loop over `command -v "$cand"` is the correct form and is not flagged. Verified that the assertion fails on a script carrying the defect and passes once it is removed.
+
 ## [0.11.0] - 2026-08-07
 
 ### Added

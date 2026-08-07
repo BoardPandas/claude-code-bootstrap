@@ -252,6 +252,30 @@ for (const file of [...hookScripts, ...(existsSync(SETTINGS) ? [SETTINGS] : [])]
   }
 }
 
+// ------------- 7b: a hook must not select its JSON parser with `command -v`
+// On Windows, `command -v python3` finds the WindowsApps Store stub: the lookup
+// SUCCEEDS, the stub writes "Python was not found" to stderr (swallowed by the
+// customary 2>/dev/null) and prints nothing. Every extracted field comes back
+// empty, so the hook's filter matches nothing and it exits 0 -- a gate that
+// silently allows everything, with any `else` fallback unreachable because the
+// lookup already reported success. Probe by RUNNING a candidate instead.
+// A loop over `command -v "$cand"` is the correct form and is not flagged.
+for (const file of hookScripts) {
+  const code = read(file).replace(/^[ \t]*#.*$/gm, "");
+  const m = code.match(/command\s+-v\s+(python3?|node)\b/);
+  if (!m) continue;
+  // The fix probes a candidate and checks its output before trusting it.
+  const probesOutput = /probe=|\$\(printf\s+'\{"a":"ok"\}'/.test(code);
+  if (!probesOutput) {
+    errors.push(
+      `${rel(file)}: selects a JSON parser with \`command -v ${m[1]}\`. On Windows that finds the ` +
+        `WindowsApps stub, which exits without output, so every extracted field is empty and the hook ` +
+        `silently does nothing. Probe a candidate by running it against a payload of known shape and ` +
+        `keep the first that answers correctly.`,
+    );
+  }
+}
+
 // ----------------- 8: skill/agent frontmatter keys are hyphenated, not snake
 const UNDERSCORE_KEYS =
   /^\s*(disable_model_invocation|user_invocable|allowed_tools|keep_coding_instructions|argument_hint)\s*:/m;

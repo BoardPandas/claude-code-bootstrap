@@ -130,7 +130,7 @@ Best practices must reflect the current date. Always check the current date -- d
 |-------|---------|---------|
 | plan-repo | `/plan-repo` | Research and recommend best tech stack, generate README, design guardrails |
 | init-repo | "initialize repo" | Build or rebuild .claude/ folder with best practices |
-| update-practices | "update practices" | Fetch latest best practices and update config |
+| update-practices | "update practices" | Fetch latest best practices, update config, and audit `.claude/` health |
 | spec-developer | `/spec-developer` | Interview-driven feature spec saved to /tasks |
 | security-scan | "security scan" | OWASP-style security audit |
 | repo-review | "repo review" | General code health review of the whole repo with fix recommendations |
