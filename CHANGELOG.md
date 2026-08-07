@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.9.1] - 2026-08-07
+
+### Fixed
+- **The wiring guard's exemption mechanism never worked on Windows.** `check-claude-wiring.mjs` derived file keys with `path.relative()`, which returns backslash-separated paths on Windows, then compared them by strict equality against the forward-slash keys in `wiring-exemptions.json`. No exemption could ever match, so `npm run check:claude` failed locally on Windows with a contradictory pair of errors for every entry: each glob was reported as dead (its exemption did not apply) *and* its exemption was reported as stale (it was never consumed). On Linux CI both sides are forward-slashed, so the check passed there -- the bug was invisible to the workflow that gates it and only ever hit developers on Windows. `rel()` now normalizes to posix separators, which also makes reported paths identical across platforms. Verified that the guard still fails on an unexempted dead glob and on a genuinely stale exemption.
+
 ## [0.9.0] - 2026-08-07
 
 ### Added

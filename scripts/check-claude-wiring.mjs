@@ -35,7 +35,10 @@ const ALWAYS_ON_CEILING = 20 * 1024;
 const BYTES_PER_TOKEN = 3.6;
 const tokens = (bytes) => Math.round(bytes / BYTES_PER_TOKEN);
 
-const rel = (p) => relative(ROOT, p) || p;
+// Always posix-separated. path.relative() yields backslashes on Windows, which
+// silently breaks every string comparison against a config key (all of which are
+// authored with forward slashes) and makes reported paths platform-dependent.
+const rel = (p) => (relative(ROOT, p) || p).split("\\").join("/");
 const read = (p) => readFileSync(p, "utf8");
 
 function walk(dir, out = []) {
