@@ -9,6 +9,9 @@
 # four slightly different inline filters, and the one that drifted (a missing
 # ">&2") went unnoticed for months. One definition, one place to fix.
 
+# JSON extraction lives in _json-parser.sh for the same reason, one level down.
+. "$(dirname "${BASH_SOURCE[0]}")/_json-parser.sh"
+
 # Reads the hook's JSON payload from stdin and sets:
 #   HOOK_INPUT    raw payload (kept for callers that need the unparsed text)
 #   HOOK_COMMAND  tool_input.command only
@@ -19,52 +22,24 @@
 # (LL-G kb/bash/hook-scans-tool-output-false-record.md)
 read_hook_input() {
   HOOK_INPUT=$(cat)
-  HOOK_COMMAND=""
-
-  # Pick a parser by RUNNING one, not by looking one up. On Windows,
-  # `command -v python3` finds the WindowsApps Store stub: the lookup SUCCEEDS,
-  # the stub writes its "Python was not found" notice to stderr (swallowed by
-  # 2>/dev/null) and prints nothing to stdout. HOOK_COMMAND then comes back
-  # empty, is_git_commit returns false, and all four commit hooks exit 0 --
-  # every gate silently allowing everything, with the over-eager fallback below
-  # unreachable because the `command -v` guard already reported success.
-  # Probe once with a payload of known shape.
-  # (LL-G kb/claude-code/hook-env-vars-do-not-exist.md)
-  local cand probe parser=""
-  for cand in node python3 python; do
-    command -v "$cand" >/dev/null 2>&1 || continue
-    case "$cand" in
-      node)   probe=$(printf '{"a":"ok"}' | node -e \
-                'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{process.stdout.write(String(JSON.parse(s).a||""))}catch(e){}})' 2>/dev/null) ;;
-      *)      probe=$(printf '{"a":"ok"}' | "$cand" -c \
-                'import sys,json
-try: sys.stdout.write(json.load(sys.stdin).get("a",""))
-except Exception: pass' 2>/dev/null) ;;
-    esac
-    if [ "$probe" = "ok" ]; then parser="$cand"; break; fi
-  done
-
-  case "$parser" in
-    node)
-      HOOK_COMMAND=$(printf '%s' "$HOOK_INPUT" | node -e \
-        'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{
-           const v=(JSON.parse(s).tool_input||{}).command;process.stdout.write(typeof v==="string"?v:"")
-         }catch(e){}})' 2>/dev/null) ;;
-    python3|python)
-      HOOK_COMMAND=$(printf '%s' "$HOOK_INPUT" | "$parser" -c 'import sys,json
-try:
-    v = json.load(sys.stdin).get("tool_input", {}).get("command", "")
-    sys.stdout.write(v if isinstance(v, str) else "")
-except Exception:
-    pass' 2>/dev/null) ;;
-  esac
+  HOOK_COMMAND=$(json_field "$HOOK_INPUT" tool_input.command)
 
   # Degraded path: no working parser, or a parser that returned nothing for a
-  # payload that clearly carries a command. Fall back to the whole payload,
-  # which is over-eager but never under-eager -- a blocking hook must not go
-  # quiet just because a parser is missing.
-  if [ -z "$HOOK_COMMAND" ] && printf '%s' "$HOOK_INPUT" | grep -q '"command"'; then
-    HOOK_COMMAND="$HOOK_INPUT"
+  # payload that clearly carries a command. Recover the command from the raw
+  # text -- over-eager, but a blocking hook must not go quiet just because a
+  # parser is missing.
+  #
+  # json_field_flat is deliberately NOT used: it stops at the first quote, so
+  # `echo "hi" && git commit` truncates to `echo ` and the gate stops blocking.
+  # Under-eager is the one direction this hook cannot afford.
+  #
+  # Handing over the whole payload -- what this did before -- is not a fallback
+  # either. is_git_commit strips quoted regions, and in raw JSON the command IS
+  # a quoted region, so it strips to nothing and never matches. That fallback
+  # was itself dead; it just had no way to show it while the parser branch was
+  # also dead.
+  if [ -z "$HOOK_COMMAND" ]; then
+    HOOK_COMMAND=$(json_field_greedy "$HOOK_INPUT" command)
   fi
 }
 

@@ -28,56 +28,20 @@ set -u
 # (LL-G kb/claude-code/hook-env-vars-do-not-exist.md)
 HOOK_INPUT=$(cat)
 
-# Pick a parser by RUNNING one, not by looking one up. On Windows, `command -v
-# python3` finds the WindowsApps Store stub, which exits without output -- so a
-# `command -v` guard reports success and every field silently comes back empty.
-# Probe once with a payload of known shape.
-JSON_PARSER=""
-for cand in node python3 python; do
-  command -v "$cand" >/dev/null 2>&1 || continue
-  case "$cand" in
-    node)   probe=$(printf '{"a":"ok"}' | node -e \
-              'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{process.stdout.write(String(JSON.parse(s).a||""))}catch(e){}})' 2>/dev/null) ;;
-    *)      probe=$(printf '{"a":"ok"}' | "$cand" -c \
-              'import sys,json
-try: sys.stdout.write(json.load(sys.stdin).get("a",""))
-except Exception: pass' 2>/dev/null) ;;
-  esac
-  if [ "$probe" = "ok" ]; then JSON_PARSER="$cand"; break; fi
-done
+# Parser selection and extraction live in _json-parser.sh. Notably it probes a
+# candidate by RUNNING it: `command -v python3` succeeds on Windows by finding the
+# WindowsApps Store stub, which exits without output, so a lookup-based guard
+# reports success and every field silently comes back empty.
+. "$(dirname "${BASH_SOURCE[0]}")/_json-parser.sh"
 
-# $1 = dotted key path, e.g. tool_input.file_path
-extract() {
-  case "$JSON_PARSER" in
-    node)
-      printf '%s' "$HOOK_INPUT" | node -e \
-        'let s="";const k=process.argv[1].split(".");process.stdin.on("data",d=>s+=d).on("end",()=>{
-           try{let v=JSON.parse(s);for(const p of k)v=(v||{})[p];process.stdout.write(typeof v==="string"?v:"")}catch(e){}
-         })' "$1" 2>/dev/null ;;
-    python3|python)
-      printf '%s' "$HOOK_INPUT" | "$JSON_PARSER" -c 'import sys,json
-try:
-    v = json.load(sys.stdin)
-    for p in sys.argv[1].split("."):
-        v = (v or {}).get(p)
-    sys.stdout.write(v if isinstance(v, str) else "")
-except Exception:
-    pass' "$1" 2>/dev/null ;;
-  esac
-}
-
-FILE_PATH=$(extract tool_input.file_path)
-SESSION_ID=$(extract session_id)
+FILE_PATH=$(json_field "$HOOK_INPUT" tool_input.file_path)
+SESSION_ID=$(json_field "$HOOK_INPUT" session_id)
 
 # Degraded path: no working parser. Pull the values out of the raw payload rather
 # than going quiet -- a check that disappears when a parser is missing is the
 # silent failure this whole guard exists to prevent.
-raw_field() {
-  printf '%s' "$HOOK_INPUT" \
-    | sed -n "s/.*\"$1\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*/\1/p" | head -1
-}
-[ -n "$FILE_PATH" ]  || FILE_PATH=$(raw_field file_path)
-[ -n "$SESSION_ID" ] || SESSION_ID=$(raw_field session_id)
+[ -n "$FILE_PATH" ]  || FILE_PATH=$(json_field_flat "$HOOK_INPUT" file_path)
+[ -n "$SESSION_ID" ] || SESSION_ID=$(json_field_flat "$HOOK_INPUT" session_id)
 
 # No path means nothing to classify. Hard-guard on empty before any use.
 [ -n "$FILE_PATH" ] || exit 0

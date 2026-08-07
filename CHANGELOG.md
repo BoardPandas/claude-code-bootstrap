@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.12.1] - 2026-08-07
+
+### Fixed
+- **The commit gates' emergency fallback had never worked either.** When no JSON interpreter is available, `_git-commit-filter.sh` was documented to fall back to scanning the whole hook payload -- "over-eager but never under-eager", so a blocking gate could not go quiet. It went quiet. The matcher strips quoted regions before looking for `git commit`, and in a raw JSON payload the command *is* a quoted region: `{"command":"git commit -F m.txt"}` strips down to `{:}` and matches nothing. The fallback was dead in exactly the same way the parser branch was, and it could not show it while the branch above it was also dead. The degraded path now lifts the command out of the raw text first, so it is bare enough to match. Verified with `node` absent and `python3` resolving to the Windows Store stub: every commit form is still detected, and `git log` still is not.
+
+### Changed
+- **JSON extraction moved into one shared `_json-parser.sh`.** The parser probe and both interpreter one-liners existed as two independently-maintained copies, in the commit filter and in the write hook. That is the arrangement `_git-commit-filter.sh` was itself created to end, and it matters more here: this code works around a bug whose entire character is silence, so a drifted copy does not throw, it returns nothing forever and the hook stops firing. The probe now also runs once at source time rather than once per field, which removes a redundant interpreter launch from every `Write` and `Edit`.
+
 ## [0.12.0] - 2026-08-07
 
 ### Added
