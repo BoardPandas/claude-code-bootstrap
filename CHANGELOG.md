@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.12.2] - 2026-08-07
+
+### Fixed
+- **`git -C <path> commit` walked straight past all three commit gates.** The filter matched `git` followed immediately by `commit`, so any of git's global flags sitting between the two hid the commit from every gate: `git -C /repo commit`, `git --git-dir=/r/.git commit`, `git -c user.name=bot commit`. Loosening the pattern to allow tokens in between is not the fix either -- that starts blocking `git log --grep=commit` and `git config --get commit.gpgsign`. Detection now walks the command's tokens the way git reads its own argv: find `git` at a command position, step over global flags (accounting for the ones that consume the *next* token as their value), and require the first non-flag token to be `commit`. Covered by a 30-case matrix of commit forms and near-misses, run against each parser backend.
+
+- **The degraded path mangled two cases it was supposed to catch.** With no interpreter available, the command is recovered from the raw payload text, and the surrounding JSON came with it: trailing structure fused onto the last token (`commit"}}` is not `commit`) and an escaped newline fused two commands into one (`x\ngit` is not `git`). Both read as "no commit here" -- silence, in the fallback whose whole job is not to be silent. The recovered text is now split on JSON's own punctuation first.
+
+### Changed
+- **Verification now covers Linux, not just the Windows failure that prompted it.** The parser probe, the argv walk, and the degraded fallback were each exercised three ways: with `node`, with a real `python3` (what a Linux box normally selects), and with no working interpreter at all -- 30/30 in every mode. One Windows-only fix was caught and reverted during this: a `sed` substitution for escaped newlines works on Linux but silently matches nothing under Git Bash, because MSYS rewrites backslashes in a command's argv. It is done with bash parameter expansion instead, which behaves identically on both.
+
 ## [0.12.1] - 2026-08-07
 
 ### Fixed

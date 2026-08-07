@@ -45,15 +45,79 @@ read_hook_input() {
 
 # True when HOOK_COMMAND actually invokes `git commit`.
 #
-# Quoted regions are stripped before matching so a command that only MENTIONS
-# the phrase is not treated as a commit:
-#   grep -r 'git commit' docs/          -> not a commit  (was blocked before)
-#   git add CHANGELOG.md && git commit  -> is a commit
-#   git commit -m "mentions git commit" -> is a commit
+#   git commit -m "mentions git commit"     -> is a commit
+#   git add CHANGELOG.md && git commit      -> is a commit
+#   git -C /other/repo commit               -> is a commit
+#   GIT_AUTHOR_NAME=x git commit            -> is a commit
+#   grep -r 'git commit' docs/              -> not a commit
+#   git config --get commit.gpgsign         -> not a commit
+#   echo git commit                         -> not a commit
+#
+# This walks the token stream rather than matching a regex, because a regex
+# fails in both directions at once and cannot be tuned out of it. Tight enough
+# to require `git` immediately followed by `commit` misses `git -C /repo commit`,
+# since git's global flags sit between the two -- and a missed commit means the
+# gate silently does not fire, the worst outcome available. Loosening it to
+# allow arbitrary tokens in between starts blocking `git log --grep=commit` and
+# `git config --get commit.gpgsign`. The walk gets both right by modelling what
+# git's argv actually looks like.
+# (LL-G kb/claude-code/hook-git-commit-filter-needs-argv-walk.md)
 is_git_commit() {
-  local stripped
-  stripped=$(printf '%s' "$HOOK_COMMAND" | sed -e "s/'[^']*'//g" -e 's/"[^"]*"//g')
-  printf '%s' "$stripped" | grep -qE '(^|[;&|(]|&&|\|\|)[[:space:]]*([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*git[[:space:]]+commit\b'
+  local normalized tok state result restore_glob
+
+  # Quoted regions collapse to ONE opaque token rather than being deleted.
+  # Deleting them looks equivalent and is not: `git -C "/path with space" commit`
+  # would become `git -C  commit`, and the -C would then swallow the word
+  # `commit` as its own value -- a commit that reports itself as not a commit.
+  #
+  # Newlines become separators, so the second line of a two-line script is still
+  # a command position.
+  normalized=$(printf '%s' "$HOOK_COMMAND" \
+    | sed -e "s/'[^']*'/__CCQ__/g" -e 's/"[^"]*"/__CCQ__/g' \
+    | tr '\n' ';' \
+    | sed -e 's/[;&|()][;&|()]*/ ; /g')
+
+  # Unquoted word splitting below would otherwise glob-expand a token like `*`
+  # against the working directory.
+  restore_glob=0
+  case $- in
+    *f*) ;;
+    *)   restore_glob=1; set -f ;;
+  esac
+
+  # cmd   -- next token starts a command
+  # flags -- inside git's global flags, still looking for the subcommand
+  # skip  -- this token is the value of the flag before it
+  # args  -- inside some other command's arguments; nothing here is a commit
+  state=cmd
+  result=1
+  for tok in $normalized; do
+    if [ "$state" = skip ]; then state=flags; continue; fi
+    if [ "$tok" = ";" ]; then state=cmd; continue; fi
+    case "$state" in
+      cmd)
+        case "$tok" in
+          *=*)                         ;;  # env assignment prefix; still at a command position
+          git|git.exe|*/git|*/git.exe) state=flags ;;
+          *)                           state=args ;;
+        esac
+        ;;
+      flags)
+        case "$tok" in
+          # Global flags that consume the NEXT token as their value. Missing one
+          # here means its value gets read as the subcommand, and the gate stops
+          # firing for every command that uses it.
+          -C|-c|--git-dir|--work-tree|--namespace) state=skip ;;
+          commit)                                  result=0; break ;;
+          -*)                                      ;;  # self-contained flag, incl. --git-dir=x
+          *)                                       state=args ;;  # some other subcommand
+        esac
+        ;;
+    esac
+  done
+
+  [ "$restore_glob" = 1 ] && set +f
+  return "$result"
 }
 
 # Commits that legitimately carry no changelog entry.

@@ -109,10 +109,29 @@ json_field_flat() {
 # region -- `{"command":"git commit -F m.txt"}` strips down to `{:}` and matches
 # nothing. Stripping the key prefix is what leaves the value bare enough to match.
 json_field_greedy() {
-  printf '%s' "$1" \
+  local v bs
+  v=$(printf '%s' "$1" \
     | grep -o "\"$2\"[[:space:]]*:[[:space:]]*\".*" \
     | head -1 \
-    | sed "s/^\"$2\"[[:space:]]*:[[:space:]]*\"//"
+    | sed "s/^\"$2\"[[:space:]]*:[[:space:]]*\"//")
+
+  # Break on JSON's own punctuation so a shell tokenizer downstream sees real
+  # words. Without this the trailing JSON glues onto the final token
+  # (`commit"}}` is not `commit`) and an escaped newline glues two commands into
+  # one (`x\ngit` is not `git`) -- both of which read as "no commit here".
+  #
+  # Parameter expansion, not sed: MSYS rewrites backslashes in a command's argv,
+  # so `sed 's/\\n/ /g'` silently matches nothing under Git Bash while working
+  # on Linux. A transform that quietly does nothing on one platform is the exact
+  # failure mode this file exists to prevent. Bash does the substitution itself,
+  # so both platforms get the same result.
+  #
+  # The pattern must stay double-quoted. Unquoted, bash reads the backslash as
+  # an escape and leaves a stray one behind (`x\ ; git`).
+  bs='\'
+  v=${v//"${bs}n"/ ; }
+  v=${v//\"/ ; }
+  printf '%s' "$v"
 }
 
 # Probe at source time, in the CALLER's shell. json_field runs its extraction in
