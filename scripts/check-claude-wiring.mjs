@@ -14,6 +14,14 @@
 // 2026-07-29. If the product changes, this guard is what tells you -- update the
 // assertion deliberately rather than deleting it.
 //
+// Every check here is an ERROR. There is deliberately no warning tier: a check
+// that reports without failing is read once, on the day it is added, and never
+// again. The context budgets were advisory until 2026-08-21 and CLAUDE.md had
+// drifted to 95% of its ceiling unnoticed.
+//
+// scripts/check-claude-wiring.test.mjs asserts each check still fires. A guard
+// with no tests is the thing it exists to prevent.
+//
 // BP: practices/claude-config/verify-claude-wiring-in-ci.md
 // LL-G: kb/claude-code/{cursor-frontmatter-keys-ignored,hook-matcher-tool-names-only,
 //                       hook-empty-path-formats-repo,line-budgets-gamed-by-long-lines}.md
@@ -23,7 +31,6 @@ import { join, relative } from "node:path";
 
 const ROOT = process.cwd();
 const errors = [];
-const warnings = [];
 const notes = [];
 
 // Always-on context ceilings, in bytes. Budget by BYTES, not lines: a line-count
@@ -291,6 +298,39 @@ for (const dir of [".claude/skills", ".claude/agents"]) {
   }
 }
 
+// ------------------- 9: every skill must resolve to a model, one way or another
+// A skill either declares model: itself, or binds agent: and inherits that
+// agent's. Neither is wrong -- silently having *neither* is, because the skill
+// then runs on whatever the session happens to be using. Checking the pair keeps
+// the agent-binding pattern legal instead of forcing a redundant model: on skills
+// that deliberately delegate (security-scan takes opus from the security agent).
+const agentModel = new Map();
+for (const file of walk(join(ROOT, ".claude/agents")).filter((p) => p.endsWith(".md")).filter(notExcluded)) {
+  const front = frontmatter(read(file)) ?? "";
+  const name = file.split(/[\\/]/).pop().replace(/\.md$/, "");
+  agentModel.set(name, front.match(/^\s*model\s*:\s*(\S+)/m)?.[1] ?? null);
+}
+
+for (const file of walk(join(ROOT, ".claude/skills")).filter((p) => p.endsWith("SKILL.md")).filter(notExcluded)) {
+  const front = frontmatter(read(file)) ?? "";
+  if (/^\s*model\s*:/m.test(front)) continue;
+
+  const bound = front.match(/^\s*agent\s*:\s*(\S+)/m)?.[1];
+  if (!bound) {
+    errors.push(
+      `${rel(file)}: declares no model: and binds no agent:, so it runs on whatever model the ` +
+        `session happens to be using. Add model:, or bind agent: to inherit one.`,
+    );
+  } else if (!agentModel.has(bound)) {
+    errors.push(`${rel(file)}: binds agent: ${bound}, which does not exist in .claude/agents/.`);
+  } else if (agentModel.get(bound) === null) {
+    errors.push(
+      `${rel(file)}: inherits its model from agent: ${bound}, but that agent declares no model: ` +
+        `either. Declare one on the agent.`,
+    );
+  }
+}
+
 // -------------------------------------------- 4: always-on context budget
 const CLAUDE_MD = join(ROOT, "CLAUDE.md");
 let claudeMdBytes = 0;
@@ -301,7 +341,7 @@ if (existsSync(CLAUDE_MD)) {
   alwaysOnFiles.unshift("CLAUDE.md");
 
   if (claudeMdBytes > CLAUDE_MD_CEILING) {
-    warnings.push(
+    errors.push(
       `CLAUDE.md is ${claudeMdBytes} bytes (~${tokens(claudeMdBytes)} tok), over the ` +
         `${CLAUDE_MD_CEILING}-byte ceiling. Move detail down into docs and keep pointers up here.`,
     );
@@ -323,7 +363,7 @@ if (existsSync(CLAUDE_MD)) {
 }
 
 if (alwaysOnBytes > ALWAYS_ON_CEILING) {
-  warnings.push(
+  errors.push(
     `Always-on context is ${alwaysOnBytes} bytes (~${tokens(alwaysOnBytes)} tok), over the ` +
       `${ALWAYS_ON_CEILING}-byte ceiling. Above this, individual rules stop being salient ` +
       `regardless of wording.`,
@@ -346,10 +386,6 @@ for (const f of alwaysOnFiles) console.log(`  · ${f}`);
 if (notes.length) {
   console.log(`\nExempted (${notes.length}):`);
   for (const n of notes) console.log(`  · ${n}`);
-}
-if (warnings.length) {
-  console.log(`\nWarnings (${warnings.length}):`);
-  for (const w of warnings) console.log(`  ! ${w}`);
 }
 if (errors.length) {
   console.log(`\nErrors (${errors.length}):`);

@@ -4,48 +4,56 @@ description: Update changelog and version before committing
 
 # Pre-Commit: Changelog & Version Update
 
-Before every `git commit`, you MUST:
+Every commit ships a CHANGELOG.md section and a matching version bump. This is
+enforced by `.claude/scripts/check-changelog-staged.sh`, which blocks the commit
+otherwise -- the steps below are the contract it checks, not advice.
 
-## 1. Update CHANGELOG.md
+## 1. Add a new CHANGELOG.md section
 
-- Move relevant items from `[Unreleased]` into a new versioned section if releasing, or add new entries under `[Unreleased]`.
-- Categorize changes using [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) sections:
-  - **Added** — new features or capabilities
-  - **Changed** — changes to existing functionality
-  - **Fixed** — bug fixes
-  - **Removed** — removed features
-  - **Security** — vulnerability fixes
-- Review staged changes (`git diff --cached`) to determine what changed.
-- Write entries from the user's perspective, not implementation details.
+There is no `[Unreleased]` staging area. Each commit adds its own section at the
+top of the file, newest first:
 
-## 2. Bump Version in package.json
+```markdown
+## [0.9.1] - 2026-08-21
 
-Version format: **Major.Minor.Patch** (SemVer, e.g., `0.0.1`)
+### Added
+- New capability, described from the user's perspective.
+```
+
+Categorise with [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) headings:
+**Added**, **Changed**, **Fixed**, **Removed**, **Security**. Review `git diff --cached`
+to see what actually changed, and write entries as effects on the user, not as
+implementation notes.
+
+## 2. Bump the version in package.json to match
+
+Version format: **Major.Minor.Patch** (SemVer). The version in package.json and
+the version in the new CHANGELOG.md heading must be identical.
 
 | Segment | When to increment | Resets | Example |
 |---|---|---|---|
-| **Major** (1st) | Breaking changes — API contract changes, database schema migrations that break compatibility, authentication flow changes, removal of public endpoints | Minor, Patch → 0 | 1.2.3 → 2.0.0 |
-| **Minor** (2nd) | New features or enhancements — new pages, new API endpoints, new dashboard widgets, new integrations, new worker jobs | Patch → 0 | 1.2.3 → 1.3.0 |
-| **Patch** (3rd) | Bug fixes, security patches, performance improvements, dependency updates, docs, refactors, config changes, chores, and any other change not covered above | Nothing | 1.2.3 → 1.2.4 |
+| **Major** (1st) | Breaking changes — API contract changes, schema migrations that break compatibility, auth flow changes, removal of public endpoints | Minor, Patch → 0 | 1.2.3 → 2.0.0 |
+| **Minor** (2nd) | New features or enhancements — new pages, endpoints, integrations, worker jobs | Patch → 0 | 1.2.3 → 1.3.0 |
+| **Patch** (3rd) | Everything else — bug fixes, security patches, performance, dependencies, docs, refactors, config, chores | Nothing | 1.2.3 → 1.2.4 |
 
-Rules:
-- Every commit bumps at least the **Patch** segment, no exceptions.
-- When a higher segment increments, all lower segments reset to 0.
-- If a commit includes both a feature and a bug fix, use the **highest** applicable bump (Minor in that case).
-- **NEVER bump Major autonomously.** Always ask the user for guidance before incrementing the Major version, even if the changes appear to be breaking. The user decides when a Major bump happens.
-- If unsure between Minor and Patch, ask the user.
+- Every commit bumps at least **Patch**, no exceptions.
+- A higher segment incrementing resets all lower segments to 0.
+- A commit with both a feature and a fix takes the **highest** applicable bump.
+- **NEVER bump Major autonomously.** Ask the user first, even when the change
+  looks breaking. The user decides when Major moves.
+- If unsure between Minor and Patch, ask.
 
-## 3. Stage Both Files
+## 3. Make the edits their own step, then commit
 
-After updating, stage both files before committing:
 ```bash
 git add CHANGELOG.md package.json
 ```
 
-## Workflow
+The gate is a PreToolUse hook, so it runs **before** your command. It cannot see
+files that the very command it is checking has not written yet — folding the edit
+into `... && git commit` does not satisfy it. Edit and stage first, commit second.
 
-1. Run `git diff --cached --stat` to see what's staged
-2. Update CHANGELOG.md with appropriate entries
-3. Bump version in package.json
-4. `git add CHANGELOG.md package.json`
-5. Proceed with the commit
+## Exemptions
+
+Merge commits, `--amend`, and the initial commit are exempt automatically. For a
+genuinely trivial commit, `SKIP_CHANGELOG=1` bypasses the gate.

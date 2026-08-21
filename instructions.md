@@ -37,6 +37,7 @@ This repository provides a pre-configured `.claude/` folder that gives Claude Co
     update-practices/SKILL.md  # Best practice updates
     spec-developer/SKILL.md   # Interview-driven feature specs
     security-scan/SKILL.md # Security scanning
+    repo-review/SKILL.md   # General code health review
     performance-review/SKILL.md  # Performance analysis
     dependency-audit/SKILL.md    # Dependency checking
     test-scaffold/SKILL.md      # Test generation
@@ -48,7 +49,6 @@ This repository provides a pre-configured `.claude/` folder that gives Claude Co
     ux-review/SKILL.md          # UX review against Laws of UX
     merge-worktrees/SKILL.md    # Merge worktrees/branches into main, clean up
     triage-issues/SKILL.md      # Fix open GitHub issues via builder subagents
-    agy-execute-plan/SKILL.md   # Hand a plan to the Antigravity CLI, then verify
   references/
     source-urls.md         # URL registry for fetching best practices
     infrastructure.md      # Fixed infrastructure stack (do not modify)
@@ -138,6 +138,12 @@ All planning uses phases, never dates or time estimates:
 - **What it does:** Leaked secrets, OWASP Top 10, dependency CVEs, input validation gaps.
 - **Scope:** Optionally pass a file or directory path.
 
+### repo-review
+
+- **Trigger:** "repo review", "code health review", "review the repo"
+- **What it does:** Whole-repo code health -- correctness risks, error handling gaps, dead code, duplication, oversized files, repo hygiene -- with fix recommendations and pointers into the specialised scan skills for deep dives.
+- **Scope:** Optionally pass a file or directory path.
+
 ### performance-review
 
 - **Trigger:** "performance review", "perf review", "check performance"
@@ -202,12 +208,6 @@ All planning uses phases, never dates or time estimates:
 - **What it does:** Reads the open GitHub issues, groups duplicates that share a root cause, and dispatches one worktree-isolated `builder` subagent per unit to implement and verify the fix. The main session then merges each finished branch one at a time, re-verifies on the merged tree, updates CHANGELOG/version, commits, pushes to the main branch, and closes the issues. Anything a subagent could not resolve comes back as a blocker with a concrete recommendation and gets a `claude-blocked` label so the next default run skips it.
 - **Scope:** Blank for every open issue, specific numbers (`284 290`), or `all` to retry previously blocked issues.
 - **Hard stops:** a dirty working tree, a protected main branch, a merge conflict, a failed verification, or a rejected push. It never force-pushes and never closes an issue before the fix is pushed.
-
-### agy-execute-plan
-
-- **Trigger:** "have AGY run the plan", "let Antigravity build this", "agy the plan then double-check it"
-- **What it does:** Hands an existing Claude-written plan to the Antigravity CLI (`agy`) for autonomous end-to-end execution, then independently verifies the result against the plan via tests and the git diff (not AGY's self-reported log), fixes whatever AGY left incomplete or broke, and reports an honest blocked/partial/complete status.
-- **When to use:** When a plan in `tasks/` should be carried out by AGY rather than by Claude directly.
 
 ---
 

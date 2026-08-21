@@ -6,17 +6,33 @@ on:
   pull_request:
   workflow_dispatch:
 
+# No job here needs to write anything. Declaring it explicitly means a compromised
+# action gets a read-only token rather than whatever the org default happens to be.
+permissions:
+  contents: read
+
 jobs:
   claude-wiring:
     name: Claude wiring guard
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      # Third-party actions are pinned to full commit SHAs: a tag is mutable, so
+      # `@v4` re-points wherever the publisher (or an attacker who reaches the
+      # repo) moves it. Comments record the human-readable version.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           # globSync is stable from Node 22.
           node-version: "22"
+
+      # Deliberately BEFORE the guard itself: a green guard whose checks have been
+      # narrowed to match nothing is indistinguishable from a clean repo, which is
+      # the exact failure mode this repo exists to prevent. Verify the ruler, then
+      # measure. Also covers the commit gate's refusal paths, which only ever run
+      # when someone is being stopped -- so nothing else would exercise them.
+      - name: Gate self-tests (wiring guard + commit gate)
+        run: npm test
 
       # Runs before any install/build step so it fails fast. This repo has no
       # build, but keep the ordering when the template is cloned into one.

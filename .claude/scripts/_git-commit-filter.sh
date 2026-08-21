@@ -120,10 +120,31 @@ is_git_commit() {
   return "$result"
 }
 
+# Anchors every subsequent git call to the repo root, so a commit issued from a
+# subdirectory is judged against the same tree as one issued from the top.
+#
+# NOTE: this anchors to the SESSION's repo. `git -C /other/repo commit` and
+# `cd /other/repo && git commit` retarget the command but not the hook, so a
+# cross-repo commit is still judged against the wrong tree.
+# (LL-G kb/claude-code/hook-cwd-is-not-the-commit-target-repo.md)
+anchor_to_repo_root() {
+  local root
+  root=$(git rev-parse --show-toplevel 2>/dev/null) || return 1
+  cd "$root" || return 1
+}
+
 # Commits that legitimately carry no changelog entry.
 is_changelog_exempt() {
   # Merge commits: the merged branches carry their own entries.
   if git rev-parse -q --verify MERGE_HEAD >/dev/null 2>&1; then
+    return 0
+  fi
+  # --amend rewrites a commit that already carried its entry.
+  if printf '%s' "$HOOK_COMMAND" | grep -qE 'git[[:space:]]+commit[^&|;]*--amend'; then
+    return 0
+  fi
+  # The initial commit has no HEAD to diff against.
+  if ! git rev-parse -q --verify HEAD >/dev/null 2>&1; then
     return 0
   fi
   # Explicit opt-out for reverts, hotfixes, genuinely trivial commits.
@@ -133,12 +154,55 @@ is_changelog_exempt() {
   return 1
 }
 
-# True when CHANGELOG.md is already staged, or when this very command stages it.
-# The hook fires BEFORE the command runs, so a compound
-# "git add CHANGELOG.md && git commit ..." has not staged it yet.
-changelog_is_handled() {
-  if printf '%s' "$HOOK_COMMAND" | grep -qE 'git add [^&|;]*CHANGELOG\.md'; then
-    return 0
-  fi
-  git diff --cached --name-only 2>/dev/null | grep -q '^CHANGELOG\.md$'
+# Reads the "version" field out of package.json content on stdin.
+read_version() {
+  sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1
+}
+
+# The version this commit is shipping, per the working tree. Empty when the repo
+# has no package.json -- the template is cloned into non-Node repos too, and a
+# gate that blocks every commit there is a gate people rip out.
+current_version() {
+  [ -f package.json ] || return 0
+  read_version < package.json
+}
+
+# ---------------------------------------------------------------------------
+# The three checks below test STATE and CONSEQUENCE, never the command's text.
+#
+# A PreToolUse hook fires BEFORE the command runs, so the tempting shortcut is to
+# accept any command that *says* it stages the changelog. That is a gate on
+# intent, and intent is satisfiable without doing the thing: `git add CHANGELOG.md`
+# stages nothing when the file is unmodified, so the exemption fires for exactly
+# the commits it exists to stop. This file carried that bug until 2026-08-21.
+# (LL-G kb/claude-code/hook-validates-text-not-state.md)
+#
+# Diffing against HEAD instead of the index is what removes the need for any text
+# exemption: it sees the edit whether or not it has been staged yet. The tradeoff
+# is real and belongs in the block message -- the changelog edit must be its own
+# step, before the commit call.
+# ---------------------------------------------------------------------------
+
+# True when CHANGELOG.md differs from HEAD (staged or merely edited).
+changelog_was_edited() {
+  ! git diff --quiet HEAD -- CHANGELOG.md 2>/dev/null
+}
+
+# True when package.json's version differs from HEAD's.
+version_was_bumped() {
+  [ -f package.json ] || return 0
+  local now before
+  now=$(current_version)
+  before=$(git show HEAD:package.json 2>/dev/null | read_version)
+  [ -n "$now" ] && [ "$now" != "$before" ]
+}
+
+# True when CHANGELOG.md actually names the version being shipped. "The file
+# changed" is weak; "the file documents this release" is the invariant, and it is
+# the one that catches an edit that silently landed in the wrong section.
+changelog_names_version() {
+  local v
+  v=$(current_version)
+  [ -n "$v" ] || return 0
+  grep -qF "## [$v]" CHANGELOG.md 2>/dev/null
 }

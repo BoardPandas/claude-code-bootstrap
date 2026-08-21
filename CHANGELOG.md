@@ -4,6 +4,33 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.13.0] - 2026-08-21
+
+### Added
+
+- **Test suites for both gates** (`npm test`). `scripts/check-claude-wiring.test.mjs` builds a passing fixture repo, then breaks one thing at a time and asserts the wiring guard exits non-zero and names the defect — 22 cases covering every check. `scripts/check-changelog-gate.test.mjs` asserts the commit gate in both directions across 17 cases: each refusal path, each allow path, every exemption, subdirectory invocation, and graceful degradation in a repo with no `package.json`. Previously the guard was the only thing standing between silently-dead config and green CI, and nothing verified the guard itself still worked.
+- **Wiring check: every skill must resolve to a model.** A skill either declares `model:` or binds `agent:` and inherits that agent's. Declaring neither leaves it running on whatever the session happens to be using, which is now a build failure rather than an invisible default.
+- **`repo-review` documented in instructions.md**, which had never listed it.
+
+### Changed
+
+- **The context budgets now fail the build instead of warning.** `CLAUDE.md` over 16 KB, or all always-on context over 20 KB, is an error. There is no warning tier left in the wiring guard: an advisory check is read on the day it is added and never again, and in the meantime `CLAUDE.md` had drifted to 95% of a ceiling nobody was enforcing.
+- **`CLAUDE.md` trimmed back under budget.** The 30-item hook-event list and the optional-settings list were duplicated verbatim from `.claude/references/hooks-and-settings.md`; both are now pointers to it, with an instruction to read it before editing hooks. Net 845 bytes of headroom restored.
+- **CI hardening.** Third-party actions are pinned to full commit SHAs rather than mutable `@v4` tags, and the workflow declares `permissions: contents: read`.
+- **The changelog flow is direct-to-version.** There is no `[Unreleased]` staging area — each commit adds its own `## [version]` section. The rule and both hooks said otherwise while the repo had done it this way for 29 releases.
+
+### Fixed
+
+- **The commit gate no longer accepts intent in place of state.** It previously allowed any command whose *text* mentioned staging the changelog, and `git add CHANGELOG.md` stages nothing when the file is unmodified — so the exemption fired for exactly the commits it existed to stop. It now checks that `CHANGELOG.md` differs from `HEAD`, that `package.json`'s version differs from `HEAD`'s, and that the changelog contains a section naming that version. The tradeoff is stated in the block message: the edit must be its own step, because a `PreToolUse` hook cannot see a file the command it is checking has not written yet. (LL-G `kb/claude-code/hook-validates-text-not-state.md`)
+- **The commit gate enforces the version bump it always demanded.** Its own refusal message told you to bump `package.json`; nothing checked. A commit with a staged changelog and an unchanged version passed.
+- **The gate is anchored to the repo root**, so a commit issued from a subdirectory is judged against the same tree as one issued from the top.
+- **Exemptions for `--amend` and the initial commit**, both of which previously tripped the gate for no reason.
+- **`README.md` no longer teaches trigger phrases that cannot work.** `plan-repo`, `spec-developer`, `mermaid-diagram`, and `merge-worktrees` set `disable-model-invocation: true`, so the plain-English phrases the Quick Start recommended silently did nothing. They are now shown as slash commands, with a note explaining the distinction.
+- **`README.md` skill and agent tables brought current** — they listed 10 of 16 skills and 5 of 8 agents, omitting the entire LL-G/BP contribution loop that RULE 1 and RULE 3 depend on.
+- **`README.md` clone URL and sync date corrected** — it pointed at a `your-org` placeholder and claimed March 2026.
+- **Removed the `agy-execute-plan` documentation from `instructions.md`.** The skill was deleted; its tree entry and full reference section remained, describing a subsystem that no longer exists.
+- **`design-guardrails.md` marked as generated** in `README.md`, which described it as if it shipped with the template.
+
 ## [0.12.2] - 2026-08-07
 
 ### Fixed
