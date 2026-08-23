@@ -48,7 +48,7 @@ Then open Claude Code in your repo and say: **"initialize repo"** to merge the t
 
 | Skill | Trigger | Description |
 |-------|---------|-------------|
-| plan-repo | `/plan-repo` | Research and recommend best tech stack, generate README, design guardrails, tools reference |
+| plan-repo | `/plan-repo` | Research and recommend best tech stack for a web or desktop target, pick the infra profile (Cloudflare or Railway), generate README, design guardrails, tools reference |
 | init-repo | "initialize repo" | Build or rebuild the .claude/ folder with best practices |
 | update-practices | "update practices" | Fetch latest best practices and update config |
 | spec-developer | `/spec-developer` | Interview-driven feature spec saved to /tasks |

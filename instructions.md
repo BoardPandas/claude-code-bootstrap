@@ -51,7 +51,7 @@ This repository provides a pre-configured `.claude/` folder that gives Claude Co
     triage-issues/SKILL.md      # Fix open GitHub issues via builder subagents
   references/
     source-urls.md         # URL registry for fetching best practices
-    infrastructure.md      # Fixed infrastructure stack (do not modify)
+    infrastructure.md      # Cloudflare and Railway profiles (do not modify)
     tools.md               # CLI tools reference (auto-populated per stack)
     ux-laws.md             # Laws of UX / Gestalt reference for ux-review
     hooks-and-settings.md  # Canonical hook/settings catalog
@@ -104,9 +104,9 @@ All planning uses phases, never dates or time estimates:
 ### plan-repo
 
 - **Trigger:** "plan repo", "plan project", "plan stack", "recommend stack"
-- **What it does:** Interviews you about the project requirements (what it does, target platform, scale, constraints) -- but does NOT ask you to pick a stack. Instead, it spins up parallel research subagents to compare current options (Go vs Rust vs TS, shadcn vs MUI vs Mantine, Drizzle vs Prisma, etc.) as of today's date, then recommends the best stack for your specific project with trade-offs. You approve or override, then it generates README, design guardrails, and tools reference.
+- **What it does:** Interviews you about the project requirements (what it does, how it is delivered -- web, desktop, or both -- scale, constraints) -- but does NOT ask you to pick a stack or a hosting platform. Instead, it spins up research subagents in waves to compare current options (Cloudflare vs Railway, Go vs Rust vs TS, Tauri vs Electron vs Flutter, shadcn vs MUI vs Mantine, Drizzle vs Prisma, etc.) as of today's date, then recommends the best stack for your specific project with trade-offs. You approve or override, then it generates README, design guardrails, and tools reference.
 - **When to use:** Before init-repo on new projects, or when evaluating a stack change.
-- **Output:** Stack recommendation with trade-offs, plan file (`tasks/plan-repo.md`), README draft, design guardrails (if UI), tools reference.
+- **Output:** Infrastructure profile decision (or "local-only, no infrastructure"), stack recommendation with trade-offs, plan file (`tasks/plan-repo.md`), README draft, design guardrails (if UI), tools reference.
 - **Key concept:** It recommends, you decide. Every recommendation is backed by current research, not cached opinions.
 
 ### init-repo
