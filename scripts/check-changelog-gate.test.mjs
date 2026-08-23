@@ -19,7 +19,7 @@ import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, writeFileSync, rmSync, mkdirSync, readFileSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { join, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { tmpdir } from "node:os";
 
@@ -42,8 +42,8 @@ function git(cwd, ...args) {
 }
 
 // Builds a throwaway repo with one commit already in history.
-function makeRepo({ withPackageJson = true, version = "1.0.0" } = {}) {
-  const dir = mkdtempSync(join(tmpdir(), "changelog-gate-"));
+function makeRepo({ withPackageJson = true, version = "1.0.0", prefix = "changelog-gate-" } = {}) {
+  const dir = mkdtempSync(join(tmpdir(), prefix));
   git(dir, "init", "-q", ".");
   git(dir, "config", "user.email", "t@example.com");
   git(dir, "config", "user.name", "t");
@@ -58,14 +58,30 @@ function makeRepo({ withPackageJson = true, version = "1.0.0" } = {}) {
 }
 
 // Runs the gate against `dir` with the given command string. Returns its exit code.
-function runGate(dir, command, { env = {}, cwd = dir } = {}) {
+//
+// `payloadCwd` is the cwd the harness reports in the hook payload, i.e. where the
+// command is about to run. Left out by default so the common cases keep covering
+// the fallback to the hook process's own cwd.
+function runGate(dir, command, { env = {}, cwd = dir, payloadCwd } = {}) {
+  const payload = { tool_input: { command } };
+  if (payloadCwd) payload.cwd = payloadCwd;
   const r = spawnSync("bash", [GATE], {
     cwd,
-    input: JSON.stringify({ tool_input: { command } }),
+    input: JSON.stringify(payload),
     encoding: "utf8",
     env: { ...process.env, ...env },
   });
   return { code: r.status, stderr: r.stderr };
+}
+
+// Brings a repo built by makeRepo into compliance: a bumped version and a
+// changelog section naming it.
+function satisfyContract(dir) {
+  writeFileSync(
+    join(dir, "CHANGELOG.md"),
+    "# Changelog\n\n## [1.0.1] - 2026-08-23\n- real entry\n\n## [1.0.0] - 2026-01-01\n- initial\n",
+  );
+  writeFileSync(join(dir, "package.json"), '{\n  "version": "1.0.1"\n}\n');
 }
 
 const ALLOW = 0;
@@ -165,10 +181,128 @@ describe("allows commits that satisfy it", () => {
   });
 });
 
+// The hook process runs in the SESSION's repo; the command it is judging may
+// target a different one. Both failure directions are live here, and they are the
+// ones that make a gate get ripped out: a compliant cross-repo commit refused
+// because the session's changelog is stale, and a non-compliant one waved through
+// because the session's happens to be current.
+// (LL-G kb/claude-code/hook-cwd-is-not-the-commit-target-repo.md)
+describe("judges the repo the command targets, not the session's", () => {
+  // The session repo is deliberately the OPPOSITE of the target on every case, so
+  // a gate that reads the wrong tree cannot accidentally return the right answer.
+  function withPair(sessionSatisfied, targetSatisfied, body) {
+    const session = makeRepo();
+    const target = makeRepo();
+    try {
+      if (sessionSatisfied) satisfyContract(session);
+      if (targetSatisfied) satisfyContract(target);
+      body(session, target);
+    } finally {
+      rmSync(session, { recursive: true, force: true });
+      rmSync(target, { recursive: true, force: true });
+    }
+  }
+
+  test("cd into another repo: allows when THAT repo satisfies the contract", () => {
+    withPair(false, true, (session, target) => {
+      const { code, stderr } = runGate(session, `cd ${target} && ${commitCmd()}`);
+      assert.equal(code, ALLOW, `the target repo is compliant but was blocked:\n${stderr}`);
+    });
+  });
+
+  test("cd into another repo: blocks when THAT repo does not, however clean the session's is", () => {
+    withPair(true, false, (session, target) => {
+      const { code, stderr } = runGate(session, `cd ${target} && ${commitCmd()}`);
+      assert.equal(code, BLOCK, "a compliant session repo must not vouch for another repo");
+      assert.match(stderr, /CHANGELOG\.md is unchanged from HEAD/);
+    });
+  });
+
+  test("-C into another repo: allows when THAT repo satisfies the contract", () => {
+    withPair(false, true, (session, target) => {
+      const { code, stderr } = runGate(session, `${GIT} -C ${target} ${COMMIT} -m x`);
+      assert.equal(code, ALLOW, `the target repo is compliant but was blocked:\n${stderr}`);
+    });
+  });
+
+  test("-C into another repo: blocks when THAT repo does not", () => {
+    withPair(true, false, (session, target) => {
+      assert.equal(runGate(session, `${GIT} -C ${target} ${COMMIT} -m x`).code, BLOCK);
+    });
+  });
+
+  // git itself resolves these left to right, so -C wins over an earlier cd.
+  test("the last redirection wins, as it does for git", () => {
+    withPair(false, true, (session, target) => {
+      assert.equal(runGate(session, `cd ${target} && ${GIT} -C ${session} ${COMMIT} -m x`).code, BLOCK);
+      assert.equal(runGate(target, `cd ${session} && ${GIT} -C ${target} ${COMMIT} -m x`).code, ALLOW);
+    });
+  });
+
+  test("a quoted path keeps its spaces", () => {
+    const session = makeRepo();
+    const target = makeRepo({ prefix: "changelog gate spaced-" });
+    try {
+      satisfyContract(target);
+      const { code, stderr } = runGate(session, `cd "${target}" && ${commitCmd()}`);
+      assert.equal(code, ALLOW, `a path with a space must still resolve:\n${stderr}`);
+    } finally {
+      rmSync(session, { recursive: true, force: true });
+      rmSync(target, { recursive: true, force: true });
+    }
+  });
+
+  // A relative path is meaningless without a base, and the base is the payload's
+  // cwd -- where the command runs -- not wherever the hook process happens to sit.
+  test("a relative cd resolves against the payload's cwd", () => {
+    withPair(false, true, (session, target) => {
+      const { code, stderr } = runGate(session, `cd ${relative(session, target)} && ${commitCmd()}`, {
+        cwd: tmpdir(),
+        payloadCwd: session,
+      });
+      assert.equal(code, ALLOW, `relative target should have resolved:\n${stderr}`);
+
+      // The other direction, or "resolved nothing and gave up" scores as a pass.
+      assert.equal(
+        runGate(target, `cd ${relative(target, session)} && ${commitCmd()}`, {
+          cwd: tmpdir(),
+          payloadCwd: target,
+        }).code,
+        BLOCK,
+      );
+    });
+  });
+
+  // Refusing what it cannot see is how a gate gets bypassed wholesale, taking the
+  // changelog check with it. An unresolvable target is the one case where the
+  // permissive direction is the right one.
+  test("an unresolvable target allows rather than blocking a repo it cannot see", () => {
+    withPair(false, false, (session) => {
+      assert.equal(runGate(session, `cd $ELSEWHERE && ${commitCmd()}`).code, ALLOW);
+      assert.equal(runGate(session, `cd ./no-such-dir && ${commitCmd()}`).code, ALLOW);
+    });
+  });
+
+  test("a subshell's cd does not outlive it", () => {
+    withPair(false, true, (session, target) => {
+      assert.equal(runGate(session, `(cd ${target}) && ${commitCmd()}`).code, BLOCK);
+      // ...but one that wraps the commit itself still applies to it.
+      assert.equal(runGate(session, `(cd ${target} && ${commitCmd()})`).code, ALLOW);
+    });
+  });
+});
+
 describe("exemptions", () => {
   const exempt = [
     ["--amend rewrites a commit that already carried its entry", () => ({}), commitCmd("--amend -m x")],
-    ["SKIP_CHANGELOG=1 opts out", () => ({ env: { SKIP_CHANGELOG: "1" } }), commitCmd()],
+    ["SKIP_CHANGELOG=1 in the hook's own environment opts out", () => ({ env: { SKIP_CHANGELOG: "1" } }), commitCmd()],
+    // The bypass as a user actually types it. The harness spawns the hook itself,
+    // so a variable set on the Bash tool's command line never reaches the hook
+    // process -- reading only $SKIP_CHANGELOG made the documented escape hatch
+    // unreachable while the block message went on advertising it.
+    ["SKIP_CHANGELOG=1 as a command prefix opts out", () => ({}), `SKIP_CHANGELOG=1 ${commitCmd()}`],
+    ["export SKIP_CHANGELOG=1 earlier in the command opts out", () => ({}),
+      `export SKIP_CHANGELOG=1 && ${commitCmd()}`],
     ["a non-commit command is none of the hook's business", () => ({}), `${GIT} log --grep=commit`],
   ];
 
@@ -182,6 +316,37 @@ describe("exemptions", () => {
       }
     });
   }
+
+  // The permissive direction of the same check: an opt-out is only an opt-out at a
+  // command position, or every commit message that discusses the bypass gets one.
+  test("merely mentioning the opt-out in a commit message does not exempt", () => {
+    const dir = makeRepo();
+    try {
+      const { code } = runGate(dir, commitCmd(`-m "explain SKIP_CHANGELOG=1 in the docs"`));
+      assert.equal(code, BLOCK, "text inside a quoted message is not a command");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  // The block message names the escape hatch; if the two ever disagree, the user
+  // is told to do something that does not work. That is exactly what shipped.
+  test("the escape hatch the block message names is the one that works", () => {
+    const dir = makeRepo();
+    try {
+      const { stderr } = runGate(dir, commitCmd());
+      const advertised = stderr.match(/SKIP_CHANGELOG=1[^\n]*/);
+      assert.ok(advertised, "the block message must name the bypass");
+      assert.match(
+        advertised[0],
+        new RegExp(`SKIP_CHANGELOG=1 ${GIT} ${COMMIT}`),
+        "the message must show the bypass as a command prefix, the only form the hook can see",
+      );
+      assert.equal(runGate(dir, `SKIP_CHANGELOG=1 ${commitCmd()}`).code, ALLOW);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 
   test("a merge in progress is exempt", () => {
     const dir = makeRepo();

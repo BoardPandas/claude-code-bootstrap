@@ -22,7 +22,9 @@
 #   - Merge commits (MERGE_HEAD exists) -- the merged branches carry their own entries.
 #   - git commit --amend -- the commit being rewritten already carried its entry.
 #   - The initial commit -- there is no HEAD to diff against.
-#   - SKIP_CHANGELOG=1 in the environment -- for reverts, hotfixes, trivial commits.
+#   - SKIP_CHANGELOG=1 prefixed onto the command -- for reverts, hotfixes, trivial
+#     commits. Read from the command TEXT: the harness spawns this hook itself, so
+#     a variable set on the Bash tool's command line is not in this process's env.
 #
 # In a repo with no package.json the version checks self-disable and this
 # degrades to check 1, because a gate that blocks every commit in a non-Node repo
@@ -55,7 +57,13 @@ fail() {
     echo "compound command does not count -- make it a separate step first."
     echo ""
     echo "Exempt: merge commits, --amend, the initial commit. For a genuinely"
-    echo "trivial commit, set SKIP_CHANGELOG=1 to bypass."
+    echo "trivial commit, prefix the command itself:"
+    echo ""
+    echo "     SKIP_CHANGELOG=1 git commit -m \"...\""
+    echo ""
+    echo "The prefix must ride on the same command being judged -- the hook reads"
+    echo "it out of the command text, not out of its own environment, which the"
+    echo "harness gives it rather than your shell."
   } >&2
   exit 2
 }

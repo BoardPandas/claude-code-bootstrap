@@ -56,4 +56,9 @@ into `... && git commit` does not satisfy it. Edit and stage first, commit secon
 ## Exemptions
 
 Merge commits, `--amend`, and the initial commit are exempt automatically. For a
-genuinely trivial commit, `SKIP_CHANGELOG=1` bypasses the gate.
+genuinely trivial commit, prefix the command itself -- `SKIP_CHANGELOG=1 git commit
+-m "..."`. The hook reads the assignment out of the command text, so exporting the
+variable in an earlier command does not reach it.
+
+The gate judges the repo the command targets, `cd otherrepo && ...` and `git -C
+otherrepo ...` included -- not whichever repo the session started in.
