@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.14.1] - 2026-08-23
+
+### Fixed
+
+- **The commit gate now judges the repo your command actually targets.** `cd otherrepo && git commit` and `git -C otherrepo commit` were checked against the CHANGELOG.md of whichever repo the session started in — refusing a perfectly compliant commit in another clone, and waving through a non-compliant one whenever the session's own changelog happened to be current. The gate now follows `cd`/`pushd` and `-C` out of the command text (later redirection wins, as it does for git), resolving relative paths against the directory the command will run in. When the target genuinely cannot be determined — a path built from a variable, a directory that does not exist, an explicit `--git-dir` — the commit is allowed rather than blocked.
+- **`SKIP_CHANGELOG=1` actually bypasses the gate now.** The documented escape hatch, the one the block message itself tells you to reach for, never worked: hooks are spawned by the harness and do not inherit variables set on the command being checked, so the bypass silently did nothing and the commit stayed blocked. `SKIP_CHANGELOG=1 git commit -m "..."` is now read out of the command text. It must be a prefix on the command itself — mentioning it inside a commit message exempts nothing.
+
 ## [0.14.0] - 2026-08-23
 
 ### Added
