@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.14.0] - 2026-08-23
+
+### Added
+
+- **Two infrastructure profiles instead of one locked stack.** Server-side work now deploys onto **Cloudflare** (Workers for frontend and API, D1 or Hyperdrive-fronted Postgres, KV and Durable Objects, Queues, Cron Triggers, native CDN/WAF) or **Railway** (container services, managed Postgres and Redis, cron service type, volumes, with a Cloudflare proxy in front). Profiles are picked whole rather than mixed layer by layer, because the two platforms do not map onto each other — Cloudflare has no Redis and no managed Postgres, Railway has no object storage or edge network. `.claude/references/infrastructure.md` documents both end to end with diagrams, constraints, and a table of requirements that decide the choice outright.
+- **plan-repo researches the platform instead of being told it.** A new Wave 1 subagent compares both profiles against the project's actual requirements as of the current date and reports a recommendation, the strongest argument against it, and any requirement that rules a profile out. The user approves or overrides it in the stack recommendation like any other layer; overriding the profile re-runs the dependent research rather than keeping picks that no longer fit.
+- **A desktop track in plan-repo.** A new delivery-target question (web, desktop, or both) routes the research: desktop projects get subagents for the desktop framework (Tauri, Electron, Wails, Flutter, Compose, Avalonia, Qt, Rust-native, or fully native per-OS), desktop UI and local data (embedded SQLite, OS keychain, offline sync), and packaging and distribution (per-OS installers, code signing, macOS notarization, auto-update feeds, CI matrix builds). Desktop follow-up questions cover target OSes, OS-level capabilities, and how users receive updates.
+- **Desktop projects can have no infrastructure at all.** A local-first desktop app gets no hosting section; a profile enters the plan only when the app actually needs a server for accounts, sync, licensing, or telemetry. Auto-update artifacts alone need only R2, no compute on either profile.
+- **Desktop coverage in the generated artifacts.** Design guardrails gain native-feel and desktop-state rules (window chrome, per-OS menus and shortcuts, offline and update states); the README gains a desktop deployment section; the CLAUDE.md hierarchy gains a `desktop/CLAUDE.md`; and `tools.md` gains a desktop build-tool table (`cargo`, `tauri`, `electron-builder`, `codesign`/`notarytool`, `signtool`).
+
+### Changed
+
+- **Everything that is still fixed is stated as such, and it is a shorter list.** Cloudflare R2, Resend, Better Auth, and the five auth methods are shared by both profiles and are never researched. Payments remain out of the plan unless the requirements call for them.
+- **Research runs in three waves rather than two**, since the platform decision constrains the language, framework, and ORM picks that follow. A routing table in the skill says which waves run for each delivery target.
+- **`tools.md` is profile-aware.** `wrangler` covers R2 on both profiles plus Workers, D1, KV, Queues, and bindings on Cloudflare; the `railway` CLI covers deploys, addons, `railway run`, and logs on Railway. The "no local infrastructure" rule now carves out desktop builds, which are local by nature.
+
+### Removed
+
+- **Northflank.** It is no longer the hosting platform, no longer in `tools.md` as a CLI or an MCP entry, and no longer named in the plan-repo or init-repo skills. The duplicate Railway row in the MCP server table has been merged into one.
+
 ## [0.13.0] - 2026-08-21
 
 ### Added

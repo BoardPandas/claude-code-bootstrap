@@ -11,7 +11,9 @@ Claude Code reads this file to know which CLI tools are available and how to use
 
 ## Important: No Local Infrastructure
 
-All databases, caches, and backend services run on **Northflank** and **Cloudflare** -- never locally. There is no Docker, no local Postgres, no local Redis. Development connects to remote services via environment variables or Northflank CLI port-forwarding.
+All databases, caches, and backend services run remotely on the project's infrastructure profile -- **Cloudflare** or **Railway** (see `.claude/references/infrastructure.md`) -- never locally. There is no Docker, no local Postgres, no local Redis. Development connects to remote services through environment variables, `wrangler dev` bindings on Cloudflare, or `railway run` / `railway connect` on Railway.
+
+Desktop projects are the exception: their builds are local by nature, so the language toolchain, framework CLI, and per-OS signing tools belong here.
 
 ## Universal Tools
 
@@ -77,14 +79,23 @@ This section is populated by plan-repo or init-repo based on the project's stack
 ### Database Tools (Remote Only)
 | Tool | Check | Install | Use When |
 |------|-------|---------|----------|
-| prisma | `npx prisma --version` | `npm i -D prisma` | Prisma ORM v7+ (pure TS/WASM client, native edge-runtime support; connects to Northflank Postgres) |
-| drizzle-kit | `npx drizzle-kit --version` | `npm i -D drizzle-kit` | Drizzle ORM (connects to Northflank Postgres) |
+| prisma | `npx prisma --version` | `npm i -D prisma` | Prisma ORM v7+ (pure TS/WASM client, native edge-runtime support; D1 or remote Postgres) |
+| drizzle-kit | `npx drizzle-kit --version` | `npm i -D drizzle-kit` | Drizzle ORM (D1 on Cloudflare, Postgres on Railway) |
 
 ### Deployment Tools
 | Tool | Check | Install | Use When |
 |------|-------|---------|----------|
-| wrangler | `npx wrangler --version` | `npm i -D wrangler` | Cloudflare R2 & DNS/CDN (not Pages -- frontend is on Northflank) |
-| northflank | `northflank --version` | `npm i -g @northflank/cli` | Northflank frontend, backend, Postgres, Redis |
+| wrangler | `npx wrangler --version` | `npm i -D wrangler` | R2 on both profiles; on Cloudflare also Workers deploy, D1, KV, Queues, bindings; on Railway also DNS/CDN. Target Workers with Static Assets, not Pages |
+| railway | `railway --version` | `npm i -g @railway/cli` | Railway profile: service deploys, Postgres/Redis addons, cron, `railway run`, `railway logs` |
+
+### Desktop Build Tools (desktop targets only)
+| Tool | Check | Install | Use When |
+|------|-------|---------|----------|
+| rustup / cargo | `cargo --version` | `curl https://sh.rustup.rs -sSf \| sh` | Tauri or Rust-native desktop clients |
+| tauri | `npx tauri --version` | `npm i -D @tauri-apps/cli` | Tauri dev, build, and updater signing |
+| electron-builder | `npx electron-builder --version` | `npm i -D electron-builder` | Electron packaging and installers |
+| codesign / notarytool | `xcrun notarytool --help` | Xcode Command Line Tools | macOS signing, notarization, stapling |
+| signtool | `signtool /?` | Windows SDK | Windows Authenticode signing |
 
 ## Available MCP Servers
 
@@ -137,8 +148,7 @@ Claude Code has access to the following MCP (Model Context Protocol) servers. Th
 
 | MCP Server | Purpose |
 |------------|---------|
-| **northflank** | Full Northflank management: projects, services, addons (Postgres, Redis), jobs, secrets, volumes, domains, templates, builds, metrics |
-| **railway** | Railway platform: projects, services, deployments, variables, logs, domains |
+| **railway** | Full Railway management: projects, services, addons (Postgres, Redis), deployments, variables, volumes, domains, logs, metrics |
 | **doppler** | Secrets management: projects, configs, secrets, environments, integrations, service accounts |
 
 ### Browser Automation MCPs
