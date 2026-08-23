@@ -15,6 +15,32 @@ paths:
   - "jest.config.*"
 ---
 
+<!--
+  SCOPE THESE GLOBS TO THE ADOPTING REPO. The list above is the template's
+  best guess at a generic layout, and in most real repos several of these
+  entries match zero files.
+
+  That is not harmless. `scripts/check-claude-wiring.mjs` (shipped alongside
+  this rule, and wired as the first CI job) treats a glob matching zero files
+  as an ERROR, because a rule scoped to a path that does not exist never fires
+  and nothing says so. So a freshly scaffolded repo gets a RED build until the
+  globs are corrected -- which is the guard working, not a bug, but it is
+  confusing if you do not know it is coming.
+
+  Concrete example: a Next.js app with everything under src/ has no top-level
+  lib/, app/, worker/, api/ or middleware.*, and no root CLAUDE.md if it keeps
+  its instructions at .claude/CLAUDE.md. One repo hit 13 dead globs across the
+  two rule files on its first sync.
+
+  On adoption, and after every template sync:
+    1. Run `npm run check:claude` (or `node scripts/check-claude-wiring.mjs`).
+    2. Delete any glob it reports as matching zero files.
+    3. Add the paths this repo actually uses.
+
+  Re-check after every sync: this file is overwritten wholesale, so local
+  rescoping does not survive on its own.
+-->
+
 # RULE 3 Enforcement: Check BP Before Configuration Work
 
 Before creating or modifying infrastructure, tooling, or configuration files matching the paths above, you MUST consult the BP knowledge base to follow proven patterns.
