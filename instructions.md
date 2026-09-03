@@ -30,12 +30,16 @@ This repository provides a pre-configured `.claude/` folder that gives Claude Co
     llg-check.md           # LL-G knowledge base check before code changes
     bp-check.md            # BP best practices check before config changes
     commit-changelog.md    # Changelog and version bump enforcement
+  evals/                   # Configuration regression tests
+    README.md              # How the suite works and how to grow it
+    cases/*.md             # The corpus (20-case floor, one behaviour per case)
   scripts/                 # Hook scripts
   skills/                  # Executable skill definitions
+    capture-intent/SKILL.md   # Capture an idea as intent.md (stage 1)
     plan-repo/SKILL.md     # Pre-init project planning
     init-repo/SKILL.md     # Repository initialization
     update-practices/SKILL.md  # Best practice updates
-    spec-developer/SKILL.md   # Interview-driven feature specs
+    spec-developer/SKILL.md   # Intent -> spec.md + plan.md
     security-scan/SKILL.md # Security scanning
     repo-review/SKILL.md   # General code health review
     performance-review/SKILL.md  # Performance analysis
@@ -55,16 +59,23 @@ This repository provides a pre-configured `.claude/` folder that gives Claude Co
     tools.md               # CLI tools reference (auto-populated per stack)
     ux-laws.md             # Laws of UX / Gestalt reference for ux-review
     hooks-and-settings.md  # Canonical hook/settings catalog
+    managed-settings.example.json  # Org-policy tier example (deployed via MDM, not read from .claude/)
     design-guardrails.md   # UI/design SLA (generated for frontend projects)
     template-sync-ignore.md    # Template files this project deliberately removed (update-practices skips them)
     template-sync-state.json   # Last-synced template commit + dead-URL strikes (written by update-practices)
   settings.json            # Project-level Claude Code settings
   settings.local.json.example  # Template for personal (git-ignored) overrides
 CLAUDE.md                  # Master project rules for Claude Code
+REVIEW.md                  # Review policy: passes, severity bar, nit cap, exclusions
 agents.md                  # Agent registry (see agents.md docs below)
 instructions.md            # This file
 README.md                  # GitHub-facing README
-tasks/                     # Saved plans and specs (created on first use)
+scripts/
+  check-claude-wiring.mjs  # Wiring guard (npm run check:claude)
+  run-evals.mjs            # Eval runner (npm run evals)
+  *.test.mjs               # Self-tests asserting each check still fires
+intent/<slug>/             # intent.md + spec.md (created on first use)
+tasks/                     # Saved plans (created on first use)
 ```
 
 ---
@@ -97,6 +108,87 @@ All planning uses phases, never dates or time estimates:
 | Polish | Error handling, edge cases, accessibility | 80%+ coverage, no critical bugs |
 | Ship | Deployment, monitoring, documentation | Production-ready |
 
+### 4. The Artifact Chain
+
+Each stage commits an artifact the next stage reads. One artifact, one owner, one approval.
+
+```
+/capture-intent → intent.md → [product owner approves] → /spec-developer → spec.md + plan.md → diff
+```
+
+| Artifact | Location | Answers | Owner | Approved by |
+|---|---|---|---|---|
+| `intent.md` | `intent/<slug>/` | Why | Originator | Product owner |
+| `spec.md` | `intent/<slug>/` | What | Product owner | Product owner |
+| `plan.md` | `tasks/` | How | Engineer | Engineer |
+| diff | git branch | The change | Author | Code owner, per `REVIEW.md` |
+
+Why the split matters:
+
+- **Intent before spec** gives a non-engineer a way to put a problem into the system without
+  knowing how anything works, and gives the organisation a cheap place to say no.
+- **Spec separate from plan** lets a product owner approve *what* is built without being
+  asked to approve *how*, and makes "did the diff match the plan?" an answerable question.
+- **Open questions stay open.** A question answered with a plausible guess becomes a
+  fabricated constraint that nobody re-checks.
+
+Work larger than a single file should not skip straight to a diff.
+
+---
+
+## Review Policy (`REVIEW.md`)
+
+`REVIEW.md` at the repo root is version-controlled review policy, read by the `reviewer`
+agent, `/repo-review`, `/code-review`, and human reviewers alike. Four sections are
+required and checked by `npm run check:claude`:
+
+| Section | Answers |
+|---|---|
+| `## Passes` | What review covers, in order |
+| `## What "Important" means here` | The bar for blocking a merge |
+| `## Cap the nits` | How many style notes are allowed (default: three) |
+| `## Do not report` | What must never appear in a review |
+
+The severity bar is deliberately narrow. **Important** means exactly one of: the code is
+wrong, it fails silently, or it is a security/data-loss risk. Everything else is a nit,
+however strongly the reviewer feels. Every Important finding must carry a concrete failure
+scenario; if one cannot be written, it is not Important.
+
+The nit cap is a correctness measure, not a politeness measure — reviews that bury two real
+defects under twenty style notes get skimmed, and the defects ship.
+
+Tune it monthly against what actually shipped broken: passes that never caught a real
+defect come out, and defect classes that reached main become a pass, a guard check, or an
+eval case.
+
+---
+
+## Configuration Evals (`.claude/evals/`)
+
+`npm run check:claude` proves the configuration is **wired**. It cannot prove the
+configuration still **works** — a skill whose body was replaced wholesale by a template
+sync, a CLAUDE.md rule pruned one line too far, or a hook whose refusal message no longer
+lands all pass the guard while behaving differently. The evals are what notice.
+
+```bash
+npm run evals -- --validate   # structure only: no API calls, no cost, every push
+npm run evals                 # behavioural: needs the claude CLI, costs tokens
+npm run evals -- --only=<id>  # one case, for iterating
+```
+
+The behavioural pass runs each case's `## Task` through `claude -p` restricted to
+`Read,Glob,Grep` in plan mode — it cannot mutate the repo it is measuring — then grades the
+transcript against the case's `## Expect` bullets.
+
+**A case that cannot be run is a failure, never a skip.** A suite that quietly degrades to
+zero cases is indistinguishable from one that passes.
+
+Add a case whenever a production incident traces back to configuration, `/add-lesson`
+records a gotcha about this configuration, or an entry is added to `Things Claude Gets
+Wrong` in CLAUDE.md. The floor is 20 cases; shrinking past it has to be deliberate.
+
+Full format and authoring guidance: `.claude/evals/README.md`.
+
 ---
 
 ## Skills Reference
@@ -124,12 +216,21 @@ All planning uses phases, never dates or time estimates:
 - **When to use:** Periodically or after Claude Code updates.
 - **Safe to repeat:** Running it twice in a row produces no changes the second time.
 
+### capture-intent
+
+- **Trigger:** `/capture-intent` (slash only)
+- **What it does:** Interviews the originator about the *problem*, never the solution, and writes `intent/<slug>/intent.md`: problem, proposed outcome, affected users and systems, constraints, out of scope, open questions.
+- **When to use:** Whenever someone has a need but not a solution. It is the first artifact in the chain and requires no engineering knowledge.
+- **Key concept:** An intent carries no technology choices, no file structure, no estimates. Unanswered questions stay recorded as unanswered rather than filled with plausible guesses.
+- **Gate:** The intent is `Status: Draft` until a product owner approves it. `/spec-developer` refuses a draft unless explicitly overridden -- that gap is the cheapest place to decide an idea is not worth pursuing.
+
 ### spec-developer
 
-- **Trigger:** "spec developer", "plan feature", "spec this feature"
-- **What it does:** Explores the codebase with parallel subagents, then asks 20+ clarifying questions about the feature. Generates a 500-700 line implementation plan covering architecture, data models, test plan, error handling, and rollback strategy. Saves to `/tasks`.
+- **Trigger:** `/spec-developer <path to intent.md, or a feature description>` (slash only)
+- **What it does:** Explores the codebase with parallel subagents, loads the project's policy references (design guardrails, UX laws, infrastructure profile, `REVIEW.md`, recorded decisions), asks scoped clarifying questions, then produces two artifacts.
+- **Outputs:** `intent/<slug>/spec.md` (requirements, design, acceptance criteria, flagged concerns -- product-owner-owned) and `tasks/<date>-<slug>-plan.md` (implementation order, test plan, rollback -- engineer-owned).
 - **When to use:** For any feature larger than a single file change.
-- **Key concept:** Plan only -- does not implement. Start a fresh session to execute.
+- **Key concept:** Policy is applied *while the spec is written*, not audited afterwards. Conflicts land in a **Flagged Concerns** table naming who resolves each. Splitting spec from plan is what makes "did the diff match the plan?" answerable.
 - **Variant:** If retrying after a failed implementation, it documents previous attempts to avoid dead ends.
 
 ### security-scan
@@ -413,7 +514,9 @@ The template includes hooks in `.claude/settings.json`:
 - **SessionStart:** Surfaces the LL-G / BP knowledge-base reminder once per session.
 - **PreToolUse (git commit):** Blocks PowerShell here-string syntax, reminds about the changelog/version bump, and blocks commits that do not stage `CHANGELOG.md` (merge commits and `SKIP_CHANGELOG=1` are exempt).
 - **PreToolUse (EnterPlanMode):** Prompts a knowledge-base check before planning.
+- **PreToolUse (Write|Edit):** Surfaces the LL-G shelf for the file's technology, once per session per shelf.
 - **PostToolUse (git commit):** Prompts evaluation of whether the committed work should be contributed back to LL-G or BP.
+- **PostToolUse (Write|Edit):** Formats the edited file with whatever formatter the *project* declares (biome, prettier, ruff, black, rustfmt, gofmt, shfmt). Non-blocking by design: a formatter that refuses an edit turns every unformattable file into a wall. This is why `REVIEW.md` forbids reporting formatting in review -- a hook owns it.
 - **Stop:** Bell sound when Claude finishes a task (useful with multiple sessions).
 - **Notification:** Bell sound when Claude needs attention.
 

@@ -1,0 +1,58 @@
+name: Scheduled security scan
+
+# The /security-scan skill is on-demand, which makes coverage point-in-time: a
+# dependency CVE published the day after a manual run goes unnoticed until
+# somebody happens to run it again. This is the recurring half.
+on:
+  schedule:
+    # Mondays 07:00 UTC, an hour after the evals so the two do not contend.
+    - cron: "0 7 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Dependency and secret audit
+    runs-on: ubuntu-latest
+    steps:
+      # Full history: a secret deleted from the working tree is still leaked,
+      # so the history is the part that actually matters here.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22"
+
+      # This repo ships no runtime dependencies, so a finding here means one was
+      # added. Kept unconditional so that day is loud rather than silent.
+      - name: Dependency audit
+        run: |
+          if [ -f package-lock.json ]; then
+            npm audit --audit-level=moderate
+          else
+            echo "No lockfile; nothing to audit. This repo ships zero dependencies by design."
+          fi
+
+      # Tracked credential material is the highest-severity finding in the
+      # security-scan skill's own category list, and it is cheap to check for.
+      - name: Tracked credential files
+        run: |
+          hits=$(git ls-files | grep -iE '(^|/)\.env($|\.)|\.(pem|key|p12|pfx|keystore)$' || true)
+          if [ -n "$hits" ]; then
+            echo "::error::Tracked credential-shaped files found:"
+            echo "$hits"
+            exit 1
+          fi
+          echo "No tracked credential files."
+
+      - name: Hook script syntax
+        run: |
+          status=0
+          for f in .claude/scripts/*.sh; do
+            bash -n "$f" || { echo "::error file=$f::bash syntax error"; status=1; }
+          done
+          exit $status
