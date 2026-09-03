@@ -126,10 +126,15 @@ For each gap identified, create or update the file. Follow these rules:
 - **Settings:** Update `.claude/settings.json` with recommended permissions and hooks. Preserve existing custom entries.
 - **Tools reference:** Update `.claude/references/tools.md` with stack-specific CLI tools, install commands, and usage patterns. **Important:** There is no local Docker, no local Postgres, no local Redis -- server-side infrastructure runs remotely on the project's profile, Cloudflare or Railway (see `.claude/references/infrastructure.md`). Do not add local infrastructure tools (docker, docker-compose, psql, redis-cli). Desktop targets are the exception: their build, signing, and packaging toolchains are local and do belong in tools.md. Preserve the existing **Available MCP Servers** section that documents all MCP integrations available to Claude Code.
 - **CLAUDE.md:** Build a hierarchical CLAUDE.md structure:
-  - Update root `CLAUDE.md` with project-specific stack info, conventions, and skill/agent inventory.
+  - Update root `CLAUDE.md` with project-specific stack info and conventions.
   - Plan (but do not create) subfolder CLAUDE.md files where distinct rules will apply.
-  - Keep each CLAUDE.md file focused and under 200 lines.
+  - Budget by **bytes, not lines**: 16 KB for CLAUDE.md, 20 KB for all always-on context. A line budget keeps passing while single lines grow to thousands of characters. `npm run check:claude` fails on either ceiling.
+  - Do not restate what `instructions.md` or `.claude/references/` already cover. Detail goes down into those; CLAUDE.md keeps pointers. Do not duplicate the skill table either — skills are auto-discovered and their own `description:` is what triggers them; list only which ones are slash-only.
+  - **Required section — `## Commands`:** the build, test, and lint commands, one line each. This is the first thing a new session needs and the last thing anyone remembers to write down.
+  - **Required section — `## Verifying your work`:** the single command that proves a change is good, an example of healthy output, and an explicit statement that a failing check is never to be skipped, deleted, or narrowed. Make verification part of the definition of done.
+  - **Required section — `## Things Claude Gets Wrong`:** seeded from the LL-G entries loaded in Step 3 for this project's stack, plus anything the gap analysis surfaced. The standing rule to write into the section: when a mistake happens twice, the correction goes here.
   - Include in the Planning section: "Every plan MUST end with a Lessons Learned / Gotchas section. After implementation, route discoveries to LL-G via `/add-lesson`, not to local files only."
+  - If the project uses the artifact chain, document it: `intent.md` → `spec.md` → `plan.md` → diff, with the owner and approver of each.
 - **agents.md:** Update the root agents.md to register all agents. Preserve project-specific content.
 - **README.md:** If a README exists, add or update the "Claude Code" section. Do not alter other sections.
 
@@ -269,6 +274,54 @@ The core-settings JSON block (permissions allow/deny lists, credential deny-list
 The full optional-settings catalog (`attribution.*`, `autoUpdatesChannel`, `sandbox.*`, `worktree.*`, `language`, `allowedHttpHookUrls`, `alwaysThinkingEnabled`, `disableAllHooks`), the `settings.json` vs `settings.local.json` split, and the `.claude/settings.local.json.example` template all live in `.claude/references/hooks-and-settings.md`. Read it, then create `settings.local.json.example` from the template there.
 
 For attribution, language, and autoUpdatesChannel preferences: in an interactive session, ask the user with AskUserQuestion before setting them. In a non-interactive or autonomous run, leave them unset and list them in the final report as pending decisions. Configure the rest based on project analysis.
+
+## Step 12b: Create the Review Policy and Eval Suite
+
+Both are required: `scripts/check-claude-wiring.mjs` errors when `REVIEW.md` is missing or
+missing a required section, and an absent eval corpus means nothing regression-tests the
+configuration this skill just built.
+
+### REVIEW.md
+
+Copy the template's `REVIEW.md` to the repo root, then tailor it to this project:
+
+- Keep all four required section headings verbatim -- `## Passes`,
+  `## What "Important" means here`, `## Cap the nits`, `## Do not report`. The guard checks
+  for them, because an empty stub satisfies a bare existence check and provides nothing.
+- Adjust the **Passes** to the detected stack: drop passes for concerns this project does
+  not have, and add ones it does (a payments project earns a money-handling pass; a
+  library earns an API-compatibility pass).
+- Set the nit cap deliberately. Three is the template's default and a reasonable one; a
+  larger number needs a reason.
+- Point the "Do not report" section at whatever this project's formatter and CI actually
+  cover, so review is not duplicating a machine.
+
+### Eval corpus
+
+Create `.claude/evals/` with the template's `README.md` and a `cases/` corpus, plus
+`scripts/run-evals.mjs`, `scripts/run-evals.test.mjs`, and an `evals` entry in
+`package.json`.
+
+Seed the corpus from the template, dropping any case whose `targets` do not exist here --
+a case pointing at a missing file fails validation on arrival. Then add project-specific
+cases until the 20-case floor is met, drawn from:
+
+- Every path-scoped rule created in Step 7: does the rule actually change behaviour for a
+  file it claims to cover?
+- Every hook configured in Step 11: does its message land, and does a blocking one refuse
+  for the stated reason?
+- Every stack-specific convention written into CLAUDE.md.
+- Each entry in the `Things Claude Gets Wrong` section.
+
+Verify before moving on:
+
+```bash
+npm run check:claude
+npm test
+npm run evals -- --validate
+```
+
+All three must pass. A scaffold that ships red teaches the team to ignore the checks.
 
 ## Step 13: Create instructions.md
 

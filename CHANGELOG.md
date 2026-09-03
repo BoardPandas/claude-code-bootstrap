@@ -4,6 +4,35 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.15.0] - 2026-09-03
+
+Aligns the template with Anthropic's AI-native SDLC playbook. The gaps closed were, in
+order of consequence: nothing regression-tested the configuration, review policy lived in
+nobody's file, and there was no way to put a problem into the system without already
+knowing the solution.
+
+### Added
+
+- **Configuration evals (`.claude/evals/`).** The wiring guard proves `.claude/` is *wired*; nothing proved it still *works*. A skill body replaced wholesale by a template sync, a CLAUDE.md rule pruned one line too far, or a hook whose refusal message stopped landing all passed CI while behaving differently. A 24-case corpus now covers the guard contract, the commit gate, skill triggering, agent boundaries, and review policy. `npm run evals -- --validate` checks corpus structure with no API calls and runs on every push; `npm run evals` grades behaviour through `claude -p` restricted to read-only tools. A case that cannot be run fails rather than skipping — a suite that silently runs zero cases is indistinguishable from one that passes.
+- **`REVIEW.md`.** Version-controlled review policy: five passes, a deliberately narrow Important bar (wrong, silently wrong, or a security/data-loss risk — everything else is a nit), a three-nit cap, and an explicit do-not-report list. `npm run check:claude` now fails when it is missing or missing a required section, because an empty stub satisfies an existence check and provides nothing.
+- **`/capture-intent` and the `intent/` convention.** An idea can now enter the system as `intent/<slug>/intent.md` — the problem in the originator's own words, with no technology choices, file structure, or estimates. Requires no engineering knowledge, and stays `Status: Draft` until a product owner approves it. Unanswered questions are recorded as unanswered rather than filled with plausible guesses that later read as real constraints.
+- **`## Commands`, `## Verifying your work`, and `## Things Claude Gets Wrong` in CLAUDE.md.** The verification contract was previously buried in prose: the repo had an ideal single check command and never said that green was the definition of done. The third section collects the eight corrections that had been needed twice.
+- **Formatter hook (`PostToolUse` on `Write|Edit`).** Formats the edited file using whatever formatter the *project* declares — biome, prettier, ruff, black, rustfmt, gofmt, shfmt. Non-blocking by design, and paired with `REVIEW.md` forbidding formatting comments in review: a hook owns it now, so reviewers should not.
+- **`.claude/references/managed-settings.example.json`.** A lift-and-adapt example of the org-policy tier: credential denies that cannot be relaxed downstream, a deny-by-default network allowlist, an approval-gate hook, and a minimum version floor. Documented as deployed via MDM — it is inert where it sits.
+- **Weekly `security-scan` workflow.** `/security-scan` was on-demand only, making coverage point-in-time: a CVE published the day after a manual run went unnoticed. Now audits dependencies and checks for tracked credential files on a schedule.
+- **Protected-path denies** for `node_modules`, build output, vendored trees, lockfiles, minified bundles, and `.git`.
+
+### Changed
+
+- **`/spec-developer` now consumes an approved intent and emits two artifacts, not one.** It previously conflated `spec.md` (what is built, product-owner-owned) with `plan.md` (how, engineer-owned). Splitting them lets a product owner approve the requirements without being asked to approve the implementation, and makes "did the diff match the plan?" answerable. It also refuses a `Status: Draft` intent unless explicitly overridden, and loads design guardrails, UX laws, the infrastructure profile, `REVIEW.md`, and recorded decisions *while writing* — conflicts land in a Flagged Concerns table naming who resolves each, rather than surfacing at review time when they have already cost a design.
+- **CLAUDE.md is 14.5 KB, down from 15.9 KB against a 16 KB ceiling.** It had drifted to 97% full, so the next added paragraph would have turned CI red. Skill and agent frontmatter catalogs, the infrastructure profile detail, and the skills table were duplicated in `instructions.md`, `.claude/references/`, and `README.md`; they are now pointers. The skills table in particular was restating descriptions the harness already surfaces.
+- **`update-practices` syncs the files outside `.claude/` that the guard requires.** `REVIEW.md` and `scripts/` were excluded by the blanket "any file not in `.claude/`" rule, which would have left every adopting repo permanently red with no way to fix it from the template. Its health audit also now covers eval-corpus drift, review-policy decay, and stalled artifacts.
+- **`init-repo` creates `REVIEW.md` and an eval corpus**, tailors the review passes to the detected stack, and requires the three new CLAUDE.md sections. Budget guidance corrected from a line count to bytes.
+
+### Fixed
+
+- **Template sync would have shipped adopting repos a red build.** Anything the wiring guard requires but lives outside `.claude/` was unreachable through `update-practices`, and the `README.md` copy instructions for existing projects omitted `REVIEW.md` and `scripts/` entirely.
+
 ## [0.14.1] - 2026-08-23
 
 ### Fixed

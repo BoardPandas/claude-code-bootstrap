@@ -61,6 +61,12 @@ before(() => {
   w(".claude/agents/reviewer.md", "---\nname: reviewer\nmodel: sonnet\n---\n\nAgent.\n");
   w(".claude/skills/direct/SKILL.md", "---\nname: direct\nmodel: haiku\n---\n\nSkill.\n");
   w(".claude/skills/bound/SKILL.md", "---\nname: bound\nagent: reviewer\n---\n\nSkill.\n");
+  w(
+    "REVIEW.md",
+    "# Review Policy\n\n## Passes\n\n- Correctness\n\n" +
+      '## What "Important" means here\n\nIt is wrong.\n\n' +
+      "## Cap the nits\n\nThree.\n\n## Do not report\n\nFormatting.\n",
+  );
 });
 
 after(() => rmSync(base, { recursive: true, force: true }));
@@ -256,6 +262,19 @@ const cases = [
         }),
       ),
     expect: /Remove the stale entry/,
+  },
+  {
+    name: "10. REVIEW.md missing entirely",
+    mutate: ({ remove }) => remove("REVIEW.md"),
+    expect: /REVIEW\.md is missing\./,
+  },
+  {
+    // An empty stub satisfies a bare existsSync and provides nothing, so the
+    // check has to look at the sections, not the file.
+    name: "10b. REVIEW.md present but missing a required section",
+    mutate: ({ write }) =>
+      write("REVIEW.md", "# Review Policy\n\n## Passes\n\n- Correctness\n"),
+    expect: /REVIEW\.md is missing the section "## What "?Important"? means here/,
   },
 ];
 

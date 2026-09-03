@@ -331,6 +331,41 @@ for (const file of walk(join(ROOT, ".claude/skills")).filter((p) => p.endsWith("
   }
 }
 
+// ------------------------------ 10: the review policy must exist and be whole
+// A review policy that lives in someone's head is applied inconsistently and
+// silently: reviewers disagree about what blocks a merge, and nobody notices
+// until a defect ships past a review that "passed". REVIEW.md is what the
+// reviewer agent, /repo-review and human reviewers all read, so its absence
+// degrades review quality without producing any error.
+//
+// Checking the section headings, not just existence, is deliberate: an empty
+// stub file satisfies a bare existsSync and provides exactly nothing. Each of
+// these four sections answers a question a reviewer must not have to guess.
+const REVIEW_MD = join(ROOT, "REVIEW.md");
+const REVIEW_SECTIONS = [
+  { re: /^##\s+Passes\s*$/m, what: "## Passes (what review covers)" },
+  { re: /^##\s+What\s+"?Important"?\s+means\s+here\s*$/im, what: '## What "Important" means here (severity bar)' },
+  { re: /^##\s+Cap\s+the\s+nits\s*$/im, what: "## Cap the nits (nit budget)" },
+  { re: /^##\s+Do\s+not\s+report\s*$/im, what: "## Do not report (exclusions)" },
+];
+
+if (!existsSync(REVIEW_MD)) {
+  errors.push(
+    `REVIEW.md is missing. Review policy has to be version-controlled, or every reviewer ` +
+      `applies a different bar and nothing says so. Copy it from the bootstrap template.`,
+  );
+} else {
+  const reviewText = read(REVIEW_MD);
+  for (const s of REVIEW_SECTIONS) {
+    if (!s.re.test(reviewText)) {
+      errors.push(
+        `REVIEW.md is missing the section "${s.what}". A review policy without it leaves the ` +
+          `question unanswered, which is the same as having no policy for it.`,
+      );
+    }
+  }
+}
+
 // -------------------------------------------- 4: always-on context budget
 const CLAUDE_MD = join(ROOT, "CLAUDE.md");
 let claudeMdBytes = 0;
