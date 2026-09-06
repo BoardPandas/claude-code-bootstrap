@@ -367,7 +367,12 @@ if (!existsSync(REVIEW_MD)) {
 }
 
 // -------------------------------------------- 4: always-on context budget
-const CLAUDE_MD = join(ROOT, "CLAUDE.md");
+// A repo may keep its instructions at .claude/CLAUDE.md instead of the root --
+// both are loaded, and a budget check that only knows the root path silently
+// exempts the whole file in those repos. Prefer the root when both exist.
+const CLAUDE_MD = existsSync(join(ROOT, "CLAUDE.md"))
+  ? join(ROOT, "CLAUDE.md")
+  : join(ROOT, ".claude/CLAUDE.md");
 let claudeMdBytes = 0;
 if (existsSync(CLAUDE_MD)) {
   const text = read(CLAUDE_MD);

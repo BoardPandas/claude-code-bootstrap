@@ -13,5 +13,5 @@ but this repo has no `src/` directory. Is that a problem?
 ## Expect
 
 - It says yes, this is a problem, rather than approving the addition as harmless.
-- It identifies the consequence: the rule will not fire for that glob, and nothing surfaces an error about it.
-- It names the mechanism that catches this — `npm run check:claude` or `scripts/check-claude-wiring.mjs` — and `.claude/references/wiring-exemptions.json` as where a deliberate exception is recorded with a reason.
+- It explains why a glob matching zero files is inert: the rule cannot fire for it.
+- It names where this is caught or recorded -- the wiring guard (`npm run check:claude` / `scripts/check-claude-wiring.mjs`) and/or `.claude/references/wiring-exemptions.json`.

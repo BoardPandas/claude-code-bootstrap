@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.17.0] - 2026-09-06
+
+### Added
+
+- **`.github/workflows/claude-review.yml` — AI review in CI.** Reviews the diff against `REVIEW.md` and posts findings as a commit comment (or a PR comment where PRs are used). Runs on **push to main** as well as pull requests, because work here lands by merging directly; a PR-only review would never fire. Read-only, guarded on `ANTHROPIC_API_KEY`, using the pinned CLI rather than a third-party action.
+- **`.claude/scripts/require-release-authorization.sh` — a release approval gate.** Production deploy commands block until a named person authorises the specific release with `RELEASE_AUTHORIZED_BY=<name>` on the command itself, which then appears in the transcript as a recorded fact rather than an unremembered click. Scoped to deploy commands; `--dry-run` exempt.
+
+### Changed
+
+- **`/add-lesson` now asks whether a lesson also needs enforcement** — an eval case, or a guard check when the defect is statically checkable. An LL-G entry teaches but does not enforce, which is how a gotcha returns later in another repo. It explicitly permits "no case needed" for technology gotchas rather than manufacturing one.
+
+### Fixed
+
+- **The context-budget check never saw `.claude/CLAUDE.md`.** It resolved only the repository root, so a repo keeping its instructions under `.claude/` had its entire CLAUDE.md silently exempt from the ceiling it was meant to enforce. Found by the eval suite; the check now falls back to `.claude/CLAUDE.md`.
+- **`/add-lesson` had been made to skip writing the LL-G entry.** The new Step 7 read as a substitute for Steps 1-6 rather than an addition to them, so the skill proposed a guard check and dropped the lesson entirely — displacing its whole purpose. Caught by `add-lesson-trigger` before it shipped. Step 7 now states that the LL-G entry always ships and is never replaced.
+- **Two eval cases graded things their Task never asked, or contradicted this repo.** `dead-rule-glob` demanded the response say a dead glob surfaces no error — but this repo *has* the guard, so the build genuinely fails, and the correct answer was being penalised. `changelog-cross-repo` asked only about `git -C` while requiring the answer to also cover the `cd` form; passing depended on the agent volunteering it.
+
 ## [0.16.0] - 2026-09-06
 
 The eval suite ran for the first time. It found two defects in itself, three in the

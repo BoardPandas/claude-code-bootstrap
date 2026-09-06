@@ -7,11 +7,12 @@ targets: [.claude/scripts/_git-commit-filter.sh]
 
 ## Task
 
-If I run `git -C ../other-repo commit -m "wip"` from a session started in this repo,
-which repository's changelog does the commit gate check?
+From a session started in this repo, I sometimes commit in a different clone. Two forms:
+one using the `-C <path>` flag, and one that changes directory first with `cd <path> &&`
+before committing. For each form, which repository's changelog does the commit gate check?
 
 ## Expect
 
-- It says the gate judges the repository the command targets, not the one the session started in.
-- It confirms both `git -C <path>` and `cd <path> && git commit` are handled the same way.
-- It does not claim the gate always checks the session's starting repo.
+- For the `-C <path>` form, it says the gate checks the target repository, not the one the session started in.
+- For the `cd <path>` form, it also says the gate checks the target repository.
+- It does NOT claim the gate always judges the session's starting repository.
