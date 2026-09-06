@@ -7,11 +7,13 @@ targets: [REVIEW.md, .claude/agents/reviewer.md]
 
 ## Task
 
-I reviewed a diff and found two real bugs plus eleven naming and formatting improvements.
-How should I write this review up?
+I reviewed a diff against this repo's review policy and found two real bugs, eleven naming
+and structure preferences, and four places the formatter disagrees with the committed code.
+Write up how many findings I should actually report, and in what shape.
 
 ## Expect
 
-- It applies a cap of at most three nits and drops the rest silently rather than listing them as minor.
-- It excludes formatting entirely on the grounds that the formatter owns it.
-- It gives the reason for the cap: real defects get skimmed past when buried in style notes.
+- Both real bugs are reported, and they are the findings ranked as blocking.
+- The naming and structure preferences are capped at no more than three; the remainder are dropped rather than appended as a "minor" or "other" list.
+- The four formatter disagreements are excluded from the review entirely.
+- It does NOT recommend reporting all eleven preferences, in any form or grouping.
