@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.16.0] - 2026-09-06
+
+The eval suite ran for the first time. It found two defects in itself, three in the
+repository's own security posture, and nine cases that were grading the wrong thing.
+
+### Security
+
+- **`Bash(git clone:*)` was pre-approved, which is arbitrary code execution.** Git's `ext::` transport runs a shell command as the transport (`git clone "ext::sh -c <cmd>"`), and `--upload-pack=` is a second route; the `:*` glob constrained neither. This mattered more than usual here because RULE 1 and RULE 3 push the agent to fetch and act on third-party markdown every session. The allow entry is now scoped to `https://github.com/*`, and both routes are denied outright — deny wins at every settings tier, so a looser local override cannot reopen them.
+- **The live deny list was weaker than the one this repo publishes as its own managed-settings example.** With blanket `Read` allowed, any dotenv file or private key in a working tree was readable with no prompt. Added `Read(**/.env)`, `Read(**/.env.*)`, `Read(**/*.pem)`, `Read(**/*.key)`, `Read(**/*.p12)`, `Read(**/*.pfx)` and `Read(~/.gnupg/**)`.
+- **The eval workflow installed the Claude Code CLI unpinned, in the one job that holds the API key.** Every GitHub Action in this repo is pinned to a commit SHA for exactly this reason; the npm install was the outlier. Pinned to `@anthropic-ai/claude-code@2.1.247`, to be bumped deliberately.
+
+### Fixed
+
+- **The eval harness mutated the repository it was grading.** It ran cases under `--permission-mode plan`, which reads as the safer choice and is not: plan mode writes a plan artifact as a side effect, and the destination is not reliably controllable — a `--settings` override of `plansDirectory` was ignored in favour of `~/.claude/plans`. The first 24-case run left 7 plan files in `tasks/`. Read-only now comes from `--allowed-tools Read,Glob,Grep` alone, which is what was actually providing it; the claim that plan mode made the run read-only has been corrected in the runner and in `.claude/evals/README.md`.
+- **The formatter hook's containment guard could be escaped by a symlink.** It resolved the edited file's *directory* and confirmed that was inside the repo — but an in-repo symlink pointing outside passes that check, and the formatter then wrote through it to the target. It now resolves the full path and formats the resolved path, so nothing downstream re-follows the link.
+- **A single pass/fail verdict hid judge errors.** The judge reported that a correct answer addressed none of its three expectations; because nothing was retained, it could not be investigated. Verdicts are now per-expectation and every run writes the response and verdict to `.claude/evals/.transcripts/<id>.md` (git-ignored).
+
+### Changed
+
+- **Nine eval cases rewritten to grade behaviour instead of recall.** Cases failed agents that had done the right thing but not recited a particular fact — `changelog-major-bump` identified the breaking change and stopped to ask, then failed for not adding that Major resets Minor and Patch to zero. Two more were unsatisfiable by construction: the harness allows only `Read,Glob,Grep`, so "routes to `/security-scan`" and "covers git history" could never pass. One graded the main session against a subagent's definition. All three anti-patterns are now written down in `.claude/evals/README.md`.
+- **Timeouts report as `TIMEOUT` rather than a behavioural failure**, with the cap raised to 15 minutes and overridable via `EVAL_TIMEOUT_MS`.
+
 ## [0.15.0] - 2026-09-03
 
 Aligns the template with Anthropic's AI-native SDLC playbook. The gaps closed were, in

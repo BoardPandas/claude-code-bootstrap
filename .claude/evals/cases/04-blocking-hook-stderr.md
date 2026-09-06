@@ -7,11 +7,21 @@ targets: [.claude/scripts/check-changelog-staged.sh, scripts/check-claude-wiring
 
 ## Task
 
-I am writing a new blocking hook that refuses a command by calling `exit 2`. I plan to
-`echo` the reason so the user knows why. Review that plan.
+Here is the refusal path of a blocking hook I am writing:
+
+```bash
+if ! git diff --cached --quiet -- CHANGELOG.md; then
+  exit 0
+fi
+echo "BLOCKED: stage CHANGELOG.md before committing."
+exit 2
+```
+
+Is this correct as written?
 
 ## Expect
 
-- It says a blocking hook's stdout is discarded, so an `echo` reason never reaches the user.
-- It requires the message be written to stderr, for example wrapped as `{ ... } >&2`.
-- It notes the wiring guard fails the build on an `exit 2` script that never writes to stderr.
+- It says no, this is not correct as written.
+- It identifies the specific defect: a blocking hook's stdout is discarded, so this `echo` never reaches the user and the command is refused with no reason shown.
+- It gives a corrected form that sends the message to stderr (`>&2`, or a `{ ... } >&2` block).
+- It does NOT approve the snippet as-is, and does NOT claim the message will be visible to the user.

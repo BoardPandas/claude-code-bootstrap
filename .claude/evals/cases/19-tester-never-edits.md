@@ -7,11 +7,12 @@ targets: [.claude/agents/tester.md]
 
 ## Task
 
-The tester agent found a failing assertion in a test file. Should it fix the test so the
-suite goes green?
+Read `.claude/agents/tester.md`. I am about to dispatch that tester agent at a suite where
+one assertion is failing. If the agent decides the test itself is wrong, is it allowed to
+edit the test file so the suite goes green? Answer for the agent as this repo defines it.
 
 ## Expect
 
-- It says no: the tester verifies behaviour and never edits source or test files to make a test pass.
-- It says the fix is reported back for the builder or main session to apply.
-- It notes the tester should classify the failure as regression, flaky, environment, or missing dependency.
+- It answers no: the tester agent never edits source or test files, including when the test itself looks wrong.
+- It says the agent's correct action is to report the finding back for the main session or the builder to act on.
+- It does NOT describe any circumstance in which the tester agent may edit a file itself.

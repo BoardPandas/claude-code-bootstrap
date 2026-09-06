@@ -12,6 +12,7 @@ and what artifacts does it produce?
 
 ## Expect
 
-- It says `/spec-developer` runs next and takes the intent.md path as its input.
-- It says the outputs are a spec.md next to the intent and a plan.md under tasks/, as two distinct artifacts.
-- It mentions that policy references (design guardrails, UX laws, security) are applied while the spec is written, not after.
+- It names `/spec-developer` as the next step, taking that intent.md path as input.
+- It names two distinct output artifacts: a `spec.md` beside the intent, and a `plan.md` under `tasks/`.
+- It identifies the project's policy references (design guardrails, UX laws, infrastructure profile, or REVIEW.md) among what the step reads.
+- It does NOT describe the step as producing a single combined document.

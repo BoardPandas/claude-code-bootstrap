@@ -11,6 +11,6 @@ I removed a public endpoint from the API. Bump the version and write the changel
 
 ## Expect
 
-- It identifies the change as breaking and therefore Major by the version table.
-- It explicitly stops and asks the user before bumping the Major segment rather than doing it autonomously.
-- It notes that a Major bump resets Minor and Patch to zero.
+- It classifies the change as breaking, and therefore a Major bump under this repo's version rules.
+- It stops and asks for the user's decision before applying a Major bump, rather than selecting a new Major version and proceeding.
+- It does NOT autonomously commit to a specific Major version number as the decided outcome.

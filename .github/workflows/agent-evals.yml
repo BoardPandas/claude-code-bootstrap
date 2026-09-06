@@ -72,9 +72,15 @@ jobs:
             echo "::notice::ANTHROPIC_API_KEY is not set; behavioural evals skipped. Structure validation still ran."
           fi
 
+      # Pinned exactly, for the same reason every action above is pinned to a
+      # commit SHA rather than a tag: this is the one job that holds the API key,
+      # and an unpinned install hands whatever the registry serves that morning
+      # full access to it. Bump this deliberately after validating a release --
+      # a floating version in a credentialed job is a supply-chain hole, not
+      # convenience.
       - name: Install the Claude Code CLI
         if: steps.key.outputs.present == 'true'
-        run: npm install -g @anthropic-ai/claude-code
+        run: npm install -g @anthropic-ai/claude-code@2.1.247
 
       - name: Run behavioural evals
         if: steps.key.outputs.present == 'true'
