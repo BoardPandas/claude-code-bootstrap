@@ -1,10 +1,11 @@
 {
   "name": "claude-code-bootstrap",
-  "version": "0.18.0",
+  "version": "0.19.0",
   "private": true,
   "description": "Claude Code starter template with ready-to-use .claude/ configuration",
   "scripts": {
     "check:claude": "node scripts/check-claude-wiring.mjs",
+    "check:eol": "node scripts/check-line-endings.mjs",
     "evals": "node scripts/run-evals.mjs",
     "test": "node --test \"scripts/**/*.test.mjs\""
   },

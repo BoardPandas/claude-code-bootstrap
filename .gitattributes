@@ -1,3 +1,28 @@
+# Normalize every text file to LF in the repository and on checkout.
+#
+# eol=lf is the half that matters. text=auto alone normalizes what is COMMITTED but
+# leaves the CHECKOUT to core.autocrlf, which Git for Windows sets to true by default,
+# so the CRs come straight back on the next clone.
+#
+# The failure this prevents: a CRLF working tree plus a later LF-only rewrite by any
+# tool that treats a lone CR as a line terminator emits one line per CR, so every CR
+# becomes a REAL blank line and the file's line count becomes exactly old-lines plus
+# old-CRs. Each cycle roughly doubles the file. A knowledge-base index went
+# 257 -> 768 -> 1537 -> 3071 lines that way while its content stayed at ~173, and a
+# one-number edit landed as a 768-insertion diff that destroyed blame on the file.
+# Nothing looks wrong while it happens: status is clean and Markdown renders N blank
+# lines exactly like one. See LL-G kb/git/crlf-expansion-doubles-file.md.
+#
+# Enforced by scripts/check-line-endings.mjs, which also fails if this rule is removed.
+* text=auto eol=lf
+
 # Shell scripts must use LF line endings, or the shebang breaks on
 # Git Bash/macOS/Linux with "bad interpreter: bash\r".
 *.sh text eol=lf
+
+# Vendored payloads kept byte-for-byte as shipped, so a future upstream drop can be
+# diffed against them. -text opts a path out of all normalization, and the guard treats
+# it as a deliberate exemption. Uncomment and adjust when this template is cloned into a
+# repo that vendors third-party sources:
+# vendor/** -text
+# kb/*/sources/** -text

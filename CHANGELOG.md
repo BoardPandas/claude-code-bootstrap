@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.19.0] - 2026-09-10
+
+### Added
+
+- **`.gitattributes` now pins LF for every text file, not just `*.sh`**, and **`scripts/check-line-endings.mjs` (`npm run check:eol`, wired into CI) enforces it.** The guard fails if the `* text=auto eol=lf` rule is removed, or if any tracked text file is stored CRLF or mixed in the index. Both ship as part of the template, so every repo cloned from it inherits the rule and the guard rather than the gap.
+
+  `eol=lf` is the half that matters: `text=auto` alone normalizes what is *committed* but leaves the *checkout* to `core.autocrlf`, which Git for Windows sets to true by default, so the CRs return on the next clone. The failure it prevents is silent from every angle — a CRLF working tree plus a later LF-only rewrite by any tool that treats a lone CR as a line terminator emits one line per CR, so every CR becomes a **real** blank line and a file's line count becomes exactly old-lines plus old-CRs, roughly doubling each cycle. A knowledge-base index went 257 → 768 → 1537 → 3071 lines that way while its actual content stayed at ~173, and changing a single number in it produced a 768-insertion/257-deletion diff that destroyed `git blame` for the file. `git status` stays clean throughout and Markdown renders N blank lines exactly like one, so nothing complains. Full write-up: LL-G `kb/git/crlf-expansion-doubles-file.md`.
+
+  Paths marked `-text` are exempt by design — the attribute is the opt-out for vendored payloads kept byte-for-byte so a future upstream drop can be diffed. `.gitattributes` carries commented examples for when the template is cloned into a repo that vendors sources.
+
+  `scripts/check-line-endings.test.mjs` covers it the way this repo covers its other guards: a fixture that passes, then one mutation at a time asserting exit 1 and the message naming the defect. Six cases, including the one this check has already failed in real life — an unparseable `git ls-files --eol` row (empty `w/` field, for a file staged but not checked out) once made its pattern miss, and a CRLF blob sailed through counted as "exempt" while the guard printed OK. Unparseable rows now fail closed. Reintroducing that bug fails two of the six tests.
+
+  Deliberately not checked: a "blank lines outnumber content lines" heuristic. Legitimate files sit near a 1:1 ratio (changelogs, run logs, vendored manuals), so it false-positives on healthy files while the CR check catches the cause before any expansion can occur.
+
 ## [0.18.0] - 2026-09-10
 
 ### Added

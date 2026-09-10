@@ -39,6 +39,17 @@ jobs:
       - name: Claude wiring guard (rule scoping + hook matchers + always-on budget)
         run: npm run check:claude
 
+      # Asserts .gitattributes still pins LF and that nothing is stored CRLF in the
+      # index. A CRLF working tree plus a later LF-only rewrite by a tool that treats a
+      # lone CR as a line terminator turns every CR into a REAL blank line, so a file's
+      # line count becomes old-lines + old-CRs and roughly doubles each cycle. An index
+      # went 257 -> 3071 lines that way while its content stayed at ~173, and a
+      # one-number edit landed as a 768-insertion diff. Nothing looks wrong while it
+      # happens: status is clean and Markdown renders N blank lines as one. This ships
+      # as part of the template, so every repo cloned from it inherits the guard.
+      - name: Line endings (LF pinned, no CRLF in the index)
+        run: npm run check:eol
+
       # The hooks are shipped as part of the template, so a syntax error here
       # breaks every repo cloned from it.
       - name: Hook script syntax
