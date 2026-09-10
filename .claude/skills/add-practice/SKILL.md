@@ -17,7 +17,9 @@ You are adding a new entry to the BP best practices knowledge base.
 
 All GitHub operations use the `gh` CLI via the Bash tool. Do not switch to the GitHub MCP server for these operations even if one is connected -- `gh` is already authenticated and consistent, and pulling in MCP tool schemas mid-skill bloats the context window for no benefit.
 
-The fragile parts of writing to the contents API (capturing each file's blob SHA, base64-encoding without the GNU-only `-w0` flag, and choosing create-vs-update) are handled by `.claude/scripts/kb-upsert.sh`. You compute the new file contents; the script pushes them.
+All three files this skill touches -- the entry, its concern `llms.txt`, and the master index count -- are written as **ONE commit** by `.claude/scripts/kb-commit.mjs`. You compute the file contents; the script builds the commit.
+
+Do not push them one at a time. The three files are only correct together: after a lone entry push the entry is a file nothing links, and after a lone concern push the master count disagrees with its shelf. Both states fail BP's CI (`scripts/check-practices.mjs`). `kb-upsert.sh` (single-file upsert) also re-reads each blob SHA immediately before its PUT, which inverts the compare-and-swap and silently overwrites anything that landed while you were editing -- see LL-G `kb/git/github-contents-sha-refresh-defeats-cas.md`. `kb-commit.mjs` takes the base commit you edited from and refuses a non-fast-forward instead.
 
 ## Step 1: Collect information
 
@@ -53,12 +55,26 @@ gh auth status
 ```
 If `gh` is not installed or not authenticated, stop and tell the user to run `gh auth login` first.
 
+**Capture the base commit SHA first, before you read or edit anything.** This is what makes the
+write safe: your commit is parented on it, and if anyone pushes while you are composing the
+entry, the ref update is refused rather than silently overwriting them.
+```
+BASE=$(gh api repos/BoardPandas/BP/commits/heads/main --jq .sha)
+echo "$BASE"
+```
+Keep that value; you pass it to `--base` in Step 6. Do not re-read it later -- a freshly-read
+SHA always matches HEAD, which is the bug this avoids.
+
 Read the current master index and the relevant concern index so you know the entry count and can avoid duplicates:
 ```
-gh api repos/BoardPandas/BP/contents/llms.txt --jq .content | base64 -d
-gh api repos/BoardPandas/BP/contents/practices/<concern>/llms.txt --jq .content | base64 -d
+gh api repos/BoardPandas/BP/contents/llms.txt -H 'Accept: application/vnd.github.raw'
+gh api repos/BoardPandas/BP/contents/practices/<concern>/llms.txt -H 'Accept: application/vnd.github.raw'
 ```
-If the concern command fails with a `404`, the concern folder does not exist yet -- you will create it in Step 5. You do NOT need to capture blob SHAs by hand; `kb-upsert.sh` reads the current SHA itself immediately before each write.
+If the concern command fails with a `404`, the concern folder does not exist yet -- you will create it in Step 5.
+
+> On a 404, `gh api --jq .sha` prints the error body to **stdout** rather than applying the
+> filter, so an unchecked capture yields a JSON blob instead of an empty string. Validate any
+> SHA you capture against `^[0-9a-f]{40}$` rather than testing it for emptiness.
 
 ## Step 4: Create the entry file
 
@@ -98,12 +114,13 @@ If the concern command fails with a `404`, the concern folder does not exist yet
    <notes, or omit the section if none>
    ```
 
-2. Push it (the script base64-encodes and creates the file):
-```
-.claude/scripts/kb-upsert.sh BoardPandas/BP practices/<concern>/<slug>.md .git/bp-entry.md "Add <concern> practice: <title>"
-```
+2. Leave it on disk. Nothing is pushed until Step 6, which commits all three files together.
 
-3. Delete the scratch file: `rm .git/bp-entry.md`
+`## CHECK` and `## IMPLEMENT` are not optional: `/apply-practice` reads exactly those two
+sections to decide whether a repo already follows the practice and how to adopt it. An entry
+without them cannot be applied mechanically, and BP's guard fails the build rather than letting
+the skill find nothing to act on. A rationale section is required too -- `## WHY`, or
+`## CONTEXT` if that reads better for the entry.
 
 ## Step 5: Update the concern llms.txt
 
@@ -123,11 +140,12 @@ Compute the new content of `practices/<concern>/llms.txt`:
   - [<Title>](<slug>.md): <one-line description>. <PRIORITY>.
   ```
 
-Write the full new file content to `.git/bp-index.md` with the Write tool, then push it:
-```
-.claude/scripts/kb-upsert.sh BoardPandas/BP practices/<concern>/llms.txt .git/bp-index.md "Update <concern> index: add <slug>"
-```
-The script creates the file if it didn't exist (new concern) or updates it in place otherwise -- you don't pass a SHA. Then delete the scratch file: `rm .git/bp-index.md`
+Write the full new file content to `.git/bp-index.md` with the Write tool. Do not push it yet.
+
+Keep the whole bullet on one line -- BP's guard counts entries by line, and only bullets under
+the `## Entries` heading are counted. If the concern carries companion files (a runbook, a
+script), they belong in their own `## Companion files` section below the entries, where they are
+still reachable but do not inflate the count.
 
 ## Step 6: Update master llms.txt entry count
 
@@ -139,15 +157,51 @@ If this is a new concern, add a new section under `## Concerns`:
 - [<Concern> index](practices/<concern>/llms.txt): <description> (1 entry)
 ```
 
-Write the updated master content to `.git/bp-master.md`, then push it:
+Edit the master line **line-anchored** -- change only the number, never reflow the
+description. Master-index lines are one clause naming the concern and its scope; the specific
+practices belong on the shelf. The file has a hard 12 KB budget that fails CI, because every
+session loads it under RULE 3 (two descriptions had already grown into run-on sentences, one of
+them 725 bytes).
+
+Write the updated master content to `.git/bp-master.md`.
+
+### Now commit all three files as ONE commit
+
 ```
-.claude/scripts/kb-upsert.sh BoardPandas/BP llms.txt .git/bp-master.md "Update master index: <concern> now has N+1 entries"
+.claude/scripts/kb-commit.mjs \
+  --repo BoardPandas/BP \
+  --base "$BASE" \
+  --message "Add <concern> practice: <title>" \
+  practices/<concern>/<slug>.md  .git/bp-entry.md \
+  practices/<concern>/llms.txt   .git/bp-index.md \
+  llms.txt                       .git/bp-master.md
 ```
-Then delete the scratch file: `rm .git/bp-master.md`
+
+Add `--dry-run` first if you want to see the paths and byte counts without writing.
+
+The script normalizes content to LF before encoding. The contents API stores bytes verbatim,
+so `.gitattributes eol=lf` does not govern this path -- a CRLF scratch file (which the Write
+tool produces on Windows) otherwise puts CRs straight into the knowledge base, and 24 of them
+arrived in an LL-G shelf index that way on 2026-09-10.
+
+**If the ref update is refused**, `main` moved while you were composing. Nothing was lost and
+nothing was clobbered. Re-read the two index files, re-apply your edits on top of the NEW
+content, take a fresh `BASE`, and run the command again. Never retry with force.
+
+Then delete the scratch files: `rm -f .git/bp-entry.md .git/bp-index.md .git/bp-master.md`
 
 ## Step 7: Confirm
 
+Confirm the commit actually passed BP's guard -- the push is not the finish line:
+```
+gh run list --repo BoardPandas/BP --limit 1 --json conclusion,headSha,status
+```
+`check-practices.mjs` runs there. A red build means the entry is unreachable, its
+`concern:`/`tech:`/`priority:` is off, the master count disagrees, a required section is
+missing, or CRs got in; fix it rather than leaving the knowledge base broken for the next reader.
+
 Output:
-- The GitHub URL of the created entry file (printed by `kb-upsert.sh`)
-- Confirmation that both index files were updated
+- The commit URL (printed by `kb-commit.mjs`)
+- That all three files landed in that single commit
 - The entry's priority level
+- The CI conclusion for that commit

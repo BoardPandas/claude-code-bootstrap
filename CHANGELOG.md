@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.18.0] - 2026-09-10
+
+### Added
+
+- **`.claude/scripts/kb-commit.mjs` — writes several files to a repo as ONE commit** via the git data API (blobs → tree → commit → ref), with no local clone. `add-lesson` and `add-practice` now use it instead of three sequential `kb-upsert.sh` pushes.
+
+  A knowledge-base entry is three files that are only correct together: the entry, its shelf `llms.txt`, and the master index count. Pushed one at a time the target repo passes through two genuinely broken states — after the first push the entry is a file no index links, after the second the master count disagrees with its shelf — and both now fail LL-G's and BP's CI. On 2026-09-10 that produced three red LL-G builds before the fourth went green.
+
+  It also closes a HIGH-severity defect the old path carried. `kb-upsert.sh` re-reads each blob's SHA immediately before its PUT "so the value is fresh", which inverts the compare-and-swap: a freshly-read SHA always matches HEAD, so the write always succeeds and silently overwrites anything that landed while you were editing. LL-G's own `kb/git/github-contents-sha-refresh-defeats-cas.md` quotes that helper's comment as the anti-pattern. `kb-commit.mjs` therefore **requires** `--base` — the commit your edits were based on, read before editing — parents the new commit on it, and moves the ref with `force=false`, so a concurrent push is refused rather than clobbered. Verified both directions against a throwaway branch: a two-file commit landed as one commit with CRs stripped, and a deliberately stale `--base` was refused with HTTP 422 while the branch tip and existing content stayed untouched.
+
+  It also normalizes content to LF before encoding. The contents API stores bytes verbatim — no git clean filter runs on that path — so a `.gitattributes` `eol=lf` rule does not govern it, and a CRLF scratch file (what the Write tool produces on Windows) otherwise puts CRs straight into the knowledge base. 24 arrived in an LL-G shelf index exactly that way.
+
+### Changed
+
+- **`add-lesson` and `add-practice` capture the base commit SHA before reading anything, and commit all three files together.** Both skills also gained the constraints they were previously silent about: append shelf bullets in the file's own format and on one line (both guards count bullets by line); edit the master index line-anchored because it has a hard byte budget that fails CI (LL-G 20 KB, BP 12 KB — LL-G's had once reached 51 KB of shelf summaries); and confirm the commit's CI run went green rather than treating the push as the finish line. `add-practice` additionally states that `## CHECK` and `## IMPLEMENT` are mandatory, because `apply-practice` reads exactly those two sections and an entry without them cannot be applied mechanically.
+
 ## [0.17.0] - 2026-09-06
 
 ### Added

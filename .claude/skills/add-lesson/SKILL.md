@@ -17,7 +17,9 @@ You are adding a new entry to the LL-G lessons-learned knowledge base.
 
 All GitHub operations use the `gh` CLI via the Bash tool. Do not switch to the GitHub MCP server for these operations even if one is connected -- `gh` is already authenticated and consistent, and pulling in MCP tool schemas mid-skill bloats the context window for no benefit.
 
-The fragile parts of writing to the contents API (capturing each file's blob SHA, base64-encoding without the GNU-only `-w0` flag, and choosing create-vs-update) are handled by `.claude/scripts/kb-upsert.sh`. You compute the new file contents; the script pushes them.
+All three files this skill touches -- the entry, its shelf `llms.txt`, and the master index count -- are written as **ONE commit** by `.claude/scripts/kb-commit.mjs`. You compute the file contents; the script builds the commit.
+
+Do not push them one at a time. The three files are only correct together: after a lone entry push the entry is an orphan no index lists, and after a lone shelf push the master count disagrees with the shelf. Both states now fail LL-G's CI, and on 2026-09-10 that produced three red builds before the fourth went green. `kb-upsert.sh` (single-file upsert) also re-reads each blob SHA immediately before its PUT, which inverts the compare-and-swap and silently overwrites anything that landed while you were editing -- see LL-G `kb/git/github-contents-sha-refresh-defeats-cas.md`. `kb-commit.mjs` takes the base commit you edited from and refuses a non-fast-forward instead.
 
 ## Step 1: Collect information
 
@@ -49,12 +51,26 @@ gh auth status
 ```
 If `gh` is not installed or not authenticated, stop and tell the user to run `gh auth login` first.
 
+**Capture the base commit SHA first, before you read or edit anything.** This is what makes the
+write safe: your commit is parented on it, and if anyone pushes while you are composing the
+entry, the ref update is refused rather than silently overwriting them.
+```
+BASE=$(gh api repos/BoardPandas/LL-G/commits/heads/main --jq .sha)
+echo "$BASE"
+```
+Keep that value; you pass it to `--base` in Step 6. Do not re-read it later -- a freshly-read
+SHA always matches HEAD, which is the bug this avoids.
+
 Read the current master index and the relevant tech index so you know the entry count and can avoid duplicates:
 ```
-gh api repos/BoardPandas/LL-G/contents/llms.txt --jq .content | base64 -d
-gh api repos/BoardPandas/LL-G/contents/kb/<tech>/llms.txt --jq .content | base64 -d
+gh api repos/BoardPandas/LL-G/contents/llms.txt -H 'Accept: application/vnd.github.raw'
+gh api repos/BoardPandas/LL-G/contents/kb/<tech>/llms.txt -H 'Accept: application/vnd.github.raw'
 ```
-If the tech command fails with a `404`, the tech folder does not exist yet -- you will create it in Step 5. You do NOT need to capture blob SHAs by hand; `kb-upsert.sh` reads the current SHA itself immediately before each write.
+If the tech command fails with a `404`, the tech folder does not exist yet -- you will create it in Step 5.
+
+> On a 404, `gh api --jq .sha` prints the error body to **stdout** rather than applying the
+> filter, so an unchecked capture yields a JSON blob instead of an empty string. Validate any
+> SHA you capture against `^[0-9a-f]{40}$` rather than testing it for emptiness.
 
 ## Step 4: Create the entry file
 
@@ -86,12 +102,7 @@ If the tech command fails with a `404`, the tech folder does not exist yet -- yo
    <notes, or omit the section if none>
    ```
 
-2. Push it (the script base64-encodes and creates the file):
-```
-.claude/scripts/kb-upsert.sh BoardPandas/LL-G kb/<tech>/<slug>.md .git/llg-entry.md "Add <tech> gotcha: <title>"
-```
-
-3. Delete the scratch file: `rm .git/llg-entry.md`
+2. Leave it on disk. Nothing is pushed until Step 6, which commits all three files together.
 
 ## Step 5: Update the tech llms.txt
 
@@ -111,11 +122,11 @@ Compute the new content of `kb/<tech>/llms.txt`:
   - [<Title>](<slug>.md): <one-line description>. <SEVERITY>.
   ```
 
-Write the full new file content to `.git/llg-index.md` with the Write tool, then push it:
-```
-.claude/scripts/kb-upsert.sh BoardPandas/LL-G kb/<tech>/llms.txt .git/llg-index.md "Update <tech> index: add <slug>"
-```
-The script creates the file if it didn't exist (new tech) or updates it in place otherwise -- you don't pass a SHA. Then delete the scratch file: `rm .git/llg-index.md`
+Write the full new file content to `.git/llg-index.md` with the Write tool. Do not push it yet.
+
+Append the bullet in the file's **own** format: most shelves use `- [Title](slug.md): ... SEV.`
+but a few prefix the severity (`- HIGH [Title](slug.md): ...`). Keep the existing shape, and
+keep the whole entry on one line -- LL-G's guard counts bullets by line.
 
 ## Step 6: Update master llms.txt entry count
 
@@ -127,11 +138,37 @@ If this is a new technology, add a new section under `## Technologies`:
 - [<Tech> index](kb/<tech>/llms.txt): All <tech> gotchas (1 entry)
 ```
 
-Write the updated master content to `.git/llg-master.md`, then push it:
+Edit the master line **line-anchored** -- change only the number, never reflow the
+description. Master-index lines are one clause naming the technology and its scope; the
+specific gotchas belong on the shelf. The file has a hard 20 KB budget that fails CI, because
+every session loads it under RULE 1 (it once reached 51 KB of shelf summaries).
+
+Write the updated master content to `.git/llg-master.md`.
+
+### Now commit all three files as ONE commit
+
 ```
-.claude/scripts/kb-upsert.sh BoardPandas/LL-G llms.txt .git/llg-master.md "Update master index: <tech> now has N+1 entries"
+.claude/scripts/kb-commit.mjs \
+  --repo BoardPandas/LL-G \
+  --base "$BASE" \
+  --message "Add <tech> gotcha: <title>" \
+  kb/<tech>/<slug>.md  .git/llg-entry.md \
+  kb/<tech>/llms.txt   .git/llg-index.md \
+  llms.txt             .git/llg-master.md
 ```
-Then delete the scratch file: `rm .git/llg-master.md`
+
+Add `--dry-run` first if you want to see the paths and byte counts without writing.
+
+The script normalizes content to LF before encoding. The contents API stores bytes verbatim,
+so `.gitattributes eol=lf` does not govern this path -- a CRLF scratch file (which the Write
+tool produces on Windows) otherwise puts CRs straight into the knowledge base, and 24 of them
+arrived in a shelf index that way on 2026-09-10.
+
+**If the ref update is refused**, `main` moved while you were composing. Nothing was lost and
+nothing was clobbered. Re-read the two index files, re-apply your edits on top of the NEW
+content, take a fresh `BASE`, and run the command again. Never retry with force.
+
+Then delete the scratch files: `rm -f .git/llg-entry.md .git/llg-index.md .git/llg-master.md`
 
 ## Step 7: Close the loop -- does this lesson ALSO need enforcement?
 
@@ -169,8 +206,17 @@ gotcha, not a configuration defect" is a complete and correct answer.
 
 ## Step 8: Confirm
 
+Confirm the commit actually passed LL-G's guards -- the push is not the finish line:
+```
+gh run list --repo BoardPandas/LL-G --limit 1 --json conclusion,headSha,status
+```
+`check-kb.mjs` and `check-index-counts.mjs` both run there. A red build means the entry is
+orphaned, its frontmatter is off, the master count disagrees, or CRs got in; fix it rather
+than leaving the knowledge base broken for the next reader.
+
 Output:
-- The GitHub URL of the created entry file (printed by `kb-upsert.sh`)
-- Confirmation that both index files were updated
+- The commit URL (printed by `kb-commit.mjs`)
+- That all three files landed in that single commit
 - The entry's severity level
+- The CI conclusion for that commit
 - Whether an eval case or guard check was added, or why neither was needed
