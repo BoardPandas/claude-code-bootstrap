@@ -29,7 +29,7 @@ Check the current date FIRST. All best practices must be verified as current as 
 
 1. Read `.claude/references/source-urls.md` to get the list of URLs to fetch. All external URLs used by this skill come from that registry; never hardcode URLs here.
 2. Read `CLAUDE.md` in the repo root. Note its contents and version references.
-3. Read `agents.md` in the repo root. Note registered agents.
+3. Read `.claude/references/agent-registry.md` (older repos: root `agents.md`). Note registered agents.
 4. Scan `.claude/skills/` using Glob. List all existing skills.
 5. Scan `.claude/agents/` using Glob. List all existing agents.
 6. Read `.claude/settings.json`. Note current settings.
@@ -156,7 +156,8 @@ not finished.
 - `.claude/references/template-sync-ignore.md`: project-specific removal list; never overwrite local entries.
 - `intent/**` and `tasks/**`: the project's own artifact chain, never template content.
 - Any file not in `.claude/` and not named in the exception table above.
-- `CLAUDE.md`, `agents.md`, `instructions.md`: these are project-tailored.
+- `CLAUDE.md`, `.claude/references/agent-registry.md`, `instructions.md`: these are project-tailored.
+- `AGENTS.md`, `.agents/**`, `.codex/**`: generated Codex mirrors. Never sync or hand-edit them; regenerate with `npm run sync:codex` once the template changes are applied.
 
 ### Apply template changes
 
@@ -237,7 +238,7 @@ For every `.claude/skills/*/SKILL.md`:
 
 For every `.claude/agents/*.md`:
 
-- **Registered.** Present in `agents.md`, with a description matching the agent's own.
+- **Registered.** Present in `.claude/references/agent-registry.md`, with a description matching the agent's own.
 - **Reachable.** Every agent named by a skill's `agent:` field, by an `Agent(<name>)` entry in a `tools:` allowlist, or by a subagent instruction in a skill body must resolve to a real agent file. A dangling name fails at dispatch time, mid-task.
 - **Tool list still fits the job.** A read-only review agent should not hold `Write` beyond its report path; an implementation agent needs `Edit`/`Write`. Over-broad tool lists are the usual drift.
 - **`isolation: worktree` agents are briefed about it.** They cannot see uncommitted work and will report confidently on stale content. Each must orient with `git rev-parse` / `status` before acting.
@@ -431,13 +432,14 @@ Review `.claude/rules/*.md` files:
 ## Step 7: Update Documentation
 
 1. Update `CLAUDE.md` if skill or agent inventory changed.
-2. Update `agents.md` if agent inventory changed.
+2. Update `.claude/references/agent-registry.md` if agent inventory changed.
 3. Update `instructions.md` if usage patterns, available features, or configuration options changed. Ensure it documents:
    - Path-scoped rules (`.claude/rules/*.md`)
    - Agent memory (`.claude/agent-memory/`)
    - All agent and skill frontmatter fields
    - All hook events and types (command, http, prompt, agent)
    - All settings options including settings.local.json overrides
+4. If `scripts/sync-codex.mjs` exists, run `npm run sync:codex` last, after every other edit. `AGENTS.md`, `.agents/skills/`, and `.codex/` are generated from `CLAUDE.md` and `.claude/`, and `npm run check:claude` fails while they are stale.
 
 ## Step 8: Report
 

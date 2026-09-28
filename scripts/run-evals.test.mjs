@@ -17,7 +17,7 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, cpSync, readdirSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, cpSync, readdirSync, readFileSync, chmodSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { tmpdir } from "node:os";
@@ -160,6 +160,44 @@ test("a missing claude CLI is a failure, not a skip", () => {
     });
     assert.equal(r.status, 1, `expected a hard failure, got ${r.status}`);
     assert.match(`${r.stdout}${r.stderr}`, /is not available|FAIL/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// Read-only must be enforced, not requested. --allowed-tools only pre-approves: under a
+// user-level bypassPermissions default, a case agent kept Edit, Bash and every MCP
+// connector, and on 2026-09-28 one rewrote a rule inside the repo being graded. So every
+// agent call must remove the other tools, the MCP servers, and the bypass mode.
+test("every claude -p call is locked to Read/Glob/Grep with no MCP and no bypass", { skip: process.platform === "win32" && "needs a POSIX shim" }, () => {
+  const dir = mkdtempSync(join(tmpdir(), "evals-argv-"));
+  try {
+    cpSync(base, dir, { recursive: true });
+    const bin = join(dir, "bin");
+    const log = join(dir, "argv.log");
+    mkdirSync(bin);
+    // Fake CLI: answers the --version probe, records every other argv, then fails the
+    // call so the run ends without needing a real model.
+    writeFileSync(
+      join(bin, "claude"),
+      `#!/bin/sh\n[ "$1" = "--version" ] && { echo "0.0.0 (fake)"; exit 0; }\n` +
+        `printf '%s\\037' "$@" >> "${log}"; printf '\\n' >> "${log}"\nexit 1\n`,
+    );
+    chmodSync(join(bin, "claude"), 0o755);
+    spawnSync(process.execPath, [RUNNER, "--only=case-1"], {
+      cwd: dir,
+      encoding: "utf8",
+      env: { ...process.env, PATH: `${bin}:${process.env.PATH}` },
+    });
+    const calls = readFileSync(log, "utf8").trim().split("\n").map((l) => l.split("\x1f").filter(Boolean));
+    assert.ok(calls.length > 0, "the runner never invoked claude -p");
+    for (const argv of calls) {
+      const after = (flag) => argv[argv.indexOf(flag) + 1];
+      assert.equal(argv[0], "-p");
+      assert.equal(after("--tools"), "Read,Glob,Grep", `missing --tools lockdown: ${argv.slice(2).join(" ")}`);
+      assert.equal(after("--permission-mode"), "default", "bypassPermissions must be overridden");
+      assert.ok(argv.includes("--strict-mcp-config"), "MCP servers must be excluded");
+    }
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

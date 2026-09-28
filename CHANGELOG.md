@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.20.1] - 2026-09-28
+
+### Security
+
+- **The eval harness was only read-only on paper.** Each case agent ran with `--allowed-tools Read,Glob,Grep`, which pre-approves those tools but removes none. Under a user-level `defaultMode: bypassPermissions`, the agent kept Edit, Bash, and every MCP connector on the machine: about 1,100 tools, including mail and chat senders. A case that asked it to "rewrite the frontmatter" of a rule did exactly that, editing `.claude/rules/bp-check.md` and `wiring-exemptions.json` and then running `npm test` in the working tree under test. Agent and judge calls now pass `--tools Read,Glob,Grep --strict-mcp-config --permission-mode default`, which leaves exactly three tools. A regression test asserts every `claude -p` call carries the lockdown. The 0.16.0 entry that credited `--allowed-tools` with making runs read-only was wrong.
+- **The CI reviewer had the same gap.** `claude-review.yml` reads an untrusted diff, and project settings still gave it `WebFetch` and `Bash(git clone …)`. It now runs with the same lockdown.
+
+## [0.20.0] - 2026-09-28
+
+### Added
+
+- **Codex gets the same configuration as Claude Code, generated rather than copied.** `npm run sync:codex` builds `AGENTS.md`, `.agents/skills/`, and `.codex/` (custom agents, hooks, config) from `CLAUDE.md` and `.claude/`. Every sibling repo that maintained these by hand drifted: skills went missing, a blind "Claude" to "Codex" replace produced `.Codex/agent-memory/` paths that do not exist, model names went stale, and a copied hook script kept a bug after the original was fixed. Hooks run the same `.claude/scripts/` in place, so there is still one copy of each.
+- **`npm run check:claude` now fails when the Codex mirror is stale, missing a file, or carries one no source generates**, so a `.claude/` change cannot ship without regenerating it. `scripts/sync-codex.test.mjs` asserts each of those paths still fires.
+- **What Codex cannot mirror is reported, not dropped.** The plan-mode hook (Codex has no plan-mode tool) and the two edit hooks (Codex edits arrive as `apply_patch`, which the scripts do not parse yet) are listed in `AGENTS.md` and `.codex/README.md`. The Stop/Notification bell becomes Codex's native `[tui] notifications`. Permission deny rules, which Codex does not enforce, are written into `AGENTS.md` as rules.
+- `init-repo` and `update-practices` install and refresh the Codex mirror in downstream repos.
+
+### Changed
+
+- **The agent registry moved from `agents.md` to `.claude/references/agent-registry.md`.** A lowercase `agents.md` and Codex's `AGENTS.md` are the same path on Windows and default macOS, so one silently overwrites the other. The generator refuses to run while a lowercase `agents.md` exists, and `init-repo` moves an older repo's registry.
 ## [0.19.0] - 2026-09-10
 
 ### Added

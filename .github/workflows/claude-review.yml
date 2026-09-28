@@ -100,9 +100,13 @@ jobs:
             the Important bar and there are no nits worth the cap, say "No findings."
             and stop. Do not summarise the diff. Do not praise. Do not restate policy.
         run: |
-          # Read-only: the reviewer gets no Write, Edit or Bash. It reads the repo
-          # for context and reports; it never changes anything.
-          if ! claude -p "$REVIEW_PROMPT" --allowed-tools Read,Glob,Grep > /tmp/review.md 2>&1; then
+          # Read-only, enforced: it reads an untrusted diff, so prompt injection is
+          # in scope. --allowed-tools alone only pre-approves and removes nothing;
+          # .claude/settings.json would still hand it WebFetch and Bash(git clone).
+          # --tools removes every other built-in, --strict-mcp-config drops MCP,
+          # --permission-mode default refuses anything unapproved (see run-evals.mjs).
+          if ! claude -p "$REVIEW_PROMPT" --tools Read,Glob,Grep --strict-mcp-config \
+              --permission-mode default --allowed-tools Read,Glob,Grep > /tmp/review.md 2>&1; then
             echo "::warning::Review invocation failed; see log."
             cat /tmp/review.md
             exit 0

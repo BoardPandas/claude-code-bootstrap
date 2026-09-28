@@ -1,12 +1,14 @@
 {
   "name": "claude-code-bootstrap",
-  "version": "0.19.0",
+  "version": "0.20.1",
   "private": true,
   "description": "Claude Code starter template with ready-to-use .claude/ configuration",
   "scripts": {
-    "check:claude": "node scripts/check-claude-wiring.mjs",
+    "check:claude": "node scripts/sync-codex.mjs --check && node scripts/check-claude-wiring.mjs",
+    "check:codex": "node scripts/sync-codex.mjs --check",
     "check:eol": "node scripts/check-line-endings.mjs",
     "evals": "node scripts/run-evals.mjs",
+    "sync:codex": "node scripts/sync-codex.mjs",
     "test": "node --test \"scripts/**/*.test.mjs\""
   },
   "engines": {

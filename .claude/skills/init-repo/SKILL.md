@@ -32,7 +32,7 @@ Before fetching any best practices, check the current date. All recommendations 
 ## Step 2: Read Current State
 
 1. Read `CLAUDE.md` in the repo root (if it exists). Note its contents.
-2. Read `agents.md` in the repo root (if it exists). Note its contents.
+2. Read `.claude/references/agent-registry.md` (older repos: root `agents.md`) if it exists. Note its contents.
 3. Read `README.md` in the repo root (if it exists). Identify the project's tech stack, purpose, and conventions.
 4. Scan the `.claude/` folder (if it exists) using Glob. List all existing files.
 5. Read `.claude/settings.json` (if it exists). Note current settings.
@@ -118,7 +118,7 @@ Compare the current `.claude/` folder against BP practices and web sources. For 
 
 For each gap identified, create or update the file. Follow these rules:
 
-- **Template source:** The canonical template is the `BoardPandas/claude-code-bootstrap` repository (the repo this `.claude/` folder was copied from). Its CLAUDE.md skill table and `agents.md` registry define the full template skill and agent lists. If a template skill, agent, rule, or script is missing here, copy it from that repo (via `git clone` to a temp directory or raw GitHub fetch) rather than reinventing it.
+- **Template source:** The canonical template is the `BoardPandas/claude-code-bootstrap` repository (the repo this `.claude/` folder was copied from). Its CLAUDE.md skill table and `.claude/references/agent-registry.md` define the full template skill and agent lists. If a template skill, agent, rule, or script is missing here, copy it from that repo (via `git clone` to a temp directory or raw GitHub fetch) rather than reinventing it.
 - **Non-destructive:** Never overwrite custom project-specific settings. Merge with existing config.
 - **Skills:** Ensure all template skills exist in `.claude/skills/`. If additional skills are relevant to the detected tech stack, add them.
 - **Agents:** Ensure all template agents exist in `.claude/agents/`. Add others if relevant.
@@ -135,7 +135,7 @@ For each gap identified, create or update the file. Follow these rules:
   - **Required section — `## Things Claude Gets Wrong`:** seeded from the LL-G entries loaded in Step 3 for this project's stack, plus anything the gap analysis surfaced. The standing rule to write into the section: when a mistake happens twice, the correction goes here.
   - Include in the Planning section: "Every plan MUST end with a Lessons Learned / Gotchas section. After implementation, route discoveries to LL-G via `/add-lesson`, not to local files only."
   - If the project uses the artifact chain, document it: `intent.md` → `spec.md` → `plan.md` → diff, with the owner and approver of each.
-- **agents.md:** Update the root agents.md to register all agents. Preserve project-specific content.
+- **Agent registry:** Update `.claude/references/agent-registry.md` to register all agents, preserving project-specific content. A lowercase root `agents.md` from an older template moves there: it collides with Codex's `AGENTS.md` on case-insensitive filesystems (Windows, default macOS), where one silently overwrites the other.
 - **README.md:** If a README exists, add or update the "Claude Code" section. Do not alter other sections.
 
 ## Step 7: Configure Path-Scoped Rules
@@ -312,6 +312,15 @@ cases until the 20-case floor is met, drawn from:
   for the stated reason?
 - Every stack-specific convention written into CLAUDE.md.
 - Each entry in the `Things Claude Gets Wrong` section.
+
+### Codex mirror
+
+Copy the template's `scripts/sync-codex.mjs` and `scripts/sync-codex.test.mjs`, add
+`"sync:codex": "node scripts/sync-codex.mjs"` and `"check:codex": "node scripts/sync-codex.mjs --check"`
+to `package.json`, and prefix `check:claude` with `node scripts/sync-codex.mjs --check && `.
+Then run `npm run sync:codex`. It generates `AGENTS.md`, `.agents/skills/`, and `.codex/`
+from `CLAUDE.md` and `.claude/`; never hand-edit those. Existing hand-made Codex files are
+replaced, so diff them first and move anything project-specific into the Claude source.
 
 Verify before moving on:
 
