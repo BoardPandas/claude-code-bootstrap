@@ -276,6 +276,20 @@ const cases = [
       write("REVIEW.md", "# Review Policy\n\n## Passes\n\n- Correctness\n"),
     expect: /REVIEW\.md is missing the section "## What "?Important"? means here/,
   },
+  {
+    // --allowed-tools only pre-approves. Under bypassPermissions this "read-only"
+    // reviewer keeps Edit, Bash and every MCP connector.
+    name: "11. claude -p restricted by --allowed-tools alone",
+    mutate: ({ write }) =>
+      write(".github/workflows/review.yml", 'jobs:\n  r:\n    steps:\n      - run: claude -p "$P" --allowed-tools Read,Glob,Grep\n'),
+    expect: /review\.yml: restricts claude with --allowed-tools but not --tools, --strict-mcp-config, --permission-mode/,
+  },
+  {
+    name: "11b. confined in part: --tools without --strict-mcp-config",
+    mutate: ({ write }) =>
+      write("scripts/agent.mjs", 'spawnSync("claude", ["-p", p, "--tools", "Read", "--permission-mode", "default", "--allowed-tools", "Read"]);\n'),
+    expect: /agent\.mjs: restricts claude with --allowed-tools but not --strict-mcp-config\./,
+  },
 ];
 
 for (const c of cases) {
@@ -285,6 +299,19 @@ for (const c of cases) {
     assert.match(out, c.expect, `guard failed, but not for the expected reason:\n${out}`);
   });
 }
+
+// The confinement check must not fire on a fully confined call, or on the flags
+// being named in a comment.
+test("a fully confined claude -p passes check 11", () => {
+  const { code, out } = run(({ write }) =>
+    write(
+      ".github/workflows/review.yml",
+      "jobs:\n  r:\n    steps:\n      - run: |\n          # --allowed-tools alone is not enough\n" +
+        '          claude -p "$P" --tools Read --strict-mcp-config --permission-mode default --allowed-tools Read\n',
+    ),
+  );
+  assert.equal(code, 0, out);
+});
 
 // The exemption mechanism has to keep working, or the fix for a false positive is
 // to delete the check.

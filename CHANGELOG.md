@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.20.3] - 2026-09-28
+
+### Fixed
+
+- **`/add-lesson` and `/add-practice` told the agent to write scratch files where it is not allowed to.** Both staged the entry and index files under `.git/`, but the template's own `Edit(**/.git/**)` deny rule blocks the Write tool there. The first real run of `/add-lesson` stalled on it, and three files fetched into `.git/` by shell could not be removed afterwards because the cleanup was denied too. Scratch files now go in `.claude/kb-scratch/`, which contains a `.gitignore` of `*`. That makes the directory ignore itself, so nothing in it can be committed in any repo, whatever the repo's own `.gitignore` says.
+
+## [0.20.2] - 2026-09-28
+
+### Added
+
+- **The wiring guard now fails any `claude` call restricted by `--allowed-tools` alone** (check 11). `--allowed-tools` only pre-approves tools, so under a `bypassPermissions` default the "read-only" agent keeps Edit, Bash and every MCP connector. That is the gap 0.20.1 closed by hand in the eval harness and the CI reviewer. Workflows and scripts now have to pass `--tools`, `--strict-mcp-config` and `--permission-mode` alongside it, and the check fires on both pre-fix files. Recorded in LL-G as `kb/claude-code/allowed-tools-does-not-restrict-under-bypass.md`.
+
 ## [0.20.1] - 2026-09-28
 
 ### Security
