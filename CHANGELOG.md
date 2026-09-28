@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.20.2] - 2026-09-28
+
+### Added
+
+- **The wiring guard now fails any `claude` call restricted by `--allowed-tools` alone** (check 11). `--allowed-tools` only pre-approves tools, so under a `bypassPermissions` default the "read-only" agent keeps Edit, Bash and every MCP connector. That is the gap 0.20.1 closed by hand in the eval harness and the CI reviewer. Workflows and scripts now have to pass `--tools`, `--strict-mcp-config` and `--permission-mode` alongside it, and the check fires on both pre-fix files. Recorded in LL-G as `kb/claude-code/allowed-tools-does-not-restrict-under-bypass.md`.
+
 ## [0.20.1] - 2026-09-28
 
 ### Security

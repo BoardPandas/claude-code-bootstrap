@@ -366,6 +366,41 @@ if (!existsSync(REVIEW_MD)) {
   }
 }
 
+// ---------------- 11: a headless `claude` restricted by --allowed-tools must be confined
+// --allowed-tools PRE-APPROVES tools; it removes none. Under a user-level
+// defaultMode: bypassPermissions every other built-in (Edit, Bash) and every MCP
+// connector stays callable, so a "read-only" eval or review agent can edit the repo,
+// run commands, or send mail. Observed 2026-09-28: an eval case agent rewrote a rule
+// inside the repo it was grading. In CI the default mode hides the gap, which is why
+// it has to be caught statically.
+// LL-G: kb/claude-code/allowed-tools-does-not-restrict-under-bypass.md
+const CONFINE = [
+  { re: /(^|[\s"'`[,(])--tools\b/, flag: "--tools" },
+  { re: /--strict-mcp-config\b/, flag: "--strict-mcp-config" },
+  { re: /--permission-mode\b/, flag: "--permission-mode" },
+];
+const automation = [
+  ...walk(join(ROOT, ".github/workflows")).filter((p) => /\.ya?ml$/.test(p)),
+  ...walk(join(ROOT, "scripts")).filter((p) => /\.(mjs|js|sh)$/.test(p) && !/\.test\.mjs$/.test(p)),
+  ...walk(join(ROOT, ".claude/scripts")).filter((p) => /\.(mjs|js|sh)$/.test(p)),
+]
+  .filter(notExcluded)
+  // This file names the flags in its own messages.
+  .filter((p) => rel(p) !== "scripts/check-claude-wiring.mjs");
+for (const file of automation) {
+  const code = read(file).replace(/^[ \t]*(#|\/\/).*$/gm, "");
+  if (!/--allowed-?tools\b|--allowedTools\b/.test(code)) continue;
+  const missing = CONFINE.filter((c) => !c.re.test(code)).map((c) => c.flag);
+  if (missing.length) {
+    errors.push(
+      `${rel(file)}: restricts claude with --allowed-tools but not ${missing.join(", ")}. ` +
+        `--allowed-tools only pre-approves; under a bypassPermissions default every other tool ` +
+        `and MCP connector stays callable. Add --tools <list> --strict-mcp-config ` +
+        `--permission-mode default.`,
+    );
+  }
+}
+
 // -------------------------------------------- 4: always-on context budget
 // A repo may keep its instructions at .claude/CLAUDE.md instead of the root --
 // both are loaded, and a budget check that only knows the root path silently
