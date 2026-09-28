@@ -1,21 +1,9 @@
 ---
 name: update-practices
-model: opus
-effort: high
-description: Fetch latest Claude Code best practices, update the .claude/ folder configuration, and audit its health -- verifying hooks actually fire, skills are startable, agents are reachable, memory is still true, and CLAUDE.md is lean. Safe to run repeatedly.
-user-invocable: true
-argument-hint: (no arguments needed)
-allowed-tools:
-  - Read
-  - Write
-  - Edit
-  - Glob
-  - Grep
-  - Bash
-  - WebFetch
-  - WebSearch
-  - Agent
+description: "Fetch latest Claude Code best practices, update the .claude/ folder configuration, and audit its health -- verifying hooks actually fire, skills are startable, agents are reachable, memory is still true, and CLAUDE.md is lean. Safe to run repeatedly."
 ---
+
+> Generated from `.claude/skills/update-practices/SKILL.md` by `scripts/sync-codex.mjs`. Edit the source, then run `npm run sync:codex`. Claude Code tool and command names below map to Codex as described in `AGENTS.md` under "Codex runtime".
 
 # Update Best Practices
 
@@ -230,7 +218,7 @@ For every `.claude/skills/*/SKILL.md`:
 
 - **The documented trigger can actually start it.** `disable-model-invocation: true` means no plain-English phrase will ever start the skill. Any skill setting it must appear in the CLAUDE.md table as `/command`, never as a phrase. This exact defect once shipped across four skills at once, including the repo's headline workflow, so check it every run.
 - **The description carries its own triggers.** The description is all that routing sees. It should name the concrete phrases and nouns a user would say, not restate the skill's title.
-- **Referenced files resolve.** Follow every relative path and `${CLAUDE_SKILL_DIR}` reference in the body (`references/`, `templates/`, `evals/`). A skill pointing at a renamed file fails only when someone finally runs it.
+- **Referenced files resolve.** Follow every relative path and `.agents/skills/update-practices` reference in the body (`references/`, `templates/`, `evals/`). A skill pointing at a renamed file fails only when someone finally runs it.
 - **Frontmatter keys are real.** Only documented keys have any effect; an invented or misspelled key is silently ignored rather than rejected.
 - **Body size.** A SKILL.md past a few hundred lines should push detail into `references/` and keep the body as the procedure.
 

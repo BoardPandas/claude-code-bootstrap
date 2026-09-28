@@ -36,7 +36,9 @@ jobs:
 
       # Runs before any install/build step so it fails fast. This repo has no
       # build, but keep the ordering when the template is cloned into one.
-      - name: Claude wiring guard (rule scoping + hook matchers + always-on budget)
+      # Also fails when the generated Codex mirror (AGENTS.md, .agents/skills/, .codex/)
+      # no longer matches CLAUDE.md and .claude/ -- run `npm run sync:codex` to fix.
+      - name: Claude wiring guard + Codex mirror drift
         run: npm run check:claude
 
       # Asserts .gitattributes still pins LF and that nothing is stored CRLF in the

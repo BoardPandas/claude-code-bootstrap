@@ -1,20 +1,9 @@
 ---
 name: init-repo
-model: opus
-effort: high
-description: Build or rebuild the .claude/ folder with best practices. Use when setting up Claude Code in a new or existing repository. Run plan-repo first for new projects.
-allowed-tools:
-  - Read
-  - Write
-  - Edit
-  - Glob
-  - Grep
-  - Bash
-  - WebFetch
-  - WebSearch
-  - Agent
-  - AskUserQuestion
+description: "Build or rebuild the .claude/ folder with best practices. Use when setting up Claude Code in a new or existing repository. Run plan-repo first for new projects."
 ---
+
+> Generated from `.claude/skills/init-repo/SKILL.md` by `scripts/sync-codex.mjs`. Edit the source, then run `npm run sync:codex`. Claude Code tool and command names below map to Codex as described in `AGENTS.md` under "Codex runtime".
 
 # Initialize Repository for Claude Code
 

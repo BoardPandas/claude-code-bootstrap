@@ -22,13 +22,19 @@ Then open Claude Code, type **`/plan-repo`** to plan your stack, and say **"init
 # Copy the .claude/ folder into your repo
 cp -r path/to/claude-code-bootstrap/.claude/ your-repo/.claude/
 cp path/to/claude-code-bootstrap/CLAUDE.md your-repo/CLAUDE.md
-cp path/to/claude-code-bootstrap/agents.md your-repo/agents.md
 cp path/to/claude-code-bootstrap/REVIEW.md your-repo/REVIEW.md
 cp -r path/to/claude-code-bootstrap/scripts/ your-repo/scripts/
 ```
 
 `REVIEW.md` and `scripts/` are not optional: `npm run check:claude` fails without the
 review policy, and the guard and eval runner both live in `scripts/`.
+
+For Codex, generate its mirror of the same configuration (`AGENTS.md`, `.agents/skills/`,
+`.codex/`) instead of copying it, then keep it current with the same command:
+
+```bash
+node scripts/sync-codex.mjs
+```
 
 Then open Claude Code in your repo and say: **"initialize repo"** to merge the template with your existing setup.
 
@@ -85,7 +91,7 @@ Then open Claude Code in your repo and say: **"initialize repo"** to merge the t
 
 ### Agents
 
-See [agents.md](agents.md) for the full agent registry.
+See [agent-registry.md](.claude/references/agent-registry.md) for the full agent registry.
 
 | Agent | Purpose |
 |-------|---------|
