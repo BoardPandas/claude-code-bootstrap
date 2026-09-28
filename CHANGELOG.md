@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.20.1] - 2026-09-28
+
+### Security
+
+- **The eval harness was only read-only on paper.** Each case agent ran with `--allowed-tools Read,Glob,Grep`, which pre-approves those tools but removes none. Under a user-level `defaultMode: bypassPermissions`, the agent kept Edit, Bash, and every MCP connector on the machine: about 1,100 tools, including mail and chat senders. A case that asked it to "rewrite the frontmatter" of a rule did exactly that, editing `.claude/rules/bp-check.md` and `wiring-exemptions.json` and then running `npm test` in the working tree under test. Agent and judge calls now pass `--tools Read,Glob,Grep --strict-mcp-config --permission-mode default`, which leaves exactly three tools. A regression test asserts every `claude -p` call carries the lockdown. The 0.16.0 entry that credited `--allowed-tools` with making runs read-only was wrong.
+- **The CI reviewer had the same gap.** `claude-review.yml` reads an untrusted diff, and project settings still gave it `WebFetch` and `Bash(git clone …)`. It now runs with the same lockdown.
+
 ## [0.20.0] - 2026-09-28
 
 ### Added

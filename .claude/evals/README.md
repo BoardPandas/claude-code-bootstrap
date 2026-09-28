@@ -22,8 +22,11 @@ npm run evals                  # behavioural: needs the `claude` CLI, costs toke
 npm run evals -- --only=dead-rule-glob   # one case, for iterating
 ```
 
-The behavioural pass runs each case's `## Task` through `claude -p` restricted to
-`Read,Glob,Grep` — that tool list, and nothing else, is what makes it read-only — then
+The behavioural pass runs each case's `## Task` through `claude -p` locked to
+`Read,Glob,Grep`: `--tools` removes every other built-in tool, `--strict-mcp-config` removes
+MCP servers, and `--permission-mode default` overrides a user-level `bypassPermissions`.
+`--allowed-tools` alone is not enough. It pre-approves tools but removes none, and under
+bypass mode a case agent once edited the repo it was grading. The harness then
 grades the response against the case's `## Expect` bullets with a second call. The judge
 returns *which* expectations were unmet, not a single pass/fail, so a failure can be
 diagnosed rather than guessed at.

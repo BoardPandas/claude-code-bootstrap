@@ -168,9 +168,19 @@ if (VALIDATE_ONLY) {
 }
 
 // ----------------------------------------------------------- behavioural run
-// Read-only comes from --allowed-tools, NOT from a permission mode: the agent
-// under test gets no Write, Edit or Bash, so it cannot mutate the repo it is
-// measuring.
+// Read-only has to be ENFORCED, not requested. --allowed-tools only pre-approves
+// tools; it removes nothing. Under a user-level `defaultMode: bypassPermissions`
+// every other tool stays callable -- Edit, Bash, and every MCP connector the user
+// has (about 1,100 tools on the machine where this was found, including mail and
+// chat senders). On 2026-09-28 a case agent asked to "rewrite the frontmatter" of
+// a rule did exactly that: it edited .claude/rules/, regenerated files, and ran
+// npm test inside the working tree being graded. Each flag closes one route:
+//
+//   --tools                     the only built-in tools that exist this session
+//   --strict-mcp-config         no MCP servers (no --mcp-config is passed, so none)
+//   --permission-mode default   overrides bypassPermissions; anything unapproved
+//                               is refused, since -p cannot prompt
+//   --allowed-tools             pre-approves the three, so -p never stalls
 //
 // --permission-mode plan is deliberately NOT used. It looks like the safer
 // choice and is not: plan mode writes a plan artifact as a side effect, and the
@@ -180,6 +190,15 @@ if (VALIDATE_ONLY) {
 // eval harness that dirties the working tree it is grading is measuring
 // something other than the repo under test.
 const AGENT_TOOLS = "Read,Glob,Grep";
+const LOCKDOWN = [
+  "--tools",
+  AGENT_TOOLS,
+  "--strict-mcp-config",
+  "--permission-mode",
+  "default",
+  "--allowed-tools",
+  AGENT_TOOLS,
+];
 
 // A slow case is usually a real signal (the agent is thrashing), but the cap has
 // to clear the slowest legitimate run or the suite reports defects that are
@@ -192,7 +211,7 @@ const TIMEOUT_MS = Number(process.env.EVAL_TIMEOUT_MS || 15 * 60 * 1000);
 const TRANSCRIPT_DIR = join(ROOT, ".claude/evals/.transcripts");
 
 function claude(prompt, extraArgs = []) {
-  const r = spawnSync("claude", ["-p", prompt, "--allowed-tools", AGENT_TOOLS, ...extraArgs], {
+  const r = spawnSync("claude", ["-p", prompt, ...LOCKDOWN, ...extraArgs], {
     cwd: ROOT,
     encoding: "utf8",
     maxBuffer: 32 * 1024 * 1024,
