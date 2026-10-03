@@ -47,7 +47,7 @@ both skills, which let the two copies drift).
 
 ## Hook types
 
-1. **Command hooks**: `{ "type": "command", "command": "..." }` — Runs a shell command. Exit code 0 = allow, 2 = block (PreToolUse), non-zero = error.
+1. **Command hooks**: `{ "type": "command", "command": "..." }` — Runs a shell command. Exit code 0 = allow, 2 = block (PreToolUse), non-zero = error. The command runs in the session's current directory, which moves with every `cd`, so call project scripts as `bash "$CLAUDE_PROJECT_DIR"/.claude/scripts/<name>.sh`. A cwd-relative `bash .claude/scripts/<name>.sh` fails from any subdirectory, and the hook silently does not run.
 2. **HTTP hooks**: `{ "type": "http", "url": "https://..." }` — Sends an HTTP POST to a URL. The request body contains the event payload. Requires the URL to be listed in `settings.json` under `allowedHttpHookUrls`. Supports custom headers with env-var interpolation, e.g. `"headers": { "Authorization": "Bearer ${MY_WEBHOOK_TOKEN}" }`.
 3. **Prompt hooks**: `{ "type": "prompt", "prompt": "..." }` — Single-turn LLM judgment (yes/no decision). Useful for validation gates.
 4. **Agent hooks**: `{ "type": "agent", "prompt": "..." }` — Multi-turn subagent with tool access. Useful for complex validation or post-processing.

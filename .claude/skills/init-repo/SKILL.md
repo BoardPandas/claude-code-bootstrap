@@ -257,7 +257,7 @@ Only add these fields when they provide clear value for the project. Do not add 
 
 Read `.claude/references/hooks-and-settings.md` for the full catalog: every hook event, the five hook types (command, http, prompt, agent, mcp_tool), the `if:` field, matcher syntax, and the "Hooks to configure based on project needs" recommendations. That file is the single source of truth — do not re-paste the event table into any skill or CLAUDE.md.
 
-For init, configure the always-on defaults from that reference (`SessionStart` knowledge-base reminder, `PreToolUse` `Bash(git commit*)`, `Stop` and `Notification` sounds). The always-on hooks invoke scripts in `.claude/scripts/`; confirm those scripts exist (Step 6) before wiring the hooks, since a hook pointing at a missing script fails on every session start.
+For init, configure the always-on defaults from that reference (`SessionStart` knowledge-base reminder, `PreToolUse` `Bash(git commit*)`, `Stop` and `Notification` sounds). The always-on hooks invoke scripts in `.claude/scripts/`; confirm those scripts exist (Step 6) before wiring the hooks, since a hook pointing at a missing script fails on every session start. Wire each one as `bash "$CLAUDE_PROJECT_DIR"/.claude/scripts/<name>.sh`, never by a cwd-relative path, which stops resolving once the shell leaves the repo root.
 
 Then decide on the recommended development/team hooks: in an interactive session, ask the user with AskUserQuestion which ones they want. In a non-interactive or autonomous run, configure only the always-on defaults and list the skipped options in the final report so the user can add them later.
 

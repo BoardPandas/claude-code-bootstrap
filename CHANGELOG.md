@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.20.4] - 2026-10-03
+
+### Fixed
+
+- **Every hook stopped running as soon as the shell left the repo root.** `settings.json` called each script as `bash .claude/scripts/<name>.sh`, but a hook runs in the session's current directory, and that directory moves with every `cd`. From a subdirectory the path no longer resolved, the hook failed as a non-blocking "No such file or directory" error, and the tool call went through unchecked. Session transcripts from repos built on this template show about 6,700 such failures between July 30 and October 3, most of them in sessions working inside an app subfolder: the release-authorization gate did not run on 684 shell commands and the changelog gate on 909. All nine hooks now run as `bash "$CLAUDE_PROJECT_DIR"/.claude/scripts/<name>.sh`, which resolves from any directory.
+
+### Added
+
+- **The wiring guard fails a hook that calls its script by a cwd-relative path** (check 3d). Its existing missing-script check also understands the anchored form now; without that it would have quietly stopped checking every hook. `init-repo`, the hooks reference and CLAUDE.md say to anchor, and a new eval case (`hook-script-project-dir`) covers writing a new hook. A repo that picks this up through "update practices" fails the guard until its own repo-specific hooks are anchored as well.
+
 ## [0.20.3] - 2026-09-28
 
 ### Fixed

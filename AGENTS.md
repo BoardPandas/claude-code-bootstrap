@@ -88,6 +88,7 @@ generalisable version to LL-G via `/add-lesson`.
 - **Using Cursor's `globs:` / `alwaysApply:` in a rule.** Claude Code reads neither. The rule then loads in *every* session — the inverse of the intent.
 - **Assuming a worktree agent sees uncommitted work.** It branches from a commit, so it reads stale files, finds them already consistent, and reports success. Orient with `git status --short` first.
 - **Budgeting context by line count.** A line budget keeps passing while single lines grow to thousands of characters. Budget by bytes.
+- **Calling a hook script by a cwd-relative path.** Hooks run in the session's current directory, which follows every `cd`. `bash .claude/scripts/x.sh` fails from any subdirectory, and a non-blocking failure means the gate simply did not run. Write `bash "$CLAUDE_PROJECT_DIR"/.claude/scripts/x.sh`.
 
 ## Hierarchical CLAUDE.md Architecture
 
@@ -126,7 +127,7 @@ profile definitions in `.claude/references/infrastructure.md` -- read it, do not
 
 - Keep the `.claude/` folder self-contained. No absolute paths, no references outside the repo except CLAUDE.md, AGENTS.md, README.md, REVIEW.md, and instructions.md.
 - Skills live in `.claude/skills/<skill-name>/SKILL.md`; agents in `.claude/agents/<agent-name>.md`.
-- Hook scripts live in `.claude/scripts/*.sh`. settings.json calls them by relative path, so the scripts folder must travel with settings.json.
+- Hook scripts live in `.claude/scripts/*.sh`. settings.json calls them as `"$CLAUDE_PROJECT_DIR"/.claude/scripts/…` so they resolve from any subdirectory, and the scripts folder must travel with settings.json.
 - Path-scoped rules live in `.claude/rules/*.md` (conditional on `paths:` frontmatter).
 - Agent memory lives in `.claude/agent-memory/` (version-controlled, team-shared).
 - Evals live in `.claude/evals/` (`cases/*.md` corpus + `README.md`); the runner is `scripts/run-evals.mjs`.
@@ -252,9 +253,9 @@ Claude Code enforces these; Codex does not, so treat them as hard rules.
 
 ### Hooks that do not carry over
 
-- PreToolUse [EnterPlanMode|ExitPlanMode]: bash .claude/scripts/pre-plan-kb-check.sh -- Codex has no hookable EnterPlanMode/ExitPlanMode tool.
-- PreToolUse [Write|Edit]: bash .claude/scripts/pre-write-kb-check.sh -- Codex edits arrive as apply_patch, which this script does not parse.
-- PostToolUse [Write|Edit]: bash .claude/scripts/post-edit-format.sh -- Codex edits arrive as apply_patch, which this script does not parse.
+- PreToolUse [EnterPlanMode|ExitPlanMode]: bash "$CLAUDE_PROJECT_DIR"/.claude/scripts/pre-plan-kb-check.sh -- Codex has no hookable EnterPlanMode/ExitPlanMode tool.
+- PreToolUse [Write|Edit]: bash "$CLAUDE_PROJECT_DIR"/.claude/scripts/pre-write-kb-check.sh -- Codex edits arrive as apply_patch, which this script does not parse.
+- PostToolUse [Write|Edit]: bash "$CLAUDE_PROJECT_DIR"/.claude/scripts/post-edit-format.sh -- Codex edits arrive as apply_patch, which this script does not parse.
 - Stop/Notification terminal bell -- replaced by [tui] notifications in .codex/config.toml.
 
 Blocking hooks (exit 2 + stderr) behave the same in Codex. Advisory hooks that print plain
