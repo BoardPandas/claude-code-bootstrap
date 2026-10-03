@@ -389,8 +389,9 @@ function generateAgents() {
 
 function codexCommands(command) {
   // Codex runs hooks with the session cwd, which may be a subdirectory, so anchor repo
-  // paths at the git root (the Codex docs' recommendation). $(...) is POSIX-shell syntax,
-  // so Windows gets the cwd-relative form Claude Code itself uses.
+  // paths at the git root (the Codex docs' recommendation). Claude Code's own anchor,
+  // $CLAUDE_PROJECT_DIR, is not set under Codex. $(...) is POSIX-shell syntax, so Windows
+  // falls back to the cwd-relative form.
   const projectDir = /"?\$\{?CLAUDE_PROJECT_DIR\}?"?/g;
   const unix = command
     .replace(projectDir, `"${GIT_ROOT}"`)

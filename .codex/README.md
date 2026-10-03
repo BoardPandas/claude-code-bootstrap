@@ -15,7 +15,7 @@ npm run check:claude   # fails if any generated file is stale, missing, or unexp
 | `.claude/agents/<name>.md` | `.codex/agents/<name>.toml` |
 | `.claude/settings.json` hooks | `.codex/hooks.json` (runs `.claude/scripts/` in place) |
 
-Current output: 18 skills, 8 agents, 6 hook handlers, AGENTS.md 20986 B.
+Current output: 18 skills, 8 agents, 6 hook handlers, AGENTS.md 21421 B.
 
 ## How the mapping works
 
@@ -27,7 +27,7 @@ Current output: 18 skills, 8 agents, 6 hook handlers, AGENTS.md 20986 B.
 
 ## Not carried over
 
-- PreToolUse [EnterPlanMode|ExitPlanMode]: bash .claude/scripts/pre-plan-kb-check.sh -- Codex has no hookable EnterPlanMode/ExitPlanMode tool.
-- PreToolUse [Write|Edit]: bash .claude/scripts/pre-write-kb-check.sh -- Codex edits arrive as apply_patch, which this script does not parse.
-- PostToolUse [Write|Edit]: bash .claude/scripts/post-edit-format.sh -- Codex edits arrive as apply_patch, which this script does not parse.
+- PreToolUse [EnterPlanMode|ExitPlanMode]: bash "$CLAUDE_PROJECT_DIR"/.claude/scripts/pre-plan-kb-check.sh -- Codex has no hookable EnterPlanMode/ExitPlanMode tool.
+- PreToolUse [Write|Edit]: bash "$CLAUDE_PROJECT_DIR"/.claude/scripts/pre-write-kb-check.sh -- Codex edits arrive as apply_patch, which this script does not parse.
+- PostToolUse [Write|Edit]: bash "$CLAUDE_PROJECT_DIR"/.claude/scripts/post-edit-format.sh -- Codex edits arrive as apply_patch, which this script does not parse.
 - Stop/Notification terminal bell -- replaced by [tui] notifications in .codex/config.toml.

@@ -234,6 +234,18 @@ test("hooks: git-root paths, `if` dropped, unsupported hooks reported not droppe
   assert.match(agentsMd, /edit\.sh -- Codex edits arrive as apply_patch/);
 });
 
+test("hooks: a $CLAUDE_PROJECT_DIR anchor maps to the git root, Windows keeps the relative form", () => {
+  const dir = fixture();
+  const settings = JSON.parse(read(dir, ".claude/settings.json"));
+  settings.hooks.PreToolUse[0].hooks[0].command = 'bash "$CLAUDE_PROJECT_DIR"/.claude/scripts/gate.sh';
+  write(dir, ".claude/settings.json", JSON.stringify(settings, null, 2));
+  const r = run(dir);
+  assert.equal(r.status, 0, r.stderr);
+  const gate = JSON.parse(read(dir, ".codex/hooks.json")).hooks.PreToolUse[0].hooks[0];
+  assert.equal(gate.command, 'bash "$(git rev-parse --show-toplevel)"/.claude/scripts/gate.sh');
+  assert.equal(gate.commandWindows, "bash .claude/scripts/gate.sh");
+});
+
 test("an Edit|Write hook is mirrored once its script handles apply_patch", () => {
   const dir = fixture();
   write(dir, ".claude/scripts/edit.sh", "#!/usr/bin/env bash\n# parses apply_patch input\nexit 0\n");

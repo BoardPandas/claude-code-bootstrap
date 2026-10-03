@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel)/.claude/scripts/session-start-kb-check.sh\"",
+            "command": "bash \"$(git rev-parse --show-toplevel)\"/.claude/scripts/session-start-kb-check.sh",
             "commandWindows": "bash .claude/scripts/session-start-kb-check.sh",
             "statusMessage": "Surfacing LL-G / BP knowledge-base reminder..."
           }
@@ -19,25 +19,25 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel)/.claude/scripts/check-commit-herestring.sh\"",
+            "command": "bash \"$(git rev-parse --show-toplevel)\"/.claude/scripts/check-commit-herestring.sh",
             "commandWindows": "bash .claude/scripts/check-commit-herestring.sh",
             "statusMessage": "Checking commit message syntax..."
           },
           {
             "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel)/.claude/scripts/pre-commit-changelog-reminder.sh\"",
+            "command": "bash \"$(git rev-parse --show-toplevel)\"/.claude/scripts/pre-commit-changelog-reminder.sh",
             "commandWindows": "bash .claude/scripts/pre-commit-changelog-reminder.sh",
             "statusMessage": "Checking changelog update..."
           },
           {
             "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel)/.claude/scripts/check-changelog-staged.sh\"",
+            "command": "bash \"$(git rev-parse --show-toplevel)\"/.claude/scripts/check-changelog-staged.sh",
             "commandWindows": "bash .claude/scripts/check-changelog-staged.sh",
             "statusMessage": "Verifying changelog is staged..."
           },
           {
             "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel)/.claude/scripts/require-release-authorization.sh\"",
+            "command": "bash \"$(git rev-parse --show-toplevel)\"/.claude/scripts/require-release-authorization.sh",
             "commandWindows": "bash .claude/scripts/require-release-authorization.sh",
             "statusMessage": "Checking release authorization..."
           }
@@ -50,7 +50,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$(git rev-parse --show-toplevel)/.claude/scripts/post-commit-kb-contribute.sh\"",
+            "command": "bash \"$(git rev-parse --show-toplevel)\"/.claude/scripts/post-commit-kb-contribute.sh",
             "commandWindows": "bash .claude/scripts/post-commit-kb-contribute.sh",
             "statusMessage": "Checking for knowledge base contributions..."
           }

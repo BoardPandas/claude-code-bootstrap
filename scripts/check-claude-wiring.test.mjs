@@ -48,7 +48,7 @@ before(() => {
           PreToolUse: [
             {
               matcher: "Bash",
-              hooks: [{ type: "command", command: "bash .claude/scripts/gate.sh" }],
+              hooks: [{ type: "command", command: 'bash "$CLAUDE_PROJECT_DIR"/.claude/scripts/gate.sh' }],
             },
           ],
         },
@@ -132,7 +132,7 @@ const cases = [
             PreToolUse: [
               {
                 matcher: "Bash(git commit*)",
-                hooks: [{ type: "command", command: "bash .claude/scripts/gate.sh" }],
+                hooks: [{ type: "command", command: 'bash "$CLAUDE_PROJECT_DIR"/.claude/scripts/gate.sh' }],
               },
             ],
           },
@@ -150,7 +150,7 @@ const cases = [
             PreToolUse: [
               {
                 matcher: "Bash",
-                hooks: [{ type: "command", command: "bash .claude/scripts/ghost.sh" }],
+                hooks: [{ type: "command", command: 'bash "$CLAUDE_PROJECT_DIR"/.claude/scripts/ghost.sh' }],
               },
             ],
           },
@@ -164,6 +164,24 @@ const cases = [
     expect: /not valid JSON/,
   },
   {
+    name: "3d. hook calling its script by a cwd-relative path",
+    mutate: ({ write }) =>
+      write(
+        ".claude/settings.json",
+        JSON.stringify({
+          hooks: {
+            PreToolUse: [
+              {
+                matcher: "Bash",
+                hooks: [{ type: "command", command: "bash .claude/scripts/gate.sh" }],
+              },
+            ],
+          },
+        }),
+      ),
+    expect: /cwd-relative path/,
+  },
+  {
     name: "5. hook silencing both stderr and exit code",
     mutate: ({ write }) =>
       write(
@@ -174,7 +192,7 @@ const cases = [
               {
                 matcher: "Bash",
                 hooks: [
-                  { type: "command", command: "bash .claude/scripts/gate.sh 2>/dev/null || true" },
+                  { type: "command", command: 'bash "$CLAUDE_PROJECT_DIR"/.claude/scripts/gate.sh 2>/dev/null || true' },
                 ],
               },
             ],

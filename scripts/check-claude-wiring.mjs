@@ -198,13 +198,26 @@ if (existsSync(SETTINGS)) {
               `Use matcher:"Bash" plus if:"Bash(git commit*)" on the handler.`,
           );
         }
-        // Referenced hook scripts must exist, or the hook is dead on arrival.
         for (const h of block.hooks ?? []) {
           const cmd = h.command ?? "";
-          const scriptRef = cmd.match(/(?:^|\s)((?:\.claude|scripts)\/[\w./-]+\.(?:sh|mjs|js|py))/);
-          if (scriptRef && !existsSync(join(ROOT, scriptRef[1]))) {
+          const scriptRef = cmd.match(
+            /(?:^|\s)((?:"?\$\{?CLAUDE_PROJECT_DIR\}?"?\/)?)((?:\.claude|scripts)\/[\w./-]+\.(?:sh|mjs|js|py))/,
+          );
+          if (!scriptRef) continue;
+          // Referenced hook scripts must exist, or the hook is dead on arrival.
+          if (!existsSync(join(ROOT, scriptRef[2]))) {
             errors.push(
-              `.claude/settings.json: ${event} hook references ${scriptRef[1]}, which does not exist.`,
+              `.claude/settings.json: ${event} hook references ${scriptRef[2]}, which does not exist.`,
+            );
+          }
+          // 3d. Hooks run in the session's CURRENT directory. A cwd-relative script path
+          // works until the first `cd` into a subdirectory or worktree, then fails on every
+          // call as a non-blocking error -- the gate is simply not there.
+          if (!scriptRef[1]) {
+            errors.push(
+              `.claude/settings.json: ${event} hook calls ${scriptRef[2]} by a cwd-relative path, which ` +
+                `stops resolving once the shell leaves the repo root, so the hook silently never runs. ` +
+                `Anchor it: bash "$CLAUDE_PROJECT_DIR"/${scriptRef[2]}`,
             );
           }
         }
