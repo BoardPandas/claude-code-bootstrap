@@ -65,24 +65,24 @@ Hooks can return structured output (`hookSpecificOutput`) to influence the sessi
 
 ## Matcher syntax
 
-- `Bash(pattern)` — matches Bash tool calls where the command matches the glob pattern
-- `Write(pattern)` — matches Write tool calls where the file path matches
-- `Edit(pattern)` — matches Edit tool calls where the file path matches
-- `Read(pattern)` — matches Read tool calls where the file path matches
-- `Tool(param:value)` — matches on a tool input parameter, e.g. `Agent(model:opus)` matches Agent calls that request Opus. Works in permission rules too (deny/allow lists), not just hook matchers.
-- No matcher = fires for all tool calls of that event type
+- `matcher` takes **tool names only**: a bare name (`Bash`) or several joined with `|` (`Write|Edit`, `EnterPlanMode|ExitPlanMode`). No matcher means every tool call of that event.
+- Permission-rule syntax such as `Bash(git commit*)` or `Write(*)` in a matcher matches nothing, and the hook silently never runs. `npm run check:claude` fails on it.
+- Filter on a tool's arguments with `if:` on the handler, which takes permission-rule syntax: `matcher: "Bash"` plus `if: "Bash(git commit*)"`, or `matcher: "Edit"` plus `if: "Edit(src/**)"`. `if:` names each tool itself, so a Write call needs its own `Write(src/**)` handler.
+- `if:` fires conservatively on commands it cannot read (substitutions, `bash -c`), so a script that must act only on one command also checks `tool_input.command` itself. LL-G `claude-code/hook-matcher-tool-names-only`.
+- Call a script by `bash "$CLAUDE_PROJECT_DIR"/.claude/scripts/<name>.sh`, never a cwd-relative path (see Hook types above).
+- Deny and ask permission rules also accept `Tool(param:value)`, e.g. `Agent(model:opus)` for Agent calls that request Opus. That is permission syntax, so it never goes in a `matcher`.
 
 ## Hooks to configure based on project needs
 
 **Always configure:**
 - `SessionStart` — surface the LL-G / BP knowledge-base reminder once per session
-- `PreToolUse` with `Bash(git commit*)` matcher — validation before commits
+- `PreToolUse` on `Bash` with `if: "Bash(git commit*)"` — validation before commits
 - `Stop` — notification sound (use `printf '\a'`, not `echo '\a'` — `echo` prints a literal `\a` in most shells)
 - `Notification` — notification sound
 
 **Recommended for active development:**
-- `PostToolUse` with `Write(*)` or `Edit(*)` matcher — auto-lint after file changes (if linter is configured)
-- `PreToolUse` with `Bash(rm -rf*)` matcher — block dangerous delete commands
+- `PostToolUse` on `Write|Edit` — auto-lint after file changes (if a linter is configured); the script reads the path from `tool_input.file_path`
+- `PreToolUse` on `Bash` with `if: "Bash(rm -rf*)"` — block dangerous deletes; the script still checks the command itself, heredoc bodies fed to a shell included (LL-G `claude-code/delete-gate-cannot-skip-heredoc-bodies`)
 - `SubagentStop` — notification when long-running subagents complete
 
 **Recommended for team projects using HTTP hooks:**
