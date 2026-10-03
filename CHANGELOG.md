@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.20.5] - 2026-10-03
+
+### Fixed
+- **The hooks reference taught the matcher mistake CLAUDE.md warns against.** Its "Matcher syntax" section listed `Bash(pattern)`, `Write(pattern)`, `Edit(pattern)` and `Read(pattern)` as matchers, and its recommended hooks said to configure `PreToolUse` with a `Bash(git commit*)` matcher, `PostToolUse` with `Write(*)` or `Edit(*)`, and a `Bash(rm -rf*)` delete gate. In a matcher that is permission-rule syntax: it matches nothing, so every hook configured from those lines would silently never run, and the wiring guard fails on it. The section now says a matcher takes tool names only (`Bash`, `Write|Edit`), argument filters go in `if:` on the handler, `if:` names each tool itself, and a gate script still checks the command because `if:` fires conservatively. Each recommendation names its matcher and `if:` separately. `init-repo`'s list of always-on hooks is reworded the same way. Repos that run "update practices" get the corrected reference, which that skill replaces with the template's copy.
+
 ## [0.20.4] - 2026-10-03
 
 ### Fixed
