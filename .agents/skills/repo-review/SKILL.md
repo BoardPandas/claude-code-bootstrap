@@ -4,8 +4,6 @@ description: "Run a general code health review across the whole repository, cove
 ---
 
 > Generated from `.claude/skills/repo-review/SKILL.md` by `scripts/sync-codex.mjs`. Edit the source, then run `npm run sync:codex`. Claude Code tool and command names below map to Codex as described in `AGENTS.md` under "Codex runtime".
->
-> Claude Code runs this skill inside the `reviewer` subagent. In Codex, spawn the `reviewer` custom agent (`.codex/agents/reviewer.toml`) to do the work and return its summary.
 
 # Repo Review
 

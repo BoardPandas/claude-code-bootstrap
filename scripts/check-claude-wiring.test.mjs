@@ -60,7 +60,7 @@ before(() => {
   w(".claude/scripts/gate.sh", '#!/usr/bin/env bash\necho "blocked" >&2\nexit 2\n');
   w(".claude/agents/reviewer.md", "---\nname: reviewer\nmodel: sonnet\n---\n\nAgent.\n");
   w(".claude/skills/direct/SKILL.md", "---\nname: direct\nmodel: haiku\n---\n\nSkill.\n");
-  w(".claude/skills/bound/SKILL.md", "---\nname: bound\nagent: reviewer\n---\n\nSkill.\n");
+  w(".claude/skills/bound/SKILL.md", "---\nname: bound\ncontext: fork\nagent: reviewer\n---\n\nSkill.\n");
   w(
     "REVIEW.md",
     "# Review Policy\n\n## Passes\n\n- Correctness\n\n" +
@@ -239,13 +239,19 @@ const cases = [
   {
     name: "9b. skill bound to an agent that does not exist",
     mutate: ({ write }) =>
-      write(".claude/skills/bound/SKILL.md", "---\nname: bound\nagent: ghost\n---\n\nSkill.\n"),
+      write(".claude/skills/bound/SKILL.md", "---\nname: bound\ncontext: fork\nagent: ghost\n---\n\nSkill.\n"),
     expect: /which does not exist in \.claude\/agents/,
   },
   {
     name: "9c. skill inheriting from an agent that declares no model",
     mutate: ({ write }) => write(".claude/agents/reviewer.md", "---\nname: reviewer\n---\n\nAgent.\n"),
     expect: /that agent declares no model/,
+  },
+  {
+    name: "9d. skill binding agent: without context: fork",
+    mutate: ({ write }) =>
+      write(".claude/skills/bound/SKILL.md", "---\nname: bound\nagent: reviewer\n---\n\nSkill.\n"),
+    expect: /without context: fork/,
   },
   {
     name: "4. CLAUDE.md over its byte ceiling",

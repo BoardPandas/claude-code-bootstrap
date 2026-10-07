@@ -4,7 +4,7 @@ effort: medium
 description: Run a general code health review across the whole repository, covering correctness risks, error handling gaps, dead code, duplication, oversized files, and repo hygiene, with fix recommendations and pointers to the specialized scan skills for deep dives. Use for periodic checkups or when onboarding an unfamiliar repo.
 user-invocable: true
 argument-hint: [optional: file or directory path to scope the review]
-agent: reviewer
+model: sonnet
 allowed-tools:
   - Read
   - Glob

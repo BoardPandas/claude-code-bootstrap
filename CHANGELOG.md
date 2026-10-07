@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.21.3] - 2026-10-07
+
+### Fixed
+- **`/repo-review` and `/ux-review` now run on the model they were meant to.** Both set `agent:` without `context: fork`. Claude Code honours `agent:` only when the skill forks, so both bindings were silently ignored and the skills ran on whatever model the session used. `ux-review` now forks into the `ux-reviewer` agent. `repo-review` declares `model: sonnet` instead, because it needs Bash and the `reviewer` agent has no Bash.
+- **The wiring guard catches an inert agent binding.** Check 9 now fails a skill that sets `agent:` without `context: fork`, so this cannot come back unnoticed. `npm test` covers the new case.
+- **The docs no longer say `agent:` works on its own.** CLAUDE.md, `instructions.md`, `init-repo` and `update-practices` now say the binding needs `context: fork`.
+
 ## [0.21.2] - 2026-10-07
 
 ### Changed
