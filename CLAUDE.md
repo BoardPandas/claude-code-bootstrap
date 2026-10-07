@@ -98,7 +98,7 @@ CLAUDE.md files load top-down: root user level, then project level, then subfold
 Always and aggressively offload to subagents: online research, doc fetching, log analysis, codebase exploration. This keeps the main context narrow.
 
 - **Always include a "why"** in every subagent prompt. "How auth works for rate limiting because we're improving rate limiting" beats "how auth works."
-- **Parallel exploration:** When torn between approaches, spin up parallel Explore subagents for each, pass results back, let the main session decide.
+- **Parallel exploration:** When torn between approaches, spin up parallel `explorer` subagents for each (not the built-in `Explore`, which loads every MCP tool schema), pass results back, let the main session decide.
 - **Subagents are resumable**, run in the background by default, and can nest up to 5 levels deep.
 
 ## Frontmatter

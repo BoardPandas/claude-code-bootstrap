@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.21.2] - 2026-10-07
+
+### Changed
+- **Node 24.** CI runs on Node 24, the current Active LTS, in all three workflows, and `package.json` now requires Node 24 or later. CI no longer tests Node 22, so the old `>=22` floor was a claim nothing checked.
+- **The review workflow still installs Claude Code through npm, and now says why.** Anthropic's README marks npm install deprecated in favour of the native installer. A published npm version can never change. The installer script is fetched unpinned on every run and takes the binary's checksum from the same server as the binary. In the one job that holds the API key, the npm pin is the stronger guarantee.
+- **The hooks reference separates plugin mod hooks from `settings.json` hooks.** Claude Mods (v2.1.287) use dotted events such as `tool.check` and `agent.spawn` inside a plugin. They never belong in `settings.json`, and none of the matcher or wiring-guard rules apply to them.
+- **CLAUDE.md names the `explorer` agent for parallel exploration.** It used to say the built-in `Explore`, which `update-practices` warns against because it loads every MCP tool schema.
+
+### Removed
+- **The developertoolkit.ai changelog tracker** is no longer in the source registry. It was nine releases behind the official changelog (2.1.283 against 2.1.292). The registry's own policy drops a tracker that lags like that, because it only mirrors the changelog late.
+
 ## [0.21.1] - 2026-10-07
 
 ### Changed
