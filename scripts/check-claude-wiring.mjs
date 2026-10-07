@@ -172,9 +172,32 @@ for (const ex of exemptions) {
 
 // ------------------------------------------------------- 3 & 5: hook wiring
 const SETTINGS = join(ROOT, ".claude/settings.json");
-// A matcher is a bare tool name, optionally |-separated. Tool(pattern) is
-// permissions syntax; in a matcher it matches nothing and the hook never runs.
-const TOOL_MATCHER = /^[A-Za-z][A-Za-z0-9_]*(\|[A-Za-z][A-Za-z0-9_]*)*$/;
+// A matcher of only letters, digits, _, -, spaces, `,` and `|` is compared as
+// exact names; anything else is an unanchored JavaScript regex
+// (code.claude.com/docs/en/hooks#matcher-patterns). Both are valid. What is not:
+// Tool(pattern) permissions syntax, which the parentheses put on the regex path
+// where it matches no tool name, so the hook never runs -- and a regex that
+// does not compile.
+const EXACT_MATCHER = /^[A-Za-z0-9_\-\s,|]*$/;
+const PERMISSION_SYNTAX_MATCHER = /(?:^|\|)\s*[A-Za-z][\w-]*\(/;
+
+function matcherProblem(m) {
+  if (typeof m !== "string") return "is not a string";
+  if (m === "*" || EXACT_MATCHER.test(m)) return null;
+  if (PERMISSION_SYNTAX_MATCHER.test(m)) {
+    return (
+      "uses permission-rule syntax. Tool(pattern) belongs in permissions; in a matcher it is a " +
+      "regex that matches no tool name, so the hook never runs. " +
+      'Use matcher:"Bash" plus if:"Bash(git commit*)" on the handler.'
+    );
+  }
+  try {
+    new RegExp(m);
+    return null;
+  } catch (e) {
+    return `is not a valid regular expression (${e.message}), so the hook never runs.`;
+  }
+}
 
 if (existsSync(SETTINGS)) {
   let settings;
@@ -191,13 +214,8 @@ if (existsSync(SETTINGS)) {
     for (const [event, blocks] of Object.entries(settings.hooks ?? {})) {
       for (const block of blocks) {
         const m = block.matcher;
-        if (m !== undefined && !TOOL_MATCHER.test(m)) {
-          errors.push(
-            `.claude/settings.json: ${event} matcher ${JSON.stringify(m)} is not a bare tool name. ` +
-              `Tool(pattern) is permissions syntax and matches nothing, so the hook never runs. ` +
-              `Use matcher:"Bash" plus if:"Bash(git commit*)" on the handler.`,
-          );
-        }
+        const problem = m === undefined ? null : matcherProblem(m);
+        if (problem) errors.push(`.claude/settings.json: ${event} matcher ${JSON.stringify(m)} ${problem}`);
         for (const h of block.hooks ?? []) {
           const cmd = h.command ?? "";
           const scriptRef = cmd.match(

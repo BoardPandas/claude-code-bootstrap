@@ -64,7 +64,7 @@ If a worktree is dirty, do **not** silently commit. Show the user the changed fi
 
 ```
 git -C <path> add -A
-git -C <path> commit -F .git/CLAUDE_COMMIT_MSG.txt   # write the message to this file first, then delete it
+git -C <path> commit -F <scratchpad>/commit-msg.txt   # absolute path; Write is denied under .git/. Delete it after
 ```
 
 Never pass the message inline. If a `CHANGELOG.md` + version-bump rule applies to the repo, honor it before committing.
@@ -87,7 +87,7 @@ The branch-verify step matters: with shared worktrees a parallel process can mov
 For each branch in the plan, in the primary worktree:
 
 ```
-git -C <primary> merge --no-ff <branch> -F .git/CLAUDE_MERGE_MSG.txt   # write a short merge message, then delete it
+git -C <primary> merge --no-ff <branch> -F <scratchpad>/merge-msg.txt   # absolute path, short message; delete it after
 ```
 
 - `--no-ff` keeps each merge visible as its own commit so a single feature can be reverted later.

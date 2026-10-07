@@ -98,6 +98,15 @@ test("baseline fixture passes", () => {
   assert.match(out, /OK -- \.claude wiring verified/);
 });
 
+const matcherSettings = (matcher) =>
+  JSON.stringify({
+    hooks: {
+      PreToolUse: [
+        { matcher, hooks: [{ type: "command", command: 'bash "$CLAUDE_PROJECT_DIR"/.claude/scripts/gate.sh' }] },
+      ],
+    },
+  });
+
 const cases = [
   {
     name: "1. Cursor .mdc keys in a rule",
@@ -138,7 +147,17 @@ const cases = [
           },
         }),
       ),
-    expect: /is not a bare tool name/,
+    expect: /uses permission-rule syntax/,
+  },
+  {
+    name: "3. permission syntax hidden in a |-alternation",
+    mutate: ({ write }) => write(".claude/settings.json", matcherSettings("Edit|Bash(rm -rf*)")),
+    expect: /uses permission-rule syntax/,
+  },
+  {
+    name: "3. matcher that is not a valid regex",
+    mutate: ({ write }) => write(".claude/settings.json", matcherSettings("mcp__[")),
+    expect: /is not a valid regular expression/,
   },
   {
     name: "3b. hook referencing a script that does not exist",
@@ -323,6 +342,15 @@ for (const c of cases) {
     assert.match(out, c.expect, `guard failed, but not for the expected reason:\n${out}`);
   });
 }
+
+// Exact-name lists, comma lists, hyphenated agent types, match-all and real
+// regexes are all valid matchers; check 3 must not tax any of them.
+test("valid matcher forms pass check 3", () => {
+  for (const m of ["Bash", "Write|Edit", "Edit, Write", "code-reviewer", "*", "", "mcp__memory__.*", "^Edit$"]) {
+    const { code, out } = run(({ write }) => write(".claude/settings.json", matcherSettings(m)));
+    assert.equal(code, 0, `matcher ${JSON.stringify(m)} should pass:\n${out}`);
+  }
+});
 
 // The confinement check must not fire on a fully confined call, or on the flags
 // being named in a comment.

@@ -65,8 +65,13 @@ Hooks can return structured output (`hookSpecificOutput`) to influence the sessi
 
 ## Matcher syntax
 
-- `matcher` takes **tool names only**: a bare name (`Bash`) or several joined with `|` (`Write|Edit`, `EnterPlanMode|ExitPlanMode`). No matcher means every tool call of that event.
-- Permission-rule syntax such as `Bash(git commit*)` or `Write(*)` in a matcher matches nothing, and the hook silently never runs. `npm run check:claude` fails on it.
+How a `matcher` is read depends on its characters (official: code.claude.com/docs/en/hooks#matcher-patterns):
+
+- **Omitted, `""` or `"*"`**: every occurrence of the event.
+- **Only letters, digits, `_`, `-`, spaces, `,` and `|`**: exact names, alone or as a `|`/`,` list: `Bash`, `Write|Edit`, `Edit, Write`, `code-reviewer`. Prefer this form. (`FileChanged` and `StopFailure` accept only letters, digits, `_` and `|` here.)
+- **Any other character**: an *unanchored* JavaScript regex. `mcp__memory__.*` matches every tool on that server; `Edit.*` also matches `NotebookEdit`, so anchor with `^...$` for a whole-name match. An MCP server prefix needs the `.*`: bare `mcp__memory` is an exact name and matches no tool.
+- Non-tool events match on their own values, e.g. `SessionStart` on `startup|resume|clear|compact`, `SubagentStop` on the agent type.
+- Permission-rule syntax such as `Bash(git commit*)` or `Write(*)` in a matcher is a regex that matches no tool name, so the hook silently never runs. `npm run check:claude` fails on it, and on a regex that does not compile.
 - Filter on a tool's arguments with `if:` on the handler, which takes permission-rule syntax: `matcher: "Bash"` plus `if: "Bash(git commit*)"`, or `matcher: "Edit"` plus `if: "Edit(src/**)"`. `if:` names each tool itself, so a Write call needs its own `Write(src/**)` handler.
 - `if:` fires conservatively on commands it cannot read (substitutions, `bash -c`), so a script that must act only on one command also checks `tool_input.command` itself. LL-G `claude-code/hook-matcher-tool-names-only`.
 - Call a script by `bash "$CLAUDE_PROJECT_DIR"/.claude/scripts/<name>.sh`, never a cwd-relative path (see Hook types above).

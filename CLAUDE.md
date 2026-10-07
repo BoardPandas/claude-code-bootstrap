@@ -73,7 +73,7 @@ Corrections that have been needed twice. Add to this list when a mistake repeats
 generalisable version to LL-G via `/add-lesson`.
 
 - **Folding the changelog edit into the commit command.** The gate is a `PreToolUse` hook, so it runs *before* the command. `edit && git commit` cannot satisfy it. Stage first, commit second.
-- **Writing `Tool(pattern)` as a hook `matcher:`.** That is permissions syntax; in a matcher it matches nothing and the hook silently never runs. Use `matcher: "Bash"` plus `if: "Bash(git *)"` on the handler.
+- **Writing `Tool(pattern)` as a hook `matcher:`.** That is permissions syntax; in a matcher it is a regex matching no tool, so the hook silently never runs. Use `matcher: "Bash"` plus `if: "Bash(git *)"` on the handler.
 - **Reaching for `$CLAUDE_FILE_PATH` in a hook.** It does not exist, expands to `""`, and an empty path argument makes most tools walk the entire repo. Parse `tool_input.file_path` from stdin and hard-guard on non-empty.
 - **Selecting a JSON parser with `command -v python3`.** On Windows that finds the WindowsApps stub: the lookup succeeds, every field comes back empty, and the hook quietly does nothing. Probe by running a candidate against a known payload.
 - **Adding a `paths:` glob that matches nothing.** A rule scoped to a path that does not exist never fires and says nothing. `npm run check:claude` fails on it; record deliberate exceptions in `wiring-exemptions.json`.

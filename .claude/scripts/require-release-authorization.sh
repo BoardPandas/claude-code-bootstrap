@@ -45,21 +45,104 @@ SCAN=$(printf '%s' "$CMD" \
   | tr '\n' ';' \
   | sed -e 's/[;&|()][;&|()]*/ ; /g')
 
+# --------------------------------------------------- tool + subcommand matching
+# Deploy subcommands are matched as WHOLE TOKENS, never as substrings.
+#
+# The substring form is what `*railway*up*` was, and `up` occurs inside `backup`,
+# `update`, `upgrade` and `upload`. That gate blocked `railway postgres pitr
+# backup list`, `railway api --file q.graphql | grep -i backup`, `railway
+# variable update` and a heredoc of markdown prose that merely mentioned Railway
+# and a backup -- none of which deploy anything. A gate that refuses read-only
+# commands is a gate that gets switched off, which is the one failure this hook
+# cannot survive.
+#
+# The walk deliberately does NOT model command position, so `echo railway up`
+# still blocks. Over-eager is the safe direction here: a missed deploy is a
+# release that shipped unauthorised, while a false block costs one `--dry-run`
+# or one named authorisation. What it no longer does is fire on a command that
+# never contains the subcommand at all.
+# (LL-G kb/claude-code/hook-git-commit-filter-needs-argv-walk.md)
+#
+# Both lists are SPACE-SEPARATED and compared with `=`, never used as a case
+# pattern. `case "$tok" in $sub_pat)` looks like it would work and does not: the
+# `|` that separates case alternatives is resolved when the case statement is
+# parsed, so a variable expanding to `up|redeploy` is one pattern containing a
+# literal pipe and matches nothing at all. Silently -- the gate simply stops
+# firing, which is the direction that ships an unauthorised release.
+#
+# $1  space-separated tool names, compared against the token with any leading
+#     path and a .exe/.cmd suffix stripped  -- "railway", "fly flyctl"
+# $2  space-separated subcommands, compared against the RAW token so that
+#     flag-shaped ones work  -- "up redeploy", "--prod"
+invokes_subcommand() {
+  local tools="$1" subs="$2"
+  local tok name cand seen result restore_glob
+
+  # Unquoted word splitting below would otherwise glob-expand a token like `*`
+  # against the working directory.
+  restore_glob=0
+  case $- in
+    *f*) ;;
+    *)   restore_glob=1; set -f ;;
+  esac
+
+  seen=0
+  result=1
+  for tok in $SCAN; do
+    # Every command separator was normalised to `;` above. The subcommand has to
+    # sit in the SAME command as the tool, so `railway logs | grep up` is not a
+    # deploy and neither is `railway status && npm run up-to-date`.
+    if [ "$tok" = ";" ]; then seen=0; continue; fi
+
+    if [ "$seen" = 0 ]; then
+      name=${tok##*/}
+      name=${name%.exe}
+      name=${name%.cmd}
+      for cand in $tools; do
+        if [ "$name" = "$cand" ]; then seen=1; break; fi
+      done
+      continue
+    fi
+
+    for cand in $subs; do
+      if [ "$tok" = "$cand" ]; then result=0; break 2; fi
+    done
+  done
+
+  [ "$restore_glob" = 1 ] && set +f
+  return "$result"
+}
+
+# ------------------------------------------------------------- is this a deploy?
 # Match on intent, not on one tool. Add this project's own deploy command here;
 # the list travels with the repo, so keep it accurate rather than broad.
+#
+# `flyctl` is named explicitly. The old `*fly*deploy*` covered it only by
+# accident, through the substring it also mis-fired on, so anchoring the token
+# without listing the real binary name would have opened a silent hole.
 is_production_deploy() {
   case "$SCAN" in
     *--dry-run*|*--help*|*" -h"*) return 1 ;;
   esac
+
+  invokes_subcommand 'wrangler'   'deploy publish' && return 0
+  invokes_subcommand 'railway'    'up redeploy'    && return 0
+  invokes_subcommand 'vercel'     '--prod'         && return 0
+  invokes_subcommand 'fly flyctl' 'deploy'         && return 0
+  invokes_subcommand 'terraform'  'apply'          && return 0
+  invokes_subcommand 'npm pnpm'   'deploy:prod'    && return 0
+
+  # kubectl and helm address every environment with the same verb, so the verb
+  # alone is not intent. `prod` stays a substring test on purpose: it has to
+  # catch `--namespace=prod`, `prod-cluster` and `production`, and it can only
+  # ever NARROW a match that already found `kubectl apply` / `helm upgrade`.
   case "$SCAN" in
-    *wrangler*deploy*|*wrangler*publish*)          return 0 ;;
-    *railway*up*|*railway*redeploy*)               return 0 ;;
-    *"vercel --prod"*|*"vercel deploy --prod"*)    return 0 ;;
-    *fly*deploy*)                                  return 0 ;;
-    *"kubectl apply"*prod*|*helm*upgrade*prod*)    return 0 ;;
-    *terraform*apply*)                             return 0 ;;
-    *npm*run*deploy:prod*|*pnpm*deploy:prod*)      return 0 ;;
+    *prod*)
+      invokes_subcommand 'kubectl' 'apply'   && return 0
+      invokes_subcommand 'helm'    'upgrade' && return 0
+      ;;
   esac
+
   return 1
 }
 

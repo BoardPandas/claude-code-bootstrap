@@ -149,9 +149,10 @@ DO NOT:
 COMMIT YOUR WORK ON YOUR OWN BRANCH before you finish, or it will be discarded
 when the worktree is removed:
   1. git add -A
-  2. Write the commit message to .git/CLAUDE_COMMIT_MSG.txt with the Write tool
-  3. git commit -F .git/CLAUDE_COMMIT_MSG.txt
-  4. Delete .git/CLAUDE_COMMIT_MSG.txt
+  2. Write the commit message to a file in your scratchpad with the Write tool
+     (never under .git/ -- settings.json denies Write/Edit there)
+  3. git commit -F <that file>
+  4. Delete the file
   Never use `git commit -m`. Never use here-string (@'...'@) syntax.
 
 REPORT BACK in exactly this shape:
@@ -200,9 +201,9 @@ Then for each unit that reported `STATUS: RESOLVED`:
 4. **Commit** — message to a file, never inline:
    ```bash
    git add -A
-   # Write the message to .git/CLAUDE_COMMIT_MSG.txt with the Write tool, then:
-   git commit -F .git/CLAUDE_COMMIT_MSG.txt
-   # then delete .git/CLAUDE_COMMIT_MSG.txt
+   # Write the message to a scratchpad file with the Write tool (Write is denied under .git/), then:
+   git commit -F "$SCRATCHPAD/commit-msg.txt"
+   # then delete that file
    ```
    Reference the issues in the message body (`Closes #283, #290`) and end with the `Co-Authored-By: Claude` trailer.
 5. **Push the explicit ref:**
