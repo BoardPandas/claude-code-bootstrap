@@ -185,27 +185,26 @@ forgotten, which is how the same gotcha returns a year later in a different repo
 
 **If the lesson concerns this repository's own Claude configuration** -- a hook that
 did not fire, a rule that never loaded, frontmatter silently ignored, a skill on the
-wrong model, a guard that could be satisfied vacuously -- then it also needs a
-regression case, or nothing stops it recurring:
+wrong model, a guard that could be satisfied vacuously -- and the defect is *statically*
+checkable, it also needs a guard check, or nothing stops it recurring:
 
-1. Add a case under `.claude/evals/cases/NN-<slug>.md` following the format in
-   `.claude/evals/README.md`. Grade **behaviour**, not recall: if the expectation is
-   unmet but every other one holds, something must actually have gone wrong.
-2. If the defect is *statically* checkable, prefer a check in
-   `scripts/check-claude-wiring.mjs` plus a case in its test file. A check that runs
-   on every push beats one that runs when someone remembers to invoke the eval suite;
-   the eval case is for behaviour a static check cannot reach.
-3. Run `npm run evals -- --validate` to confirm the corpus still parses.
+1. Add a check to `scripts/check-claude-wiring.mjs` plus a case in
+   `scripts/check-claude-wiring.test.mjs` proving the check fires.
+2. Run `npm run check:claude` and `npm test`. Both must pass.
+
+If the defect is behavioural and no static check can reach it, the LL-G entry is the
+fix; if the mistake has now repeated, also add it to `Things Claude Gets Wrong` in
+`CLAUDE.md`.
 
 **If the lesson is about a technology rather than this configuration** (a Graph API
 quirk, a Next.js footgun), the LL-G entry already written is the whole fix. Say so and
-stop -- do not manufacture an eval case for something the eval harness cannot exercise.
+stop -- do not manufacture a guard check for something no static check can reach.
 
-Either way, the LL-G entry ships. A guard check and an eval case are enforcement added
-beside it, never a substitute for it: a check that lives only in this repo teaches no
-other repo anything, which is the entire reason LL-G exists.
+Either way, the LL-G entry ships. A guard check is enforcement added beside it, never a
+substitute for it: a check that lives only in this repo teaches no other repo anything,
+which is the entire reason LL-G exists.
 
-State which of the two this was, and why. "No eval case: this is a PowerShell
+State which of the two this was, and why. "No guard check: this is a PowerShell
 gotcha, not a configuration defect" is a complete and correct answer.
 
 ## Step 8: Confirm
@@ -223,4 +222,4 @@ Output:
 - That all three files landed in that single commit
 - The entry's severity level
 - The CI conclusion for that commit
-- Whether an eval case or guard check was added, or why neither was needed
+- Whether a guard check was added, or why none was needed

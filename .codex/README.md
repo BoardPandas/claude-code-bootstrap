@@ -15,7 +15,7 @@ npm run check:claude   # fails if any generated file is stale, missing, or unexp
 | `.claude/agents/<name>.md` | `.codex/agents/<name>.toml` |
 | `.claude/settings.json` hooks | `.codex/hooks.json` (runs `.claude/scripts/` in place) |
 
-Current output: 18 skills, 8 agents, 6 hook handlers, AGENTS.md 21421 B.
+Current output: 18 skills, 8 agents, 6 hook handlers, AGENTS.md 20989 B.
 
 ## How the mapping works
 

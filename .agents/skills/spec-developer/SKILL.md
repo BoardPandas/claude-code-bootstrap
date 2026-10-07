@@ -289,8 +289,9 @@ them in a file nobody opens defeats the point of raising them at spec time.
 
 > **Reminder:** After implementing, review the "Lessons Learned / Gotchas" section and
 > route discoveries to LL-G via `/add-lesson` (and reusable patterns to BP via
-> `/add-practice`). If the lesson concerns this repo's own configuration, add a regression
-> case under `.claude/evals/cases/` as well — LL-G teaches, the eval case enforces.
+> `/add-practice`). If the lesson concerns this repo's own configuration and is statically
+> detectable, add a check to `scripts/check-claude-wiring.mjs` as well — LL-G teaches, the
+> guard enforces.
 
 ## Document Failed Attempts
 

@@ -8,8 +8,6 @@ This repository is a Claude Code starter template. It provides a ready-to-use `.
 npm run check:claude   # wiring guard: rule scoping, hook matchers, frontmatter, context budgets, Codex drift
 npm run sync:codex     # regenerate AGENTS.md, .agents/skills/, .codex/ after any CLAUDE.md or .claude/ change
 npm test               # asserts every guard check still fires, plus the commit gate's refusal paths
-npm run evals          # behavioural evals for skills, agents, hooks (needs the claude CLI)
-npm run evals -- --validate   # structure-only eval check, no API calls
 ```
 
 ## Verifying your work
@@ -30,10 +28,6 @@ OK -- .claude wiring verified.
 and, from `npm test`, `# fail 0`. Never skip, delete, or narrow a failing check to make it
 pass — the checks exist because these defects are otherwise silent. If a check is genuinely
 wrong, change it deliberately and say so in the changelog.
-
-Changes touching `CLAUDE.md`, `.claude/skills/**`, `.claude/agents/**`, `.claude/scripts/**`,
-or `.claude/settings.json` must also pass `npm run evals` before merging. See
-`.claude/evals/README.md`.
 
 ## Workflow: Plan First, Then Init
 
@@ -128,7 +122,6 @@ profile definitions in `.claude/references/infrastructure.md` -- read it, do not
 - Hook scripts live in `.claude/scripts/*.sh`. settings.json calls them as `"$CLAUDE_PROJECT_DIR"/.claude/scripts/…` so they resolve from any subdirectory, and the scripts folder must travel with settings.json.
 - Path-scoped rules live in `.claude/rules/*.md` (conditional on `paths:` frontmatter).
 - Agent memory lives in `.claude/agent-memory/` (version-controlled, team-shared).
-- Evals live in `.claude/evals/` (`cases/*.md` corpus + `README.md`); the runner is `scripts/run-evals.mjs`.
 - Intent and spec artifacts live in `intent/<slug>/`; plans in `tasks/`.
 - Source URLs for best-practice fetches live in `.claude/references/source-urls.md`.
 - Template sync state lives in `.claude/references/template-sync-state.json`, deliberate removals in `template-sync-ignore.md`.
@@ -147,7 +140,7 @@ profile definitions in `.claude/references/infrastructure.md` -- read it, do not
 - Always plan in one session, execute in another. Clear context between planning and implementation.
 - Save every plan to `tasks/`. This lets you selectively undo a feature later.
 - For big features, use the **spec-developer** skill.
-- Every plan MUST end with a **Lessons Learned / Gotchas** section. After implementation, route discoveries to LL-G via `/add-lesson` -- not to local debugging.md files -- and add a regression case to `.claude/evals/cases/` when the lesson concerns this configuration.
+- Every plan MUST end with a **Lessons Learned / Gotchas** section. After implementation, route discoveries to LL-G via `/add-lesson` -- not to local debugging.md files -- and add a check to `scripts/check-claude-wiring.mjs` when the lesson concerns this configuration and the defect is statically detectable.
 
 ## Context Management
 

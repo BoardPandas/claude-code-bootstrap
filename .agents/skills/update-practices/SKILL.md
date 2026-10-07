@@ -114,8 +114,10 @@ Only sync these categories of `.claude/` files from the template:
 | Settings | `.claude/settings.json` | Deep-merge: add new hooks, permissions, and env vars from template. Never remove existing entries. Preserve project-specific matchers and custom hooks. |
 | Settings | `.claude/settings.local.json.example` | Replace with template version (it is just an example file). |
 | References | `.claude/references/managed-settings.example.json` | Generic example, not project-specific. Replace with the template version. |
-| Evals | `.claude/evals/README.md` | Replace with the template version. |
-| Evals | `.claude/evals/cases/*.md` | Merge by `id`: add template cases the project does not have; never delete a project's own cases. A template case whose `targets` do not exist in this project is dropped rather than synced — it would fail validation on arrival. |
+
+The template no longer ships an eval suite (removed in 0.21.0). A project that adopted
+`.claude/evals/`, `scripts/run-evals.mjs`, and `.github/workflows/agent-evals.yml` before
+then owns them now: do not sync, audit, or delete them.
 
 ### Files outside `.claude/` that MUST still sync
 
@@ -126,15 +128,12 @@ template. This is a deliberate exception to the rule below.
 | File | Sync strategy |
 |------|---------------|
 | `REVIEW.md` | Sync entirely if absent — `scripts/check-claude-wiring.mjs` errors without it. If present, merge new passes and exclusions but preserve the project's own severity bar and nit cap; those are local policy calls. |
-| `scripts/run-evals.mjs` | Replace with the template version. Generic runner, no project-specific logic. |
-| `scripts/run-evals.test.mjs` | Replace with the template version. |
 | `scripts/check-claude-wiring.mjs` | Replace with the template version, then re-run it: new checks routinely surface pre-existing defects, and that is the point. |
 | `scripts/check-claude-wiring.test.mjs` | Replace with the template version. |
-| `.github/workflows/agent-evals.yml` | Sync entirely if absent. If present, merge new jobs but preserve project-specific triggers. |
 | `.github/workflows/security-scan.yml` | Sync entirely if absent. If present, leave the project's schedule alone. |
 
-After syncing any of these, run `npm run check:claude`, `npm test`, and
-`npm run evals -- --validate` before reporting success. A sync that leaves the guard red is
+After syncing any of these, run `npm run check:claude` and `npm test` before reporting
+success. A sync that leaves the guard red is
 not finished.
 
 ### Files to NEVER sync
@@ -250,29 +249,16 @@ For every `.claude/agents/*.md`:
 - **Tables match reality, both directions.** Check the skills and agents tables against the actual directories for listed-but-missing *and* present-but-undocumented.
 - **Nothing the model now handles natively.** Prune per Step 5.
 
-### 2c.6 Evals, review policy, and the artifact chain
+### 2c.6 Review policy and the artifact chain
 
-The guard proves the config is wired. These three cover whether it still *behaves*, and
-none of them is statically checkable beyond existence.
-
-**Evals.** Run `npm run evals -- --validate`. Then judge the corpus, which the validator
-cannot:
-
-- Does every case still describe behaviour this repo actually wants? A case guarding a rule
-  that was deliberately removed is worse than no case: it fails forever and trains people
-  to ignore the suite. Delete it and say so.
-- Has the corpus grown since the last run? If lessons were added to LL-G or entries to
-  `Things Claude Gets Wrong` in CLAUDE.md with no matching case, the loop is open. That is
-  a DEGRADED finding, with the specific missing cases named.
-- If the `claude` CLI and a key are available, run the full `npm run evals`. A failing case
-  is BROKEN — the configuration no longer does what it claims. Never "fix" it by loosening
-  the expectation; fix the configuration, or delete the case deliberately with a reason.
+The guard proves the config is wired. These two cover whether it still *behaves*, and
+neither is statically checkable beyond existence.
 
 **Review policy.** Read `REVIEW.md` against the last month of actual defects:
 
 - Passes that have never caught a real defect are DEGRADED — recommend removal.
-- Defect classes that reached main and are not covered by any pass, guard check, or eval
-  case are BROKEN — recommend which of the three should own it.
+- Defect classes that reached main and are not covered by any pass or guard check are
+  BROKEN — recommend which of the two should own it.
 - A policy that only ever grows is a policy nobody finishes reading. Report its size trend.
 
 **Artifact chain.** Spot-check `intent/` and `tasks/`:
