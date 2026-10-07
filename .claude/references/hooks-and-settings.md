@@ -72,6 +72,16 @@ Hooks can return structured output (`hookSpecificOutput`) to influence the sessi
 - Call a script by `bash "$CLAUDE_PROJECT_DIR"/.claude/scripts/<name>.sh`, never a cwd-relative path (see Hook types above).
 - Deny and ask permission rules also accept `Tool(param:value)`, e.g. `Agent(model:opus)` for Agent calls that request Opus. That is permission syntax, so it never goes in a `matcher`.
 
+## Plugin mod hooks are a different system
+
+Since v2.1.287, plugins can ship "Claude Mods": a JavaScript hooks module with dotted
+events such as `tool.check`, `tool.call`, `prompt.submit`, `turn.step` and `agent.spawn`.
+These are not `settings.json` hooks. They never go in `.claude/settings.json`, the
+matcher and `if:` rules above do not apply to them, and the wiring guard does not check
+them. Write them inside a plugin, using the built-in `plugin-authoring` skill, and check
+them with `claude plugin validate` and `claude plugin test`. Everything else in this file
+is about `settings.json` hooks.
+
 ## Hook behavior changes (v2.1.201 to v2.1.292)
 
 Verified against the official changelog. Each one changes what a hook in this config can rely on.

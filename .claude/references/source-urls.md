@@ -45,7 +45,6 @@ Removals are also governed by the two-strikes dead-URL rule in `update-practices
 ## Changelog Trackers
 
 - https://releasebot.io/updates/anthropic/claude-code
-- https://developertoolkit.ai/en/claude-code/version-management/changelog/
 
 ## Live Web Search
 
