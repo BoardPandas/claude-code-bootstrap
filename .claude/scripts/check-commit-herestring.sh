@@ -10,8 +10,9 @@
 # literal and leak into the commit message as a stray @ line (the commit
 # subject becomes a bare "@").
 #
-# Correct approach: write the message to .git/CLAUDE_COMMIT_MSG.txt with
-# the Write tool, then run: git commit -F .git/CLAUDE_COMMIT_MSG.txt
+# Correct approach: write the message to a file OUTSIDE .git/ (the settings
+# deny Edit(**/.git/**), so the Write tool cannot create it there) -- e.g. the
+# session scratchpad -- then run: git commit -F <that file>
 #
 # Exit 0 = allow. Exit 2 = block (stderr is shown to Claude).
 
@@ -33,9 +34,10 @@ if printf '%s' "$HOOK_COMMAND" | grep -qF "@'" || printf '%s' "$HOOK_COMMAND" | 
     echo "literally and leak into the commit message as a stray @ line."
     echo ""
     echo "Use a message file instead (shell-agnostic, cannot be misquoted):"
-    echo "  1. Write the full commit message to .git/CLAUDE_COMMIT_MSG.txt (Write tool)"
-    echo "  2. Run: git commit -F .git/CLAUDE_COMMIT_MSG.txt"
-    echo "  3. Delete .git/CLAUDE_COMMIT_MSG.txt"
+    echo "  1. Write the full commit message to a file outside .git/, e.g. the"
+    echo "     session scratchpad (Write is denied under .git/ by settings.json)"
+    echo "  2. Run: git commit -F <that file>"
+    echo "  3. Delete the file"
   } >&2
   exit 2
 fi

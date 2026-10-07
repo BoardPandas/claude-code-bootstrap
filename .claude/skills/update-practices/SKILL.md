@@ -200,7 +200,7 @@ The sync steps above make the config **current**. This step makes it **work**. T
 npm run check:claude
 ```
 
-The guard already asserts everything statically checkable: rule frontmatter uses `paths:` (not Cursor's `globs:`/`alwaysApply:`), every glob matches a real file, hook matchers are bare tool names, referenced hook scripts exist, no hook silences both stderr and its exit code, blocking hooks write to stderr, no hook interpolates the nonexistent `$CLAUDE_FILE_PATH`, frontmatter keys are hyphenated, and always-on context stays under ceiling.
+The guard already asserts everything statically checkable: rule frontmatter uses `paths:` (not Cursor's `globs:`/`alwaysApply:`), every glob matches a real file, no hook matcher uses permission-rule syntax or an uncompilable regex, referenced hook scripts exist, no hook silences both stderr and its exit code, blocking hooks write to stderr, no hook interpolates the nonexistent `$CLAUDE_FILE_PATH`, frontmatter keys are hyphenated, and always-on context stays under ceiling.
 
 **Do not re-implement any of those checks here.** If the guard fails, fix what it reports before continuing -- a health audit layered on broken wiring reports noise. And if a property below turns out to be mechanically checkable, add it to the guard instead of describing it here: a check that runs in CI beats a check that runs when someone remembers to invoke this skill.
 

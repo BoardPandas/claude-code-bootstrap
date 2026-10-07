@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.21.4] - 2026-10-07
+
+### Fixed
+- **Hook matcher check matches Claude Code's real rules.** Check 3 rejected every matcher that was not a bare `|`-joined tool name, so valid matchers such as `mcp__memory__.*`, `Edit, Write`, `code-reviewer` and `"*"` failed the build. It now accepts exact-name lists and real regexes, and fails only on `Tool(pattern)` permission syntax (including inside a `|` list) and on a regex that does not compile. The hooks reference's matcher section now documents the official exact-versus-regex rules instead of "tool names only".
+- **Commit-message guidance no longer points at `.git/`.** `check-commit-herestring.sh`, `triage-issues` and `merge-worktrees` said to write the message to `.git/CLAUDE_COMMIT_MSG.txt`, but the template's own `Edit(**/.git/**)` deny rule blocks the Write tool there. They now say to use a scratchpad file.
+- **The release gate matches deploy subcommands as whole tokens.** It matched `*railway*up*` as a substring, and `up` is inside `backup`, `update`, `upgrade` and `upload`, so it blocked read-only commands like `railway postgres pitr backup list`. Subcommands are now compared token by token after the tool name, with a test file covering both directions.
+
 ## [0.21.3] - 2026-10-07
 
 ### Fixed
