@@ -4,6 +4,7 @@ effort: medium
 description: Review UI/UX code against Laws of UX and Gestalt principles. Produces severity-ranked findings with specific improvement recommendations. Use on frontend repos or targeted components.
 user-invocable: true
 argument-hint: [optional: file, directory, or component name to scope the review]
+context: fork
 agent: ux-reviewer
 allowed-tools:
   - Read

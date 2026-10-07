@@ -227,7 +227,7 @@ For each skill, consider adding:
 - `model: sonnet` for analysis and research skills
 - `model: opus` for orchestration and planning skills
 - `context: fork` for skills that should run in isolated subagent context (prevents context contamination in the main session). Good for: analysis skills that produce large output, research skills that fetch many URLs, any skill that shouldn't pollute the main conversation.
-- `agent: <agent-name>` to bind a skill to a specific agent that should execute it. Useful when a skill requires the specialized persona and tools of a particular agent.
+- `agent: <agent-name>` to bind a skill to a specific agent that should execute it. Useful when a skill requires the specialized persona and tools of a particular agent. It takes effect only alongside `context: fork`, so always set both; if the agent lacks a tool the skill needs, set `model:` instead.
 
 ## Step 10: Add Agent Frontmatter Optimizations
 

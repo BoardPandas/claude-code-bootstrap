@@ -321,7 +321,7 @@ Review each agent for new frontmatter fields:
 ### Skill frontmatter
 Review each skill for new frontmatter fields:
 - `context: fork`: Should any skills run in isolated context?
-- `agent`: Should any skills be bound to a specific agent?
+- `agent`: Should any skills be bound to a specific agent? A binding takes effect only with `context: fork`.
 - Are `model` assignments still optimal?
 
 ### Hook events

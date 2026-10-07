@@ -105,7 +105,7 @@ Always and aggressively offload to subagents: online research, doc fetching, log
 
 The full catalog of skill and agent frontmatter fields lives in `instructions.md` (Skill Frontmatter, Adding New Agents). Two rules are enforced, not advisory:
 
-- **Every skill must resolve to a model:** declare `model:` directly, **or** bind `agent:` and inherit that agent's. Doing neither leaves the skill on whatever the session happens to be using; `npm run check:claude` fails on it.
+- **Every skill must resolve to a model:** declare `model:` directly, **or** bind `agent:` alongside `context: fork` and inherit that agent's (without the fork, `agent:` is ignored). Doing neither leaves the skill on whatever the session happens to be using; `npm run check:claude` fails on it.
 - **All frontmatter keys are hyphenated.** The underscored form (`disable_model_invocation`, `allowed_tools`) is silently ignored.
 
 ## Infrastructure Profiles

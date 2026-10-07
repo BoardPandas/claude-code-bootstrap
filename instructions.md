@@ -430,6 +430,7 @@ allowed-tools:
 **Additional frontmatter fields:**
 - `user-invocable: false` — Hide the skill from the / menu while keeping it as background knowledge Claude can still draw on (distinct from `disable-model-invocation`, which blocks auto-triggering but keeps manual invocation)
 - `context: fork` — Run skill in an isolated subagent, preventing context contamination
+- `agent: <name>` — Which subagent runs the skill. It takes effect only with `context: fork`; without the fork it is silently ignored and the skill runs on the session model, which `npm run check:claude` rejects
 - `effort: low|medium|high|xhigh|max` — Override reasoning effort level. `xhigh` (Opus 4.7+) typically beats `max` on cost/quality
 - `keep-coding-instructions: true` — Preserve coding-style instructions when the skill switches output styles
 - `${CLAUDE_SKILL_DIR}` — Reference the skill's own directory for relative file paths
@@ -565,7 +566,7 @@ Update root CLAUDE.md with your project's stack, conventions, and standards. Kee
 
 1. Create a folder in `.claude/skills/` with your skill name.
 2. Create `SKILL.md` inside with YAML frontmatter (`name`, `description`, `user-invocable: true`).
-3. Add optional frontmatter: `disable-model-invocation`, `model`, `agent`, `effort`, `context: fork`.
+3. Add optional frontmatter: `disable-model-invocation`, `model`, `agent` (only with `context: fork`), `effort`, `context: fork`.
 4. Write step-by-step instructions in the markdown body.
 5. Update the skill table in CLAUDE.md and this instructions.md file.
 

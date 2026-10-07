@@ -317,6 +317,9 @@ for (const dir of [".claude/skills", ".claude/agents"]) {
 // then runs on whatever the session happens to be using. Checking the pair keeps
 // the agent-binding pattern legal instead of forcing a redundant model: on skills
 // that deliberately delegate (security-scan takes opus from the security agent).
+// agent: only takes effect with context: fork (skills docs: "Which subagent type
+// to use when context: fork is set"). Without the fork the binding is inert, so
+// it cannot supply a model either.
 const agentModel = new Map();
 for (const file of walk(join(ROOT, ".claude/agents")).filter((p) => p.endsWith(".md")).filter(notExcluded)) {
   const front = frontmatter(read(file)) ?? "";
@@ -329,7 +332,13 @@ for (const file of walk(join(ROOT, ".claude/skills")).filter((p) => p.endsWith("
   if (/^\s*model\s*:/m.test(front)) continue;
 
   const bound = front.match(/^\s*agent\s*:\s*(\S+)/m)?.[1];
-  if (!bound) {
+  const forks = /^\s*context\s*:\s*fork\s*$/m.test(front);
+  if (bound && !forks) {
+    errors.push(
+      `${rel(file)}: binds agent: ${bound} without context: fork. agent: is ignored unless the skill ` +
+        `forks, so the skill runs on the session model. Add context: fork, or replace agent: with model:.`,
+    );
+  } else if (!bound) {
     errors.push(
       `${rel(file)}: declares no model: and binds no agent:, so it runs on whatever model the ` +
         `session happens to be using. Add model:, or bind agent: to inherit one.`,
