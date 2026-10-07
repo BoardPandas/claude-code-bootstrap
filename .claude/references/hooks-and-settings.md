@@ -50,7 +50,7 @@ both skills, which let the two copies drift).
 1. **Command hooks**: `{ "type": "command", "command": "..." }` — Runs a shell command. Exit code 0 = allow, 2 = block (PreToolUse), non-zero = error. The command runs in the session's current directory, which moves with every `cd`, so call project scripts as `bash "$CLAUDE_PROJECT_DIR"/.claude/scripts/<name>.sh`. A cwd-relative `bash .claude/scripts/<name>.sh` fails from any subdirectory, and the hook silently does not run.
 2. **HTTP hooks**: `{ "type": "http", "url": "https://..." }` — Sends an HTTP POST to a URL. The request body contains the event payload. Requires the URL to be listed in `settings.json` under `allowedHttpHookUrls`. Supports custom headers with env-var interpolation, e.g. `"headers": { "Authorization": "Bearer ${MY_WEBHOOK_TOKEN}" }`.
 3. **Prompt hooks**: `{ "type": "prompt", "prompt": "..." }` — Single-turn LLM judgment (yes/no decision). Useful for validation gates.
-4. **Agent hooks**: `{ "type": "agent", "prompt": "..." }` — Multi-turn subagent with tool access. Useful for complex validation or post-processing.
+4. **Agent hooks**: `{ "type": "agent", "prompt": "..." }` — Multi-turn subagent with tool access. Useful for complex validation or post-processing. Not accepted on `PermissionRequest` since v2.1.280 (its answer could never allow or deny); there it errors, so use a command or http hook.
 5. **MCP tool hooks**: `{ "type": "mcp_tool", "tool": "...", "arguments": {...} }` — Directly invokes an MCP tool as the hook action. Useful for posting to integrated services without a shell.
 
 Any hook entry accepts an optional `if:` field using permission-rule syntax (e.g., `Bash(git *)`) so the hook fires only on matching tool calls — reduces overhead on unrelated calls.
@@ -71,6 +71,20 @@ Hooks can return structured output (`hookSpecificOutput`) to influence the sessi
 - `if:` fires conservatively on commands it cannot read (substitutions, `bash -c`), so a script that must act only on one command also checks `tool_input.command` itself. LL-G `claude-code/hook-matcher-tool-names-only`.
 - Call a script by `bash "$CLAUDE_PROJECT_DIR"/.claude/scripts/<name>.sh`, never a cwd-relative path (see Hook types above).
 - Deny and ask permission rules also accept `Tool(param:value)`, e.g. `Agent(model:opus)` for Agent calls that request Opus. That is permission syntax, so it never goes in a `matcher`.
+
+## Hook behavior changes (v2.1.201 to v2.1.292)
+
+Verified against the official changelog. Each one changes what a hook in this config can rely on.
+
+- **PreToolUse and PermissionRequest now fail closed** (v2.1.288). When matching a hook fails, or the tool input cannot be serialized to JSON, the call is blocked. Before, the hook was skipped and the call ran.
+- **Rewritten input is re-checked** (v2.1.290). Permission rules and safety checks now apply to a tool call after a PreToolUse hook rewrites its input.
+- **`<system-reminder>` tags in hook output are escaped** before they reach Claude (v2.1.292). A hook cannot use them to inject instructions.
+- **Path-scoped rules and nested CLAUDE.md load on Write and Edit** (v2.1.288). Before, only Read loaded them, so a rule never applied to a file Claude created.
+- **InstructionsLoaded reports `agent_id` and `agent_type`** when a subagent's file access loads a rule or nested CLAUDE.md (v2.1.288).
+- **SubagentStop matchers no longer fire for subagents with an empty agent type** (v2.1.275).
+- **`mcp_tool` hooks on blocking events wait for their MCP server** to connect, up to the connect timeout (v2.1.281). Before, they were skipped while it connected.
+- **Elicitation and ElicitationResult honor `{"decision":"block"}`** (v2.1.284), the same as exit code 2.
+- **Hooks declared in agent frontmatter need workspace trust** for the agent file's folder (v2.1.218).
 
 ## Hooks to configure based on project needs
 
@@ -143,8 +157,14 @@ Ask the user which additional hooks they want before configuring beyond the defa
 | `requiresMinimumVersion` / `requiredMaximumVersion` | Pin the Claude Code version range for the repo | Teams that need reproducible harness behavior |
 | `attribution.sessionUrl` | Include the session URL in attribution output | Audit trails that link commits back to sessions |
 | `autoMode.classifyAllShell` / `autoMode.idleTimeout` | Tune auto-mode shell classification and idle behavior | Heavy auto-mode users |
+| `attribution: false` | Hide all commit and PR attribution (v2.1.281) | Personal settings only. CLI versions older than 2.1.281 skip a settings file containing it, so keep the object form in any file shared across versions |
+| `maxProseWidth` | Cap the width of Claude's prose in wide terminals; tables and code keep full width (v2.1.282) | Personal preference, so `settings.local.json` |
+| `allowedProviders` | Managed only: limit which API providers a machine may use (v2.1.285) | Org policy |
+| `deniedModels` / `availableModelsMatch: "exact"` | Managed only: block specific models; with `"exact"`, an `availableModels` entry allows only the version it names (v2.1.283) | Org policy that must not auto-admit new model releases |
 
-Env levers worth knowing: `ENABLE_TOOL_SEARCH` (lazy-load MCP tool schemas; also accepts `auto:N`) and `ENABLE_PROMPT_CACHING_1H` (opt into the 1-hour prompt-cache TTL for long sessions). Niche display settings (`wheelScrollAccelerationEnabled`, `footerLinksRegexes`, `respondToBashCommands`, `pluginSuggestionMarketplaces`, `allowAllClaudeAiMcps`) exist but rarely belong in a shared template.
+Env levers worth knowing: `ENABLE_TOOL_SEARCH` (lazy-load MCP tool schemas; also accepts `auto:N`) and `ENABLE_PROMPT_CACHING_1H` (opt into the 1-hour prompt-cache TTL for long sessions). `CLAUDE_CODE_DISABLE_STRUCTURED_OUTPUTS` (v2.1.288) is for gateways that reject structured outputs. `CLAUDE_CODE_DISABLE_1M_CONTEXT=1` (v2.1.287) keeps the 200K window on Bedrock, Vertex, Foundry and the Claude apps gateway, where 1M became the default; this template deliberately does not set it.
+
+Removed or restricted: the `taskOutputMaxChars` setting and `TASK_MAX_OUTPUT_LENGTH` do nothing since the TaskOutput tool was removed (v2.1.277). A repository's `.claude/settings.json` or `settings.local.json` can no longer set `CLAUDE_CODE_DISABLE_ATTACHMENTS` (v2.1.292) or turn on Claude in Chrome; use user or managed settings. Niche display settings (`wheelScrollAccelerationEnabled`, `footerLinksRegexes`, `respondToBashCommands`, `pluginSuggestionMarketplaces`, `allowAllClaudeAiMcps`) exist but rarely belong in a shared template.
 
 Security note (v2.1.196): MCP servers declared in a committed `.claude/settings.json` / `.mcp.json` no longer auto-spawn without user approval — do not design workflows that assume a cloned repo's MCP servers start automatically.
 
