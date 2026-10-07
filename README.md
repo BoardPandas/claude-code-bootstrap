@@ -1,6 +1,6 @@
 # Claude Code Starter Template
 
-A ready-to-use `.claude/` configuration folder for any repository. Ships with skills, agents, and settings aligned to Claude Code best practices, last synced **2026-08-21**. Run `update practices` to refresh both the config and that date.
+A ready-to-use `.claude/` configuration folder for any repository. Ships with skills, agents, and settings aligned to Claude Code best practices, last synced **2026-10-07**. Run `update practices` to refresh both the config and that date.
 
 ## Quick Start
 

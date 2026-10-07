@@ -435,6 +435,8 @@ allowed-tools:
 - `${CLAUDE_SKILL_DIR}` — Reference the skill's own directory for relative file paths
 - Skills in nested `.claude/skills/` subdirectories are auto-discovered
 - Put the most important trigger phrases in the first 250 characters of `description` — recent releases truncate skill descriptions around that length in some surfaces
+- Boolean fields also accept `yes`/`no`/`on`/`off`/`1`/`0` (v2.1.218)
+- **The name `verify` is reserved in effect.** Since v2.1.286, when a project or user skill is named `verify`, Claude runs it right before every commit except docs-only and tests-only ones. Use that name only for a skill you want run on every commit.
 
 ---
 
@@ -584,6 +586,9 @@ Update root CLAUDE.md with your project's stack, conventions, and standards. Kee
 - `disallowedTools:` — Remove specific tools from inherited tool lists
 - `effort:` — Override reasoning effort (`low`, `medium`, `high`, `xhigh`, `max`)
 - `initialPrompt:` — First message sent to the agent on startup
+- `omitClaudeMd: true` — Run without user, project and local CLAUDE.md files; managed policy files still load (v2.1.271). Suits narrow agents that do not need project conventions
+- `experimental.cacheTtl:` — Per-agent prompt-cache TTL, `"5m"` or `"1h"`, used when no subagent TTL setting is configured (v2.1.248)
+- The Agent tool takes an `effort` parameter (v2.1.292), so a caller can set effort per spawn without changing the agent's frontmatter
 - `Agent(agent_type)` in `tools:` — Restrict which specific subagents this agent may spawn
 
 ### Updating the Source URL Registry

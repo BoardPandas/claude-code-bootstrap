@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.21.1] - 2026-10-07
+
+### Changed
+- **CI actions moved to their current majors.** `actions/checkout` is now v7.0.1 and `actions/setup-node` v7.0.0 in all three workflows, still pinned to commit SHAs. Neither major changes anything these workflows rely on: none use `pull_request_target` or automatic dependency caching.
+- **The AI review workflow installs Claude Code 2.1.289**, up from 2.1.247. Its `--tools`, `--strict-mcp-config` and `--permission-mode` flags were checked against that version's `--help`.
+- **The hooks and settings reference is current to Claude Code 2.1.292.** It has a new section on hook behavior changes since 2.1.201:
+  - PreToolUse and PermissionRequest hooks now fail closed when matching or serializing the input fails.
+  - Rewritten tool input is re-checked against permission rules.
+  - `<system-reminder>` tags in hook output are escaped.
+  - Path-scoped rules now load on Write and Edit, not just Read.
+
+  It also notes that agent-type hooks are refused on PermissionRequest, adds new settings (`attribution: false`, `maxProseWidth`, and the managed `allowedProviders`, `deniedModels` and `availableModelsMatch`), and lists the removed `taskOutputMaxChars` setting and settings a project can no longer set.
+- **`instructions.md` documents new frontmatter.**
+  - Agents: `omitClaudeMd` and `experimental.cacheTtl`.
+  - The Agent tool's per-spawn `effort` parameter.
+  - Frontmatter booleans also accept `yes`/`no`/`on`/`off`.
+  - Naming a skill `verify` makes Claude run it before every commit.
+- README's last-synced date is now 2026-10-07.
+
 ## [0.21.0] - 2026-10-06
 
 ### Removed
