@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 # Post-commit hook: remind Claude to evaluate if committed work should be contributed to LLG or BP
-# Always exits 0 (advisory) -- outputs the diff summary and reminder for Claude to evaluate
+# Always exits 0 (advisory). The diff summary and reminder reach Claude only as
+# JSON additionalContext, via _hook-context.sh: plain PostToolUse stdout goes to
+# the debug log, so the echo-and-exit form this used to be was never read.
 
 . "$(dirname "$0")/_git-commit-filter.sh"
+. "$(dirname "$0")/_hook-context.sh"
 
 read_hook_input
 
@@ -15,6 +18,7 @@ read_hook_input
 # (LL-G kb/bash/hook-scans-tool-output-false-record.md)
 is_git_commit || exit 0
 
+MSG=$(
 echo "=== KNOWLEDGE BASE CONTRIBUTION CHECK ==="
 echo ""
 echo "Committed changes summary:"
@@ -39,3 +43,7 @@ If nothing is worth contributing, say nothing -- do not clutter the output.
 Only surface this if you genuinely identified something valuable.
 ===
 EOF
+)
+
+emit_context PostToolUse "$MSG"
+exit 0

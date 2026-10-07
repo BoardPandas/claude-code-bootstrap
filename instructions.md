@@ -431,6 +431,7 @@ allowed-tools:
 - `user-invocable: false` — Hide the skill from the / menu while keeping it as background knowledge Claude can still draw on (distinct from `disable-model-invocation`, which blocks auto-triggering but keeps manual invocation)
 - `context: fork` — Run skill in an isolated subagent, preventing context contamination
 - `agent: <name>` — Which subagent runs the skill. It takes effect only with `context: fork`; without the fork it is silently ignored and the skill runs on the session model, which `npm run check:claude` rejects
+- `allowed-tools:` — Pre-approves tools so they run without a permission prompt; it grants nothing. A skill that forks into an agent runs with that agent's `tools:`, so every `allowed-tools` entry must be in the agent's list (exactly, or as the bare tool: `Bash` covers `Bash(du*)`). `npm run check:claude` fails on an entry the agent cannot use
 - `effort: low|medium|high|xhigh|max` — Override reasoning effort level. `xhigh` (Opus 4.7+) typically beats `max` on cost/quality
 - `keep-coding-instructions: true` — Preserve coding-style instructions when the skill switches output styles
 - `${CLAUDE_SKILL_DIR}` — Reference the skill's own directory for relative file paths

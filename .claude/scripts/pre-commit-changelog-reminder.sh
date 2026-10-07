@@ -2,8 +2,14 @@
 # Pre-commit hook: remind Claude to update CHANGELOG.md and bump version BEFORE committing
 # Fires before check-changelog-staged.sh so Claude gets the instructions first
 # Always exits 0 (advisory) -- check-changelog-staged.sh handles enforcement
+#
+# The reminder reaches Claude only as JSON additionalContext, via
+# _hook-context.sh. Plain PreToolUse stdout goes to the debug log, so the
+# echo-and-exit form this used to be never once reached the model: the first
+# Claude heard of the contract was the blocker's refusal.
 
 . "$(dirname "$0")/_git-commit-filter.sh"
+. "$(dirname "$0")/_hook-context.sh"
 
 read_hook_input
 
@@ -18,7 +24,7 @@ anchor_to_repo_root || exit 0
 is_changelog_exempt && exit 0
 changelog_was_edited && version_was_bumped && changelog_names_version && exit 0
 
-cat <<EOF
+MSG=$(cat <<EOF
 === CHANGELOG & VERSION UPDATE REQUIRED ===
 
 You are about to commit, but the changelog contract is not satisfied yet. The
@@ -44,5 +50,12 @@ The version in CHANGELOG.md and the version in package.json must match.
 Make these edits as their own step -- a PreToolUse hook cannot see files that
 the very command it is checking has not written yet.
 
+For a genuinely trivial commit, prefix the command itself:
+   SKIP_CHANGELOG=1 git commit -m "..."
+
 ===
 EOF
+)
+
+emit_context PreToolUse "$MSG"
+exit 0

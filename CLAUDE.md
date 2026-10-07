@@ -80,6 +80,7 @@ generalisable version to LL-G via `/add-lesson`.
 - **Using Cursor's `globs:` / `alwaysApply:` in a rule.** Claude Code reads neither. The rule then loads in *every* session — the inverse of the intent.
 - **Assuming a worktree agent sees uncommitted work.** It branches from a commit, so it reads stale files, finds them already consistent, and reports success. Orient with `git status --short` first.
 - **Budgeting context by line count.** A line budget keeps passing while single lines grow to thousands of characters. Budget by bytes.
+- **Echoing advice from a PreToolUse or PostToolUse hook.** Plain stdout there goes to the debug log; Claude never reads it. Print `additionalContext` JSON with `emit_context` from `.claude/scripts/_hook-context.sh`, or exit 2 with stderr to block.
 - **Calling a hook script by a cwd-relative path.** Hooks run in the session's current directory, which follows every `cd`. `bash .claude/scripts/x.sh` fails from any subdirectory, and a non-blocking failure means the gate simply did not run. Write `bash "$CLAUDE_PROJECT_DIR"/.claude/scripts/x.sh`.
 
 ## Hierarchical CLAUDE.md Architecture
@@ -103,10 +104,11 @@ Always and aggressively offload to subagents: online research, doc fetching, log
 
 ## Frontmatter
 
-The full catalog of skill and agent frontmatter fields lives in `instructions.md` (Skill Frontmatter, Adding New Agents). Two rules are enforced, not advisory:
+The full catalog of skill and agent frontmatter fields lives in `instructions.md` (Skill Frontmatter, Adding New Agents). Three rules are enforced, not advisory:
 
 - **Every skill must resolve to a model:** declare `model:` directly, **or** bind `agent:` alongside `context: fork` and inherit that agent's (without the fork, `agent:` is ignored). Doing neither leaves the skill on whatever the session happens to be using; `npm run check:claude` fails on it.
 - **All frontmatter keys are hyphenated.** The underscored form (`disable_model_invocation`, `allowed_tools`) is silently ignored.
+- **A forked skill gets its agent's tools, not its own.** `allowed-tools` only pre-approves, so each entry must be in the bound agent's `tools:`, or that step never runs.
 
 ## Infrastructure Profiles
 

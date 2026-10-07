@@ -188,7 +188,7 @@ The sync steps above make the config **current**. This step makes it **work**. T
 npm run check:claude
 ```
 
-The guard already asserts everything statically checkable: rule frontmatter uses `paths:` (not Cursor's `globs:`/`alwaysApply:`), every glob matches a real file, no hook matcher uses permission-rule syntax or an uncompilable regex, referenced hook scripts exist, no hook silences both stderr and its exit code, blocking hooks write to stderr, no hook interpolates the nonexistent `$CLAUDE_FILE_PATH`, frontmatter keys are hyphenated, and always-on context stays under ceiling.
+The guard already asserts everything statically checkable: rule frontmatter uses `paths:` (not Cursor's `globs:`/`alwaysApply:`), every glob matches a real file, no hook matcher uses permission-rule syntax or an uncompilable regex, referenced hook scripts exist, no hook silences both stderr and its exit code, blocking hooks write to stderr, no hook interpolates the nonexistent `$CLAUDE_FILE_PATH`, frontmatter keys are hyphenated, every skill that forks into an agent only lists `allowed-tools` that agent holds, and always-on context stays under ceiling.
 
 **Do not re-implement any of those checks here.** If the guard fails, fix what it reports before continuing -- a health audit layered on broken wiring reports noise. And if a property below turns out to be mechanically checkable, add it to the guard instead of describing it here: a check that runs in CI beats a check that runs when someone remembers to invoke this skill.
 
@@ -206,6 +206,7 @@ printf '{"session_id":"audit","tool_name":"Bash","tool_input":{"command":"git co
 ```
 
 - **Fires when it should.** Feed a payload the hook exists to act on. Assert the expected exit code (`2` to block for PreToolUse/PostToolUse, `0` for advisory) and that any refusal text lands on **stderr** -- a blocking hook's stdout is discarded, so the block arrives with no reason attached.
+- **Advice actually reaches the model.** An advisory hook on any event other than SessionStart, UserPromptSubmit, UserPromptExpansion or PostModelSwitch must print `{"hookSpecificOutput":{"hookEventName":"<event>","additionalContext":"..."}}` and nothing else on stdout. Plain text there goes to the debug log, so a hook that echoes its reminder passes every other check here and is still never read. Parse its stdout as JSON in the audit; `.claude/scripts/_hook-context.sh` is the fix.
 - **Stays silent when it should not fire.** Feed a payload it must ignore. Assert exit 0 and no output. This is the direction that catches an over-broad filter, and the first direction never catches it.
 - **Field extraction actually resolved.** Confirm the hook read the field it depends on. A hook that silently extracts an empty string is indistinguishable from a hook that deliberately chose not to fire, which is what makes this failure survive for months.
 

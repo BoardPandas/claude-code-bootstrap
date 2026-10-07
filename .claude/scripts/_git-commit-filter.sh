@@ -90,12 +90,34 @@ noglob_pop() {
   return 0
 }
 
+# Words that leave the NEXT word at a command position: shell keywords and
+# grouping (`{ git commit; }`, `if git commit; then`, `! git commit`) and the
+# plain precommand wrappers (`time git commit`, `env X=1 git commit`).
+#
+# Every walker below that tracks a command position asks this one question, so
+# they cannot disagree about it. They did: none of them knew these words, so
+# `{ git commit -m x; }` was not a commit at all to is_git_commit and the gate
+# silently never fired -- the unsafe direction. Teaching only one walker is no
+# better: the gate then fires, and judges the target repo or the opt-out from a
+# different reading of the same command.
+#
+# A wrapper's own flags (`env -i`, `time -p`, `exec -a name`) are not modelled.
+# The walk reads them as arguments and misses that commit rather than guess.
+is_command_prefix() {
+  case "$1" in
+    '{'|'}'|'!'|if|then|else|elif|do|while|until|time|command|exec|nohup|env) return 0 ;;
+  esac
+  return 1
+}
+
 # True when HOOK_COMMAND actually invokes `git commit`.
 #
 #   git commit -m "mentions git commit"     -> is a commit
 #   git add CHANGELOG.md && git commit      -> is a commit
 #   git -C /other/repo commit               -> is a commit
 #   GIT_AUTHOR_NAME=x git commit            -> is a commit
+#   { git commit -m x; }                    -> is a commit
+#   if git commit -m x; then ...; fi        -> is a commit
 #   grep -r 'git commit' docs/              -> not a commit
 #   git config --get commit.gpgsign         -> not a commit
 #   echo git commit                         -> not a commit
@@ -126,6 +148,7 @@ is_git_commit() {
     if [ "$tok" = ";" ]; then state=cmd; continue; fi
     case "$state" in
       cmd)
+        is_command_prefix "$tok" && continue
         case "$tok" in
           *=*)                         ;;  # env assignment prefix; still at a command position
           git|git.exe|*/git|*/git.exe) state=flags ;;
@@ -243,6 +266,7 @@ commit_target_dir() {
     esac
     case "$state" in
       cmd)
+        is_command_prefix "$tok" && continue
         case "$tok" in
           cd|pushd)                    state=cdarg ;;
           git|git.exe|*/git|*/git.exe) state=flags; gitdir=$curdir ;;
@@ -310,6 +334,7 @@ is_changelog_exempt() {
 #
 #   SKIP_CHANGELOG=1 git commit -m x          -> exempt
 #   export SKIP_CHANGELOG=1 && git commit     -> exempt
+#   { SKIP_CHANGELOG=1 git commit -m x; }     -> exempt
 #   git commit -m "SKIP_CHANGELOG=1 someday"  -> NOT exempt (quoted, so not a command)
 #
 # Reading only the hook process's own $SKIP_CHANGELOG is not enough, and that is
@@ -325,6 +350,8 @@ command_sets_skip_changelog() {
   result=1
   for tok in $(normalize_command); do
     if [ "$tok" = ";" ]; then state=cmd; continue; fi
+    # `env` has its own arm below: the assignments after it are still prefixes.
+    if [ "$state" = cmd ] && [ "$tok" != env ] && is_command_prefix "$tok"; then continue; fi
     case "$state" in
       cmd|env)
         case "$tok" in

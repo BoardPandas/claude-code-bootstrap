@@ -68,6 +68,40 @@ function frontmatter(text) {
   return m ? m[1] : null;
 }
 
+// The entries of a frontmatter list key, or null when the key is absent. Accepts
+// the three spellings Claude Code reads: a YAML block list, a flow list
+// (`[Read, Grep]`), and an inline string separated by commas or spaces. Splitting
+// ignores separators inside parentheses, so `Bash(git add *)` stays one entry.
+function frontmatterList(front, key) {
+  const lines = front.split(/\r?\n/);
+  const start = lines.findIndex((l) => new RegExp(`^${key}\\s*:`).test(l));
+  if (start === -1) return null;
+  const unquote = (v) => v.trim().replace(/^(["'])(.*)\1$/, "$2").trim();
+  const inline = lines[start].replace(new RegExp(`^${key}\\s*:`), "").trim();
+  if (inline) {
+    const items = [];
+    let depth = 0;
+    let cur = "";
+    for (const ch of inline.replace(/^\[|\]$/g, "")) {
+      if (ch === "(") depth++;
+      if (ch === ")") depth--;
+      if (depth === 0 && /[,\s]/.test(ch)) {
+        if (cur.trim()) items.push(unquote(cur));
+        cur = "";
+      } else cur += ch;
+    }
+    if (cur.trim()) items.push(unquote(cur));
+    return items;
+  }
+  const items = [];
+  for (const l of lines.slice(start + 1)) {
+    const m = l.match(/^\s+-\s*(.+?)\s*$/);
+    if (m) items.push(unquote(m[1]));
+    else if (l.trim() && !/^\s*#/.test(l)) break;
+  }
+  return items;
+}
+
 // ---------------------------------------------------------------- exemptions
 const EXEMPT_PATH = join(ROOT, ".claude/references/wiring-exemptions.json");
 let exemptions = [];
@@ -339,10 +373,12 @@ for (const dir of [".claude/skills", ".claude/agents"]) {
 // to use when context: fork is set"). Without the fork the binding is inert, so
 // it cannot supply a model either.
 const agentModel = new Map();
+const agentTools = new Map();
 for (const file of walk(join(ROOT, ".claude/agents")).filter((p) => p.endsWith(".md")).filter(notExcluded)) {
   const front = frontmatter(read(file)) ?? "";
   const name = file.split(/[\\/]/).pop().replace(/\.md$/, "");
   agentModel.set(name, front.match(/^\s*model\s*:\s*(\S+)/m)?.[1] ?? null);
+  agentTools.set(name, frontmatterList(front, "tools"));
 }
 
 for (const file of walk(join(ROOT, ".claude/skills")).filter((p) => p.endsWith("SKILL.md")).filter(notExcluded)) {
@@ -367,6 +403,35 @@ for (const file of walk(join(ROOT, ".claude/skills")).filter((p) => p.endsWith("
     errors.push(
       `${rel(file)}: inherits its model from agent: ${bound}, but that agent declares no model: ` +
         `either. Declare one on the agent.`,
+    );
+  }
+}
+
+// --------------- 12: a forked skill can only use the tools its agent holds
+// With context: fork and agent: X, the skill runs as X, with X's tools. The
+// skill's allowed-tools only PRE-APPROVES tools; it grants none that X lacks. So
+// an allowed-tools entry X's tools: does not cover is a step that can never run,
+// and the skill says nothing when it skips it. performance-review listed
+// Bash(npm ls*) and Bash(du*) and told the agent to run both, while the
+// performance agent held no Bash at all.
+//
+// Covered means listed exactly, or the agent lists the bare tool (Bash covers
+// Bash(du*)). An agent with no tools: inherits every tool, so it is skipped;
+// an unbound or non-forking skill is check 9's business.
+for (const file of walk(join(ROOT, ".claude/skills")).filter((p) => p.endsWith("SKILL.md")).filter(notExcluded)) {
+  const front = frontmatter(read(file)) ?? "";
+  const bound = front.match(/^\s*agent\s*:\s*(\S+)/m)?.[1];
+  if (!bound || !/^\s*context\s*:\s*fork\s*$/m.test(front)) continue;
+  const held = agentTools.get(bound);
+  const wanted = frontmatterList(front, "allowed-tools");
+  if (!held || !wanted || held.includes("*")) continue;
+  const missing = wanted.filter((t) => !held.includes(t) && !held.includes(t.replace(/\(.*$/, "")));
+  if (missing.length) {
+    errors.push(
+      `${rel(file)}: allowed-tools lists ${missing.join(", ")}, but the skill forks into agent: ${bound}, ` +
+        `whose tools: grants none of ${missing.length === 1 ? "it" : "them"}. allowed-tools only pre-approves; ` +
+        `the fork runs with the agent's tools, so that step can never run. Add ${missing.length === 1 ? "it" : "them"} ` +
+        `to .claude/agents/${bound}.md tools:, or drop ${missing.length === 1 ? "it" : "them"} from the skill.`,
     );
   }
 }

@@ -47,7 +47,7 @@ both skills, which let the two copies drift).
 
 ## Hook types
 
-1. **Command hooks**: `{ "type": "command", "command": "..." }` — Runs a shell command. Exit code 0 = allow, 2 = block (PreToolUse), non-zero = error. The command runs in the session's current directory, which moves with every `cd`, so call project scripts as `bash "$CLAUDE_PROJECT_DIR"/.claude/scripts/<name>.sh`. A cwd-relative `bash .claude/scripts/<name>.sh` fails from any subdirectory, and the hook silently does not run.
+1. **Command hooks**: `{ "type": "command", "command": "..." }` — Runs a shell command. Exit code 0 = allow, 2 = block (PreToolUse), non-zero = error. What Claude actually sees of its output depends on the event; see "Where hook output goes" below. The command runs in the session's current directory, which moves with every `cd`, so call project scripts as `bash "$CLAUDE_PROJECT_DIR"/.claude/scripts/<name>.sh`. A cwd-relative `bash .claude/scripts/<name>.sh` fails from any subdirectory, and the hook silently does not run.
 2. **HTTP hooks**: `{ "type": "http", "url": "https://..." }` — Sends an HTTP POST to a URL. The request body contains the event payload. Requires the URL to be listed in `settings.json` under `allowedHttpHookUrls`. Supports custom headers with env-var interpolation, e.g. `"headers": { "Authorization": "Bearer ${MY_WEBHOOK_TOKEN}" }`.
 3. **Prompt hooks**: `{ "type": "prompt", "prompt": "..." }` — Single-turn LLM judgment (yes/no decision). Useful for validation gates.
 4. **Agent hooks**: `{ "type": "agent", "prompt": "..." }` — Multi-turn subagent with tool access. Useful for complex validation or post-processing. Not accepted on `PermissionRequest` since v2.1.280 (its answer could never allow or deny); there it errors, so use a command or http hook.
@@ -63,6 +63,28 @@ Hooks can return structured output (`hookSpecificOutput`) to influence the sessi
 - **Stop / SubagentStop** — `hookSpecificOutput.additionalContext` feeds text back and continues the turn instead of ending it (self-review loops, "did you run the tests?" nudges).
 - **SessionStart** — `reloadSkills: true` rescans skill directories mid-session; `hookSpecificOutput.sessionTitle` sets the session title.
 
+## Where hook output goes
+
+Verified against code.claude.com/docs/en/hooks at v2.1.292. Getting this wrong makes an
+advisory hook silently inert: it runs, exits 0, looks healthy, and Claude never reads a
+word of it. Five of this template's hooks shipped that way until 0.21.5.
+
+- **Plain stdout reaches Claude only for** `SessionStart`, `UserPromptSubmit`,
+  `UserPromptExpansion` and `PostModelSwitch`. For every other event, `PreToolUse` and
+  `PostToolUse` included, plain stdout goes to the debug log.
+- **To advise on a tool event, print JSON** to stdout and exit 0:
+  `{"hookSpecificOutput":{"hookEventName":"PreToolUse","additionalContext":"..."}}`, with
+  `"PostToolUse"` for that event. `.claude/scripts/_hook-context.sh` builds it in pure bash
+  (`emit_context PreToolUse "$MSG"`). Print nothing else on stdout: output that does not
+  parse as JSON is plain text again, and goes to the debug log with the rest.
+- **To block, exit 2 with the reason on stderr.** stdout is discarded on exit 2. On
+  `PreToolUse` that refuses the call; on `PostToolUse` the tool has already run, so the
+  stderr text is only fed back to Claude.
+- **Codex reads the same JSON** for the hooks `.codex/hooks.json` mirrors, and likewise
+  ignores plain stdout on `PreToolUse` and `PostToolUse`.
+- **`SessionStart` reports `source: "fork"`** for a forked session (v2.1.214), not
+  `"resume"`, so a hook matching `startup|resume` to cover continued sessions skips forks.
+
 ## Matcher syntax
 
 How a `matcher` is read depends on its characters (official: code.claude.com/docs/en/hooks#matcher-patterns):
@@ -70,7 +92,7 @@ How a `matcher` is read depends on its characters (official: code.claude.com/doc
 - **Omitted, `""` or `"*"`**: every occurrence of the event.
 - **Only letters, digits, `_`, `-`, spaces, `,` and `|`**: exact names, alone or as a `|`/`,` list: `Bash`, `Write|Edit`, `Edit, Write`, `code-reviewer`. Prefer this form. (`FileChanged` and `StopFailure` accept only letters, digits, `_` and `|` here.)
 - **Any other character**: an *unanchored* JavaScript regex. `mcp__memory__.*` matches every tool on that server; `Edit.*` also matches `NotebookEdit`, so anchor with `^...$` for a whole-name match. An MCP server prefix needs the `.*`: bare `mcp__memory` is an exact name and matches no tool.
-- Non-tool events match on their own values, e.g. `SessionStart` on `startup|resume|clear|compact`, `SubagentStop` on the agent type.
+- Non-tool events match on their own values, e.g. `SessionStart` on `startup|resume|clear|compact|fork`, `SubagentStop` on the agent type.
 - Permission-rule syntax such as `Bash(git commit*)` or `Write(*)` in a matcher is a regex that matches no tool name, so the hook silently never runs. `npm run check:claude` fails on it, and on a regex that does not compile.
 - Filter on a tool's arguments with `if:` on the handler, which takes permission-rule syntax: `matcher: "Bash"` plus `if: "Bash(git commit*)"`, or `matcher: "Edit"` plus `if: "Edit(src/**)"`. `if:` names each tool itself, so a Write call needs its own `Write(src/**)` handler.
 - `if:` fires conservatively on commands it cannot read (substitutions, `bash -c`), so a script that must act only on one command also checks `tool_input.command` itself. LL-G `claude-code/hook-matcher-tool-names-only`.

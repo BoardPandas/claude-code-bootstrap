@@ -15,7 +15,9 @@
 # technology, and it treats a plan document as a plan (LL-G + BP) rather than as
 # just another markdown file.
 #
-# Always exits 0 (advisory). stdout is injected into the session as context.
+# Always exits 0 (advisory). The text reaches Claude only as JSON
+# additionalContext, via _hook-context.sh: plain PreToolUse stdout goes to the
+# debug log, so a reminder printed with echo is never read.
 #
 # LL-G: kb/claude-code/{hook-env-vars-do-not-exist,hook-empty-path-formats-repo,
 #                       hook-matcher-tool-names-only}.md
@@ -33,6 +35,7 @@ HOOK_INPUT=$(cat)
 # WindowsApps Store stub, which exits without output, so a lookup-based guard
 # reports success and every field silently comes back empty.
 . "$(dirname "${BASH_SOURCE[0]}")/_json-parser.sh"
+. "$(dirname "${BASH_SOURCE[0]}")/_hook-context.sh"
 
 FILE_PATH=$(json_field "$HOOK_INPUT" tool_input.file_path)
 SESSION_ID=$(json_field "$HOOK_INPUT" session_id)
@@ -122,6 +125,7 @@ fi
 LLG=https://raw.githubusercontent.com/BoardPandas/LL-G/main
 BP=https://raw.githubusercontent.com/BoardPandas/BP/main
 
+MSG=$(
 if [ "$KEY" = "plan" ]; then
   cat <<EOF
 === KNOWLEDGE BASE CHECK -- PLAN DOCUMENT ($FILE_PATH) ===
@@ -167,5 +171,7 @@ if [ -z "$STATE_FILE" ]; then
   echo "(note: $STATE_DIR is not writable, so this reminder cannot de-duplicate"
   echo " and will repeat on every write this session.)"
 fi
+)
 
+emit_context PreToolUse "$MSG"
 exit 0

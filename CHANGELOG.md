@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.21.5] - 2026-10-07
+
+### Fixed
+- **Advisory hooks now reach Claude.** On `PreToolUse` and `PostToolUse`, Claude Code sends a hook's plain stdout to the debug log; only `SessionStart`, `UserPromptSubmit`, `UserPromptExpansion` and `PostModelSwitch` show it to the model. The planning and pre-write knowledge-base reminders, the changelog reminder before a commit, the contribution prompt after one, and the release gate's "authorised by" note all printed plain text, so they ran on every call and were never read. Each now prints `hookSpecificOutput.additionalContext` JSON through a new pure-bash helper, `.claude/scripts/_hook-context.sh`, which Codex reads too. Blocking hooks are unchanged: exit 2 with the reason on stderr.
+- **The changelog gate sees commits inside groups, keywords and wrappers.** `{ git commit -m x; }`, `if git commit ...; then`, `! git commit`, and commits behind `time`, `command`, `exec`, `nohup` or `env` were not recognised as commits, so the gate and its reminder never fired on them. The three command walkers (is it a commit, which repo does it target, does it carry `SKIP_CHANGELOG=1`) now share one predicate for these words, so a grouped `cd other-repo && git commit` is judged against the other repo, and a `SKIP_CHANGELOG=1` prefix inside a group still opts out. Quoted text and `git commit-tree` inside a group are still not commits.
+- **Go and Rust files in a monorepo get formatted.** The format hook looked for `go.mod` and `Cargo.toml` only at the repo root, so a module below it (`services/api/go.mod`, `crates/core/Cargo.toml`) was never formatted. It now walks up from the edited file to the repo root, and still ignores a marker outside the repo.
+- **`/performance-review` can run its measurements.** It told the `performance` agent to run `npm ls` and `du`, and pre-approved both, but the agent had no Bash, so those steps never ran. The agent now holds `Bash(npm ls*)` and `Bash(du*)`, and nothing broader.
+- **The Codex section of `AGENTS.md` no longer says advisory hooks reach Claude but not Codex.** Neither runtime read their plain stdout; both read the JSON they print now.
+
+### Added
+- **The wiring guard checks a forked skill's tools against its agent** (check 12). A skill with `context: fork` and `agent: X` runs with X's tools; its `allowed-tools` only pre-approves. The guard now fails when an `allowed-tools` entry is neither in X's `tools:` nor covered by the bare tool name there (`Bash` covers `Bash(du*)`). Agents with no `tools:` inherit everything and are skipped.
+- **Tests for all of the above, in both directions:** grouped and keyword commits fire the gate while quoted text and `commit-tree` do not; each advisory hook's stdout parses as JSON with the right event name, and stays empty when the hook should be silent; `json_escape` round-trips backslashes, quotes and tabs; `gofmt` and `rustfmt` run for a module below the root but not for a file under no module or under one outside the repo. Every new check was mutation-tested.
+- **Docs.** The hooks reference has a "Where hook output goes" section (the visibility rule, the JSON shape, exit 2 for blocking, `SessionStart` `source: "fork"`). CLAUDE.md, `instructions.md`, `REVIEW.md` and `update-practices` now say that advice on a tool event must be JSON and that a forked skill gets its agent's tools.
+
 ## [0.21.4] - 2026-10-07
 
 ### Fixed

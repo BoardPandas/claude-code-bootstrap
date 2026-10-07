@@ -13,79 +13,32 @@
 // nothing. That bug was invisible for months.
 // (LL-G kb/claude-code/hook-validates-text-not-state.md)
 //
+// Shared fixtures live in changelog-gate-fixtures.mjs; grouped and keyword-
+// prefixed commits are covered in commit-gate-grouping.test.mjs.
+//
 // Run with: npm test
 
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, writeFileSync, rmSync, mkdirSync, readFileSync } from "node:fs";
-import { join, dirname, relative } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join, relative } from "node:path";
 import { tmpdir } from "node:os";
 
-const SCRIPTS = join(dirname(fileURLToPath(import.meta.url)), "..", ".claude", "scripts");
-const GATE = join(SCRIPTS, "check-changelog-staged.sh");
-
-// The hook parses tool_input.command, so a case is just a command string.
-// Assembled from parts so the literal verb never appears in a command this
-// session might run against the live hook.
-const GIT = "git";
-const COMMIT = "commit";
-const commitCmd = (rest = "-m x") => `${GIT} ${COMMIT} ${rest}`;
-
-function git(cwd, ...args) {
-  const r = spawnSync("git", args, { cwd, encoding: "utf8" });
-  if (r.status !== 0 && !args.includes("--verify")) {
-    throw new Error(`git ${args.join(" ")} failed: ${r.stderr}`);
-  }
-  return r.stdout.trim();
-}
-
-// Builds a throwaway repo with one commit already in history.
-function makeRepo({ withPackageJson = true, version = "1.0.0", prefix = "changelog-gate-" } = {}) {
-  const dir = mkdtempSync(join(tmpdir(), prefix));
-  git(dir, "init", "-q", ".");
-  git(dir, "config", "user.email", "t@example.com");
-  git(dir, "config", "user.name", "t");
-  if (withPackageJson) {
-    writeFileSync(join(dir, "package.json"), `{\n  "version": "${version}"\n}\n`);
-  }
-  writeFileSync(join(dir, "CHANGELOG.md"), `# Changelog\n\n## [${version}] - 2026-01-01\n- initial\n`);
-  git(dir, "add", "-A");
-  // -c core.hooksPath=/dev/null so a developer's own git hooks cannot interfere.
-  git(dir, "-c", "core.hooksPath=/dev/null", "commit", "-qm", "init");
-  return dir;
-}
-
-// Runs the gate against `dir` with the given command string. Returns its exit code.
-//
-// `payloadCwd` is the cwd the harness reports in the hook payload, i.e. where the
-// command is about to run. Left out by default so the common cases keep covering
-// the fallback to the hook process's own cwd.
-function runGate(dir, command, { env = {}, cwd = dir, payloadCwd } = {}) {
-  const payload = { tool_input: { command } };
-  if (payloadCwd) payload.cwd = payloadCwd;
-  const r = spawnSync("bash", [GATE], {
-    cwd,
-    input: JSON.stringify(payload),
-    encoding: "utf8",
-    env: { ...process.env, ...env },
-  });
-  return { code: r.status, stderr: r.stderr };
-}
-
-// Brings a repo built by makeRepo into compliance: a bumped version and a
-// changelog section naming it.
-function satisfyContract(dir) {
-  writeFileSync(
-    join(dir, "CHANGELOG.md"),
-    "# Changelog\n\n## [1.0.1] - 2026-08-23\n- real entry\n\n## [1.0.0] - 2026-01-01\n- initial\n",
-  );
-  writeFileSync(join(dir, "package.json"), '{\n  "version": "1.0.1"\n}\n');
-}
-
-const ALLOW = 0;
-const BLOCK = 2;
+import {
+  SCRIPTS,
+  GIT,
+  COMMIT,
+  commitCmd,
+  git,
+  makeRepo,
+  runGate,
+  satisfyContract,
+  withPair,
+  reminderText,
+  ALLOW,
+  BLOCK,
+} from "./changelog-gate-fixtures.mjs";
 
 describe("refuses commits that break the contract", () => {
   test("nothing changed at all", () => {
@@ -188,20 +141,8 @@ describe("allows commits that satisfy it", () => {
 // because the session's happens to be current.
 // (LL-G kb/claude-code/hook-cwd-is-not-the-commit-target-repo.md)
 describe("judges the repo the command targets, not the session's", () => {
-  // The session repo is deliberately the OPPOSITE of the target on every case, so
+  // withPair makes the session repo the OPPOSITE of the target on every case, so
   // a gate that reads the wrong tree cannot accidentally return the right answer.
-  function withPair(sessionSatisfied, targetSatisfied, body) {
-    const session = makeRepo();
-    const target = makeRepo();
-    try {
-      if (sessionSatisfied) satisfyContract(session);
-      if (targetSatisfied) satisfyContract(target);
-      body(session, target);
-    } finally {
-      rmSync(session, { recursive: true, force: true });
-      rmSync(target, { recursive: true, force: true });
-    }
-  }
 
   test("cd into another repo: allows when THAT repo satisfies the contract", () => {
     withPair(false, true, (session, target) => {
@@ -423,7 +364,7 @@ test("the advisory reminder agrees with the blocker", () => {
       encoding: "utf8",
     });
     assert.equal(speak.status, 0, "the reminder is advisory and must never block");
-    assert.match(speak.stdout, /CHANGELOG & VERSION UPDATE REQUIRED/);
+    assert.match(reminderText(speak.stdout), /CHANGELOG & VERSION UPDATE REQUIRED/);
 
     writeFileSync(
       join(dir, "CHANGELOG.md"),

@@ -273,6 +273,31 @@ const cases = [
     expect: /without context: fork/,
   },
   {
+    // performance-review listed Bash(npm ls*) and Bash(du*) and said to run both,
+    // while the performance agent it forks into held no Bash at all.
+    name: "12. forked skill pre-approves a tool its agent does not hold",
+    mutate: ({ write }) => {
+      write(".claude/agents/reviewer.md", "---\nname: reviewer\nmodel: sonnet\ntools:\n  - Read\n  - Grep\n---\n\nAgent.\n");
+      write(
+        ".claude/skills/bound/SKILL.md",
+        "---\nname: bound\ncontext: fork\nagent: reviewer\nallowed-tools:\n  - Read\n  - Bash(du*)\n---\n\nSkill.\n",
+      );
+    },
+    expect: /bound\/SKILL\.md: allowed-tools lists Bash\(du\*\), but the skill forks into agent: reviewer/,
+  },
+  {
+    // A scoped grant does not cover the bare tool: Bash(npm ls*) is not Bash.
+    name: "12b. agent holds a scoped Bash, skill pre-approves all of Bash",
+    mutate: ({ write }) => {
+      write(".claude/agents/reviewer.md", "---\nname: reviewer\nmodel: sonnet\ntools: Read, Bash(npm ls*)\n---\n\nAgent.\n");
+      write(
+        ".claude/skills/bound/SKILL.md",
+        "---\nname: bound\ncontext: fork\nagent: reviewer\nallowed-tools: Read Bash\n---\n\nSkill.\n",
+      );
+    },
+    expect: /allowed-tools lists Bash, but the skill forks into agent: reviewer/,
+  },
+  {
     name: "4. CLAUDE.md over its byte ceiling",
     mutate: ({ write }) => write("CLAUDE.md", `# Fixture\n\n${"x".repeat(17 * 1024)}\n`),
     expect: /over the 16384-byte ceiling/,
@@ -349,6 +374,27 @@ test("valid matcher forms pass check 3", () => {
   for (const m of ["Bash", "Write|Edit", "Edit, Write", "code-reviewer", "*", "", "mcp__memory__.*", "^Edit$"]) {
     const { code, out } = run(({ write }) => write(".claude/settings.json", matcherSettings(m)));
     assert.equal(code, 0, `matcher ${JSON.stringify(m)} should pass:\n${out}`);
+  }
+});
+
+// Check 12 must not tax a skill whose agent really can run what it pre-approves,
+// nor judge skills whose agent binding is not in effect.
+test("covered allowed-tools pass check 12", () => {
+  const agent = (tools) => `---\nname: reviewer\nmodel: sonnet\n${tools}---\n\nAgent.\n`;
+  const skill = (extra) =>
+    `---\nname: bound\n${extra}allowed-tools:\n  - Read\n  - "Bash(du*)"\n---\n\nSkill.\n`;
+  const passing = [
+    ["exact entries", agent("tools:\n  - Read\n  - Bash(du*)\n"), skill("context: fork\nagent: reviewer\n")],
+    ["the bare tool covers a scoped entry", agent("tools: [Read, Bash]\n"), skill("context: fork\nagent: reviewer\n")],
+    ["an agent with no tools: inherits everything", agent(""), skill("context: fork\nagent: reviewer\n")],
+    ["a fork with no agent: binding is not judged", agent("tools: Read\n"), skill("model: haiku\ncontext: fork\n")],
+  ];
+  for (const [why, agentMd, skillMd] of passing) {
+    const { code, out } = run(({ write }) => {
+      write(".claude/agents/reviewer.md", agentMd);
+      write(".claude/skills/bound/SKILL.md", skillMd);
+    });
+    assert.equal(code, 0, `${why} should pass:\n${out}`);
   }
 });
 

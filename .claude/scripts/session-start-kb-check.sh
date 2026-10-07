@@ -6,7 +6,10 @@
 # matching file is touched. This nudge guarantees the mandate is visible at the start
 # of every session, including sessions that never enter plan mode.
 #
-# Always exits 0 (advisory). stdout is injected into the session as context.
+# Always exits 0 (advisory). Plain stdout is injected into the session as context
+# here because this is SessionStart, one of the few events where that is true.
+# Do not copy the pattern to a PreToolUse or PostToolUse hook: there plain stdout
+# goes to the debug log, so use emit_context from _hook-context.sh instead.
 
 cat <<'EOF'
 === KNOWLEDGE BASE CHECK (RULE 1 + RULE 3) ===

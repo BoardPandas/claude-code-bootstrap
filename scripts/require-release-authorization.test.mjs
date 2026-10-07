@@ -110,7 +110,11 @@ test("--dry-run is exempt", () => {
 test("a named authorisation on the command itself lets the deploy through", () => {
   const { status, stdout } = runGate("RELEASE_AUTHORIZED_BY=chaz@wellforceit.com railway up");
   assert.equal(status, 0);
-  assert.match(stdout, /Release authorised by: chaz@wellforceit\.com/);
+  // As additionalContext JSON: plain PreToolUse stdout goes to the debug log, so
+  // the record of who authorised the release would reach no one.
+  const out = JSON.parse(stdout).hookSpecificOutput;
+  assert.equal(out.hookEventName, "PreToolUse");
+  assert.match(out.additionalContext, /Release authorised by: chaz@wellforceit\.com/);
 });
 
 test("authorisation set in a previous shell command does not carry", () => {

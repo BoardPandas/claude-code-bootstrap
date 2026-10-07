@@ -27,7 +27,8 @@
 // discovery and its 32 KiB default cap, `.agents/skills` discovery, agents/openai.yaml
 // `policy.allow_implicit_invocation`, `.codex/agents/*.toml` custom agents, and the
 // hooks.json schema (no handler-level `if`; `apply_patch` sends a patch in
-// tool_input.command, not tool_input.file_path; Stop requires JSON on stdout).
+// tool_input.command, not tool_input.file_path; Stop requires JSON on stdout; plain
+// stdout on PreToolUse/PostToolUse is ignored, additionalContext JSON is read).
 //
 // Node built-ins only, no dependencies. scripts/sync-codex.test.mjs asserts the --check
 // paths still fire.
@@ -551,7 +552,15 @@ function generateAgentsMd(settings, skills) {
   if (notCarried.length) {
     section.push("", "### Hooks that do not carry over", "");
     for (const n of notCarried) section.push(`- ${n}`);
-    section.push("", "Blocking hooks (exit 2 + stderr) behave the same in Codex. Advisory hooks that print plain", "stdout on tool events reach Claude but not Codex, so follow the rules above without them.");
+    // Neither runtime shows a tool event's plain stdout to the model; both read
+    // hookSpecificOutput.additionalContext JSON. Saying advisory hooks "reach Claude
+    // but not Codex" was wrong on both counts while they printed plain text.
+    section.push(
+      "",
+      "Blocking hooks (exit 2 + stderr) behave the same in Codex, and so do the mirrored advisory hooks,",
+      "which emit `additionalContext` JSON that both runtimes read. The hooks listed above do not run in",
+      "Codex at all, so follow the rules above without them.",
+    );
   }
 
   if (scoped.length) {

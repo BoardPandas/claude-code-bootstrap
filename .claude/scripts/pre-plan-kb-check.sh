@@ -9,13 +9,17 @@
 #                    this is the last point at which an unchecked plan can be
 #                    revised instead of implemented.
 #
-# Always exits 0 (advisory, not blocking) -- the output is seen by Claude.
+# Always exits 0 (advisory, not blocking). The text reaches Claude only as JSON
+# additionalContext, via _hook-context.sh: plain PreToolUse stdout goes to the
+# debug log, so the echo-and-exit form this used to be was never read at all.
 # Blocking here would gate every plan on a network fetch, which is worse than a
 # skipped check.
 
 set -u
 
 HOOK_INPUT=$(cat)
+
+. "$(dirname "${BASH_SOURCE[0]}")/_hook-context.sh"
 
 # $TOOL_NAME does not exist as an env var; a guard clause on it would disable the
 # entire hook. Read it from the payload.
@@ -35,7 +39,7 @@ LLG=https://raw.githubusercontent.com/BoardPandas/LL-G/main
 BP=https://raw.githubusercontent.com/BoardPandas/BP/main
 
 if [ "$TOOL_NAME" = "ExitPlanMode" ]; then
-  cat <<EOF
+  MSG=$(cat <<EOF
 === KNOWLEDGE BASE CHECK -- BEFORE PRESENTING THIS PLAN ===
 
 Confirm you consulted both knowledge bases while building this plan:
@@ -50,8 +54,9 @@ Every plan must end with a "Lessons Learned / Gotchas" section. Relevant LL-G
 entries belong there, cited by slug.
 ===
 EOF
+)
 else
-  cat <<EOF
+  MSG=$(cat <<EOF
 === KNOWLEDGE BASE CHECK REQUIRED ===
 
 Before creating this plan, you MUST consult both knowledge bases for relevant entries:
@@ -70,6 +75,8 @@ Incorporate relevant gotchas and practices into your plan BEFORE writing it.
 If you already checked both KBs earlier in this conversation for the same technologies, you may proceed.
 ===
 EOF
+)
 fi
 
+emit_context PreToolUse "$MSG"
 exit 0

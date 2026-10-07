@@ -70,6 +70,24 @@ esac
 # wrong style, and the diff looks like the author did it.
 run() { "$@" >/dev/null 2>&1; }
 
+# True when <name> exists in the file's directory or any parent up to and
+# including the repo root. Go and Rust declare a module where the module lives,
+# not at the repo root: in a monorepo go.mod sits in services/api/ and Cargo.toml
+# in crates/core/, so a root-only check meant gofmt and rustfmt never ran on a
+# single file there, and nothing anywhere said so.
+has_marker_upward() {
+  local dir
+  dir=$(dirname "$FILE_PATH")
+  while :; do
+    [ -f "$dir/$1" ] && return 0
+    [ "$dir" = "$REPO_ROOT" ] && return 1
+    case "$dir" in
+      "$REPO_ROOT"/*) dir=$(dirname "$dir") ;;
+      *) return 1 ;;
+    esac
+  done
+}
+
 format_js_like() {
   if [ -f "$REPO_ROOT/biome.json" ] || [ -f "$REPO_ROOT/biome.jsonc" ]; then
     run npx --no-install biome format --write "$FILE_PATH" && return 0
@@ -100,9 +118,9 @@ case "$FILE_PATH" in
   *.py)
     format_python ;;
   *.rs)
-    [ -f "$REPO_ROOT/Cargo.toml" ] && run rustfmt "$FILE_PATH" ;;
+    has_marker_upward Cargo.toml && run rustfmt "$FILE_PATH" ;;
   *.go)
-    [ -f "$REPO_ROOT/go.mod" ] && run gofmt -w "$FILE_PATH" ;;
+    has_marker_upward go.mod && run gofmt -w "$FILE_PATH" ;;
   *.sh|*.bash)
     [ -f "$REPO_ROOT/.editorconfig" ] && run shfmt -w "$FILE_PATH" ;;
 esac

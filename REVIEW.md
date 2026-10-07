@@ -51,7 +51,8 @@ the rule. Do not invent standards during review.
 - Changelog section and matching version bump present (see `.claude/rules/commit-changelog.md`).
 - Files under 500 lines; errors handled explicitly; inputs validated at boundaries.
 - No absolute paths or out-of-repo references inside `.claude/`.
-- Every skill resolves to a model; frontmatter keys hyphenated.
+- Every skill resolves to a model; a forked skill's `allowed-tools` are in its agent's `tools:`; frontmatter keys hyphenated.
+- An advisory hook on a tool event prints `additionalContext` JSON (`_hook-context.sh`), never plain stdout.
 
 ### 5. Test coverage
 

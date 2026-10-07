@@ -21,6 +21,7 @@ set -u
 HOOK_INPUT=$(cat)
 
 . "$(dirname "${BASH_SOURCE[0]}")/_json-parser.sh"
+. "$(dirname "${BASH_SOURCE[0]}")/_hook-context.sh"
 
 CMD=$(json_field "$HOOK_INPUT" tool_input.command)
 # Degraded path: no working interpreter. Use the over-eager extraction, because
@@ -156,9 +157,10 @@ is_production_deploy || exit 0
 RELEASE_AUTH=$(printf '%s' "$SCAN" | sed -n 's/.*RELEASE_AUTHORIZED_BY=\([A-Za-z0-9._@-]\{1,\}\).*/\1/p' | head -1)
 
 if [ -n "$RELEASE_AUTH" ]; then
-  # Recorded, not just allowed: the session transcript now carries who authorised
-  # this deploy, which is the artifact an audit actually needs.
-  echo "Release authorised by: $RELEASE_AUTH"
+  # Recorded, not just allowed: the session now carries who authorised this
+  # deploy, which is the artifact an audit actually needs. As JSON, because plain
+  # PreToolUse stdout goes to the debug log and the note would reach no one.
+  emit_context PreToolUse "Release authorised by: $RELEASE_AUTH"
   exit 0
 fi
 
