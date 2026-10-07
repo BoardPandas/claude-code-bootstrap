@@ -19,7 +19,6 @@ on:
     paths-ignore:
       - "**/*.md"
       - "CHANGELOG.md"
-      - ".claude/evals/**"
   pull_request:
   workflow_dispatch:
 
@@ -104,7 +103,8 @@ jobs:
           # in scope. --allowed-tools alone only pre-approves and removes nothing;
           # .claude/settings.json would still hand it WebFetch and Bash(git clone).
           # --tools removes every other built-in, --strict-mcp-config drops MCP,
-          # --permission-mode default refuses anything unapproved (see run-evals.mjs).
+          # --permission-mode default refuses anything unapproved (check 11 in
+          # scripts/check-claude-wiring.mjs enforces all three).
           if ! claude -p "$REVIEW_PROMPT" --tools Read,Glob,Grep --strict-mcp-config \
               --permission-mode default --allowed-tools Read,Glob,Grep > /tmp/review.md 2>&1; then
             echo "::warning::Review invocation failed; see log."

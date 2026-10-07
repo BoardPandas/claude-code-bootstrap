@@ -5,7 +5,7 @@ name: Scheduled security scan
 # somebody happens to run it again. This is the recurring half.
 on:
   schedule:
-    # Mondays 07:00 UTC, an hour after the evals so the two do not contend.
+    # Mondays 07:00 UTC.
     - cron: "0 7 * * 1"
   workflow_dispatch:
 

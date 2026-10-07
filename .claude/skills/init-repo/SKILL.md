@@ -275,11 +275,10 @@ The full optional-settings catalog (`attribution.*`, `autoUpdatesChannel`, `sand
 
 For attribution, language, and autoUpdatesChannel preferences: in an interactive session, ask the user with AskUserQuestion before setting them. In a non-interactive or autonomous run, leave them unset and list them in the final report as pending decisions. Configure the rest based on project analysis.
 
-## Step 12b: Create the Review Policy and Eval Suite
+## Step 12b: Create the Review Policy
 
-Both are required: `scripts/check-claude-wiring.mjs` errors when `REVIEW.md` is missing or
-missing a required section, and an absent eval corpus means nothing regression-tests the
-configuration this skill just built.
+Required: `scripts/check-claude-wiring.mjs` errors when `REVIEW.md` is missing or
+missing a required section.
 
 ### REVIEW.md
 
@@ -296,23 +295,6 @@ Copy the template's `REVIEW.md` to the repo root, then tailor it to this project
 - Point the "Do not report" section at whatever this project's formatter and CI actually
   cover, so review is not duplicating a machine.
 
-### Eval corpus
-
-Create `.claude/evals/` with the template's `README.md` and a `cases/` corpus, plus
-`scripts/run-evals.mjs`, `scripts/run-evals.test.mjs`, and an `evals` entry in
-`package.json`.
-
-Seed the corpus from the template, dropping any case whose `targets` do not exist here --
-a case pointing at a missing file fails validation on arrival. Then add project-specific
-cases until the 20-case floor is met, drawn from:
-
-- Every path-scoped rule created in Step 7: does the rule actually change behaviour for a
-  file it claims to cover?
-- Every hook configured in Step 11: does its message land, and does a blocking one refuse
-  for the stated reason?
-- Every stack-specific convention written into CLAUDE.md.
-- Each entry in the `Things Claude Gets Wrong` section.
-
 ### Codex mirror
 
 Copy the template's `scripts/sync-codex.mjs` and `scripts/sync-codex.test.mjs`, add
@@ -327,10 +309,9 @@ Verify before moving on:
 ```bash
 npm run check:claude
 npm test
-npm run evals -- --validate
 ```
 
-All three must pass. A scaffold that ships red teaches the team to ignore the checks.
+Both must pass. A scaffold that ships red teaches the team to ignore the checks.
 
 ## Step 13: Create instructions.md
 

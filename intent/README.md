@@ -36,6 +36,6 @@ engineer owns it and the product owner owns these two.
 ## Closing the loop
 
 When work shipped from an intent produces a lesson, route it to LL-G with `/add-lesson`,
-and — if it concerns this repo's own configuration — add a regression case under
-`.claude/evals/cases/`. Fill the `Lessons Learned / Gotchas` section of the intent so the
+and — if it concerns this repo's own configuration and is statically detectable — add a
+check to `scripts/check-claude-wiring.mjs`. Fill the `Lessons Learned / Gotchas` section of the intent so the
 record is complete where someone will actually look for it.

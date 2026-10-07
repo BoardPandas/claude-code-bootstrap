@@ -93,8 +93,8 @@ pattern, not N findings. Report it once and say where it recurs.
 ## Do not report
 
 - **Formatting.** The formatter owns it. If it is wrong, fix the formatter config.
-- **Anything already flagged by CI.** The wiring guard, `npm test`, and the eval suite all
-  report for themselves. Repeating them adds noise and no information.
+- **Anything already flagged by CI.** The wiring guard and `npm test` both report for
+  themselves. Repeating them adds noise and no information.
 - **Style that matches surrounding code.** Consistency beats your preference. Change the
   convention in `CLAUDE.md` first if you disagree with it.
 - **Missing abstractions in code under ~3 repetitions.** `CLAUDE.md` explicitly prefers
@@ -123,12 +123,12 @@ cannot write one, it is not Important — either demote it to a nit or drop it.
 - Nits are optional. Declining one needs no justification.
 - When a review finding reveals a repeating mistake, add it to **Things Claude Gets Wrong**
   in `CLAUDE.md` and route the generalisable version to LL-G with `/add-lesson`.
-- When a finding concerns this configuration, add a regression case under
-  `.claude/evals/cases/` so it cannot come back.
+- When a finding concerns this configuration and can be detected statically, add a check
+  to `scripts/check-claude-wiring.mjs` so it cannot come back.
 
 ## Tuning
 
 Review this file monthly against what actually shipped broken. Findings that never caught a
-real defect should be removed; defect classes that reached main should become a pass, a
-guard check, or an eval case. A review policy that only grows is a review policy nobody
+real defect should be removed; defect classes that reached main should become a pass or a
+guard check. A review policy that only grows is a review policy nobody
 finishes reading.

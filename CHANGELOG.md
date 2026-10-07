@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.21.0] - 2026-10-06
+
+### Removed
+- **The configuration eval suite.** `npm run evals`, the 25-case corpus in `.claude/evals/`, `scripts/run-evals.mjs` and its self-test, and the `agent-evals.yml` workflow are gone. The template's checks are now `npm run check:claude` and `npm test`, both of which run in CI on every push. `init-repo` no longer creates an eval corpus. `update-practices` no longer syncs or audits one; a repo that adopted the suite earlier keeps it as its own, and the skill leaves it alone. Where `add-lesson`, `spec-developer`, `REVIEW.md` and the intent README said to add an eval case for a configuration lesson, they now say to add a wiring-guard check when the defect can be detected statically. Guard check 11 (a headless `claude` restricted by `--allowed-tools` must also be confined) stays, since it also covers the AI review workflow.
+
 ## [0.20.5] - 2026-10-03
 
 ### Fixed

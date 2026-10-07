@@ -30,9 +30,6 @@ This repository provides a pre-configured `.claude/` folder that gives Claude Co
     llg-check.md           # LL-G knowledge base check before code changes
     bp-check.md            # BP best practices check before config changes
     commit-changelog.md    # Changelog and version bump enforcement
-  evals/                   # Configuration regression tests
-    README.md              # How the suite works and how to grow it
-    cases/*.md             # The corpus (20-case floor, one behaviour per case)
   scripts/                 # Hook scripts
   skills/                  # Executable skill definitions
     capture-intent/SKILL.md   # Capture an idea as intent.md (stage 1)
@@ -75,7 +72,6 @@ README.md                  # GitHub-facing README
 scripts/
   check-claude-wiring.mjs  # Wiring guard (npm run check:claude)
   sync-codex.mjs           # Codex mirror generator (npm run sync:codex; --check runs in check:claude)
-  run-evals.mjs            # Eval runner (npm run evals)
   *.test.mjs               # Self-tests asserting each check still fires
 intent/<slug>/             # intent.md + spec.md (created on first use)
 tasks/                     # Saved plans (created on first use)
@@ -161,36 +157,7 @@ The nit cap is a correctness measure, not a politeness measure — reviews that 
 defects under twenty style notes get skimmed, and the defects ship.
 
 Tune it monthly against what actually shipped broken: passes that never caught a real
-defect come out, and defect classes that reached main become a pass, a guard check, or an
-eval case.
-
----
-
-## Configuration Evals (`.claude/evals/`)
-
-`npm run check:claude` proves the configuration is **wired**. It cannot prove the
-configuration still **works** — a skill whose body was replaced wholesale by a template
-sync, a CLAUDE.md rule pruned one line too far, or a hook whose refusal message no longer
-lands all pass the guard while behaving differently. The evals are what notice.
-
-```bash
-npm run evals -- --validate   # structure only: no API calls, no cost, every push
-npm run evals                 # behavioural: needs the claude CLI, costs tokens
-npm run evals -- --only=<id>  # one case, for iterating
-```
-
-The behavioural pass runs each case's `## Task` through `claude -p` restricted to
-`Read,Glob,Grep` in plan mode — it cannot mutate the repo it is measuring — then grades the
-transcript against the case's `## Expect` bullets.
-
-**A case that cannot be run is a failure, never a skip.** A suite that quietly degrades to
-zero cases is indistinguishable from one that passes.
-
-Add a case whenever a production incident traces back to configuration, `/add-lesson`
-records a gotcha about this configuration, or an entry is added to `Things Claude Gets
-Wrong` in CLAUDE.md. The floor is 20 cases; shrinking past it has to be deliberate.
-
-Full format and authoring guidance: `.claude/evals/README.md`.
+defect come out, and defect classes that reached main become a pass or a guard check.
 
 ---
 
