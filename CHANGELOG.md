@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.21.7] - 2026-10-08
+
+### Fixed
+- **Commit and merge messages have a working home when a session has no scratchpad.** `check-commit-herestring.sh`, `triage-issues` and `merge-worktrees` said only "the session scratchpad", which harnesses without one (Codex, plain `claude -p`) cannot follow. The obvious substitute, a `mktemp` file, is outside the working directory, where the Write tool is refused in `acceptEdits` mode and in non-interactive runs. They now name the fallback: `.agent-scratch/` at the repo root, created with a `.gitignore` of `*` so it ignores itself. It was checked with `claude -p --permission-mode acceptEdits`: the `mktemp` path was refused, and `.agent-scratch/` was written and stayed out of `git status`.
+
+### Changed
+- **`/add-lesson` and `/add-practice` use the same `.agent-scratch/` directory** in place of `.kb-scratch/` (0.21.6), so the template has one scratch directory. They now delete only their own `llg-*`/`bp-*` files afterwards rather than the whole directory, because a commit message may be waiting in it.
+
 ## [0.21.6] - 2026-10-08
 
 ### Fixed

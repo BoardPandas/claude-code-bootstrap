@@ -13,6 +13,9 @@
 # Correct approach: write the message to a file OUTSIDE .git/ (the settings
 # deny Edit(**/.git/**), so the Write tool cannot create it there) -- e.g. the
 # session scratchpad -- then run: git commit -F <that file>
+# With no scratchpad, use a self-ignoring .agent-scratch/ at the repo root. Not
+# a mktemp path: outside the working tree, Write is refused in acceptEdits and
+# non-interactive runs, as it is under .claude/ (a protected path).
 #
 # Exit 0 = allow. Exit 2 = block (stderr is shown to Claude).
 
@@ -35,7 +38,9 @@ if printf '%s' "$HOOK_COMMAND" | grep -qF "@'" || printf '%s' "$HOOK_COMMAND" | 
     echo ""
     echo "Use a message file instead (shell-agnostic, cannot be misquoted):"
     echo "  1. Write the full commit message to a file outside .git/, e.g. the"
-    echo "     session scratchpad (Write is denied under .git/ by settings.json)"
+    echo "     session scratchpad (Write is denied under .git/ by settings.json)."
+    echo "     With no scratchpad, use .agent-scratch/ at the repo root, created with:"
+    echo "     mkdir -p .agent-scratch && printf '*\\n' > .agent-scratch/.gitignore"
     echo "  2. Run: git commit -F <that file>"
     echo "  3. Delete the file"
   } >&2
