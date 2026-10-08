@@ -150,7 +150,9 @@ COMMIT YOUR WORK ON YOUR OWN BRANCH before you finish, or it will be discarded
 when the worktree is removed:
   1. git add -A
   2. Write the commit message to a file in your scratchpad with the Write tool
-     (never under .git/ -- settings.json denies Write/Edit there)
+     (never under .git/ -- settings.json denies Write/Edit there). With no
+     scratchpad, use .agent-scratch/ at the worktree root, created with
+     `mkdir -p .agent-scratch && printf '*\n' > .agent-scratch/.gitignore`
   3. git commit -F <that file>
   4. Delete the file
   Never use `git commit -m`. Never use here-string (@'...'@) syntax.
@@ -201,7 +203,9 @@ Then for each unit that reported `STATUS: RESOLVED`:
 4. **Commit** — message to a file, never inline:
    ```bash
    git add -A
-   # Write the message to a scratchpad file with the Write tool (Write is denied under .git/), then:
+   # Write the message to a scratchpad file with the Write tool (Write is denied under .git/).
+   # With no scratchpad, run `mkdir -p .agent-scratch && printf '*\n' > .agent-scratch/.gitignore`
+   # and use .agent-scratch/commit-msg.txt in place of "$SCRATCHPAD/commit-msg.txt". Then:
    git commit -F "$SCRATCHPAD/commit-msg.txt"
    # then delete that file
    ```

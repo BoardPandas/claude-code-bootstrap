@@ -73,10 +73,10 @@ If the concern command fails with a `404`, the concern folder does not exist yet
 
 ## Step 4: Create the entry file
 
-1. Create the scratch directory, then use the Write tool to save the entry markdown to `.kb-scratch/bp-entry.md`:
+1. Create the scratch directory, then use the Write tool to save the entry markdown to `.agent-scratch/bp-entry.md`:
 
    ```
-   mkdir -p .kb-scratch && printf '*\n' > .kb-scratch/.gitignore
+   mkdir -p .agent-scratch && printf '*\n' > .agent-scratch/.gitignore
    ```
 
    The inner `.gitignore` of `*` makes the directory ignore itself, so no scratch file can be
@@ -146,7 +146,7 @@ Compute the new content of `practices/<concern>/llms.txt`:
   - [<Title>](<slug>.md): <one-line description>. <PRIORITY>.
   ```
 
-Write the full new file content to `.kb-scratch/bp-index.md` with the Write tool. Do not push it yet.
+Write the full new file content to `.agent-scratch/bp-index.md` with the Write tool. Do not push it yet.
 
 Keep the whole bullet on one line -- BP's guard counts entries by line, and only bullets under
 the `## Entries` heading are counted. If the concern carries companion files (a runbook, a
@@ -169,7 +169,7 @@ practices belong on the shelf. The file has a hard 12 KB budget that fails CI, b
 session loads it under RULE 3 (two descriptions had already grown into run-on sentences, one of
 them 725 bytes).
 
-Write the updated master content to `.kb-scratch/bp-master.md`.
+Write the updated master content to `.agent-scratch/bp-master.md`.
 
 ### Now commit all three files as ONE commit
 
@@ -178,9 +178,9 @@ Write the updated master content to `.kb-scratch/bp-master.md`.
   --repo BoardPandas/BP \
   --base "$BASE" \
   --message "Add <concern> practice: <title>" \
-  practices/<concern>/<slug>.md  .kb-scratch/bp-entry.md \
-  practices/<concern>/llms.txt   .kb-scratch/bp-index.md \
-  llms.txt                       .kb-scratch/bp-master.md
+  practices/<concern>/<slug>.md  .agent-scratch/bp-entry.md \
+  practices/<concern>/llms.txt   .agent-scratch/bp-index.md \
+  llms.txt                       .agent-scratch/bp-master.md
 ```
 
 Add `--dry-run` first if you want to see the paths and byte counts without writing.
@@ -194,7 +194,7 @@ arrived in an LL-G shelf index that way on 2026-09-10.
 nothing was clobbered. Re-read the two index files, re-apply your edits on top of the NEW
 content, take a fresh `BASE`, and run the command again. Never retry with force.
 
-Then delete the scratch files: `rm -rf .kb-scratch`
+Then delete the scratch files: `rm -f .agent-scratch/bp-*.md` (leave the directory: other skills share it)
 
 ## Step 7: Confirm
 
