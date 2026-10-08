@@ -74,16 +74,18 @@ If the tech command fails with a `404`, the tech folder does not exist yet -- yo
 
 ## Step 4: Create the entry file
 
-1. Create the scratch directory, then use the Write tool to save the entry markdown to `.claude/kb-scratch/llg-entry.md`:
+1. Create the scratch directory, then use the Write tool to save the entry markdown to `.kb-scratch/llg-entry.md`:
 
    ```
-   mkdir -p .claude/kb-scratch && printf '*\n' > .claude/kb-scratch/.gitignore
+   mkdir -p .kb-scratch && printf '*\n' > .kb-scratch/.gitignore
    ```
 
    The inner `.gitignore` of `*` makes the directory ignore itself, so no scratch file can be
    committed in any repo, whatever that repo's own `.gitignore` says. Do not use `.git/` for
    scratch: the template's `Edit(**/.git/**)` deny rule blocks the Write tool there, and the
-   files then cannot be cleaned up either.
+   files then cannot be cleaned up either. Do not use `.claude/` either: Claude Code treats it
+   as a protected path, so the Write tool is refused there in `acceptEdits` mode and in
+   non-interactive runs. A path outside the working directory is refused the same way.
 
    Content format:
    ```
@@ -131,7 +133,7 @@ Compute the new content of `kb/<tech>/llms.txt`:
   - [<Title>](<slug>.md): <one-line description>. <SEVERITY>.
   ```
 
-Write the full new file content to `.claude/kb-scratch/llg-index.md` with the Write tool. Do not push it yet.
+Write the full new file content to `.kb-scratch/llg-index.md` with the Write tool. Do not push it yet.
 
 Append the bullet in the file's **own** format: most shelves use `- [Title](slug.md): ... SEV.`
 but a few prefix the severity (`- HIGH [Title](slug.md): ...`). Keep the existing shape, and
@@ -152,7 +154,7 @@ description. Master-index lines are one clause naming the technology and its sco
 specific gotchas belong on the shelf. The file has a hard 20 KB budget that fails CI, because
 every session loads it under RULE 1 (it once reached 51 KB of shelf summaries).
 
-Write the updated master content to `.claude/kb-scratch/llg-master.md`.
+Write the updated master content to `.kb-scratch/llg-master.md`.
 
 ### Now commit all three files as ONE commit
 
@@ -161,9 +163,9 @@ Write the updated master content to `.claude/kb-scratch/llg-master.md`.
   --repo BoardPandas/LL-G \
   --base "$BASE" \
   --message "Add <tech> gotcha: <title>" \
-  kb/<tech>/<slug>.md  .claude/kb-scratch/llg-entry.md \
-  kb/<tech>/llms.txt   .claude/kb-scratch/llg-index.md \
-  llms.txt             .claude/kb-scratch/llg-master.md
+  kb/<tech>/<slug>.md  .kb-scratch/llg-entry.md \
+  kb/<tech>/llms.txt   .kb-scratch/llg-index.md \
+  llms.txt             .kb-scratch/llg-master.md
 ```
 
 Add `--dry-run` first if you want to see the paths and byte counts without writing.
@@ -177,7 +179,7 @@ arrived in a shelf index that way on 2026-09-10.
 nothing was clobbered. Re-read the two index files, re-apply your edits on top of the NEW
 content, take a fresh `BASE`, and run the command again. Never retry with force.
 
-Then delete the scratch files: `rm -rf .claude/kb-scratch`
+Then delete the scratch files: `rm -rf .kb-scratch`
 
 ## Step 7: Close the loop -- does this lesson ALSO need enforcement?
 

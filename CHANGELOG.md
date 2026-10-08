@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.21.6] - 2026-10-08
+
+### Fixed
+- **`/add-lesson` and `/add-practice` can write their scratch files outside bypass mode.** Both staged the entry, index and master files in `.claude/kb-scratch/`, but Claude Code treats `.claude/` as a protected path: in `acceptEdits` mode and in non-interactive runs the Write tool is refused there ("a sensitive file"), so the skill stopped at its first write. Only `bypassPermissions` let it through. The scratch directory is now `.kb-scratch/` at the repo root, which is neither protected nor outside the working directory (a path outside it is refused the same way). It keeps the self-ignoring `.gitignore` of `*`, so nothing in it can be committed. Both locations were checked with `claude -p --permission-mode acceptEdits`: `.claude/kb-scratch/` was refused and `.kb-scratch/` was written.
+
 ## [0.21.5] - 2026-10-07
 
 ### Fixed
