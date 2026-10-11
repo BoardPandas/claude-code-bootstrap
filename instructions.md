@@ -4,7 +4,7 @@
 
 This repository provides a pre-configured `.claude/` folder that gives Claude Code a set of skills, agents, and settings aligned with current best practices. It works in two modes:
 
-1. **Clone for new projects** -- Start a new repo with Claude Code already configured.
+1. **Clone for new projects** -- Start a new repo with Claude Code already configured. `node scripts/new-project.mjs` (or, for a repo made with GitHub's "Use this template", the `template-cleanup` workflow) resets `CHANGELOG.md` and `package.json` to a fresh `0.0.1` so the project does not inherit the template's release history.
 2. **Copy into existing projects** -- Drop the `.claude/` folder (plus CLAUDE.md) into any existing repo to add Claude Code capabilities. Add `scripts/sync-codex.mjs` and run `npm run sync:codex` to give Codex the same configuration.
 
 ## Folder Structure
@@ -72,6 +72,7 @@ README.md                  # GitHub-facing README
 scripts/
   check-claude-wiring.mjs  # Wiring guard (npm run check:claude)
   sync-codex.mjs           # Codex mirror generator (npm run sync:codex; --check runs in check:claude)
+  new-project.mjs          # One-shot reset of CHANGELOG.md + package.json to 0.0.1 in a new project; deletes itself
   *.test.mjs               # Self-tests asserting each check still fires
 intent/<slug>/             # intent.md + spec.md (created on first use)
 tasks/                     # Saved plans (created on first use)
@@ -176,7 +177,7 @@ defect come out, and defect classes that reached main become a pass or a guard c
 - **Trigger:** "initialize repo", "init repo", "set up claude code"
 - **What it does:** Reads the plan (if available), detects the stack, fetches best practices, and builds or updates all configuration files. Generates hierarchical CLAUDE.md files and stack-specific design guardrails. Non-destructive merge with existing config.
 - **When to use:** After plan-repo, after copying `.claude/` into an existing project, or to rebuild from scratch.
-- **Changelog reset:** A project cloned from this template inherits the template's `CHANGELOG.md` and version. Init detects that inherited history and resets it to a clean `0.0.1` baseline. A changelog holding your project's own entries is classified as project-owned and left untouched, so re-running init never wipes real release history.
+- **Changelog reset:** A project cloned from this template inherits the template's `CHANGELOG.md` and version until `scripts/new-project.mjs` runs. If it never ran, init runs it, or otherwise detects the inherited history and resets it to a clean `0.0.1` baseline. A changelog holding your project's own entries is classified as project-owned and left untouched, so re-running init never wipes real release history.
 - **Output:** Summary of all files created or modified.
 
 ### update-practices

@@ -10,7 +10,14 @@ A ready-to-use `.claude/` configuration folder for any repository. Ships with sk
 git clone https://github.com/BoardPandas/claude-code-bootstrap.git my-project
 cd my-project
 rm -rf .git && git init
+node scripts/new-project.mjs
 ```
+
+`new-project.mjs` gives the project its own `CHANGELOG.md` and a `package.json` at `0.0.1`
+in place of the template's release history, then deletes itself. Creating the repo with
+GitHub's **Use this template** button does the same automatically: the `template-cleanup`
+workflow runs the script on the new repo's first push and commits the result. If it did not
+start, run it from the Actions tab.
 
 Then open Claude Code, type **`/plan-repo`** to plan your stack, and say **"initialize repo"** to configure.
 

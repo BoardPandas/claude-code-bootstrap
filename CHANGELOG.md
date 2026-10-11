@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.22.0] - 2026-10-11
+
+### Added
+- **New projects start at 0.0.1 with their own changelog.** A repo created from this template no longer inherits the template's `CHANGELOG.md` and `package.json` version. `node scripts/new-project.mjs`, now a step in the README's clone instructions, writes a fresh `CHANGELOG.md` with a single `0.0.1` entry. It sets `package.json` to `0.0.1` with the project's own name and an empty description, and keeps the scripts and `engines` that CI and the wiring guard need. Then it deletes itself.
+- **"Use this template" does the reset automatically.** The new `template-cleanup` workflow runs the script on a generated repo's first push, commits the result, and then tries to delete itself. If GitHub refuses to let the workflow token delete a workflow file, the file stays but does nothing. The workflow never runs in this repo, in a fork of it, or in any repo marked as a template.
+- **The reset only touches a fresh copy.** It acts only while `package.json` is still named `claude-code-bootstrap`, and refuses to run in the template or in a clone whose `origin` still points at it. `npm test` covers each refusal and checks that the workflow and the script name the same template repo.
+
+### Changed
+- **`init-repo` uses the same reset.** If a project skipped `new-project.mjs`, Step 15 runs it rather than judging the changelog by its contents. It also treats a changelog holding only the `0.0.1` baseline as already reset.
+
 ## [0.21.8] - 2026-10-11
 
 ### Removed
