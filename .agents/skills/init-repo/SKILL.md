@@ -387,7 +387,9 @@ A project cloned from this template inherits the template's own `CHANGELOG.md` a
 
 **15a. Classify the existing changelog before touching anything**
 
-Read `CHANGELOG.md` in the repo root and decide which case applies:
+If `package.json` is still named `claude-code-bootstrap` and `scripts/new-project.mjs` exists, nobody ran the new-project reset. Run `node scripts/new-project.mjs`. It writes the same changelog as 15b, sets `package.json` to `0.0.1` with the project's own name, and deletes itself. Then skip to 15d. A changelog that holds only that `0.0.1` baseline has already been reset; leave it alone.
+
+Otherwise, read `CHANGELOG.md` in the repo root and decide which case applies:
 
 - **Absent** -- create a fresh one at `0.0.1`.
 - **Template-inherited** -- entries describe the bootstrap template itself (skills, agents, `.claude/` wiring, plan-repo/init-repo, hook scripts) rather than this project's features. Reset to `0.0.1`.

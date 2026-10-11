@@ -1,0 +1,78 @@
+name: Template cleanup
+
+# Runs once, in a repo created from this template with GitHub's "Use this template".
+# Without it the new repo starts with the template's CHANGELOG.md and package.json
+# version. scripts/new-project.mjs resets both to 0.0.1 and deletes itself and this
+# workflow; this job commits the result. A clone made with `git clone` gets the same
+# reset by running the script by hand (README, Quick Start).
+#
+# It never runs in the template itself, in a fork of it, or in any repo marked as a
+# template. Once the script is gone it does nothing.
+
+on:
+  push:
+    branches: [main]
+  # Fallback if the generated repo's first push did not trigger it.
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    name: Reset changelog and version to 0.0.1
+    if: >-
+      github.repository != 'BoardPandas/claude-code-bootstrap' &&
+      !github.event.repository.fork &&
+      !github.event.repository.is_template
+    runs-on: ubuntu-latest
+    steps:
+      # Pinned to commit SHAs, as in ci.yml.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Read once, before the script deletes itself, so the steps below agree.
+      - name: Check for a pending reset
+        id: pending
+        run: |
+          if [ -f scripts/new-project.mjs ]; then
+            echo "reset=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Already reset; nothing to do."
+          fi
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        if: steps.pending.outputs.reset == 'true'
+        with:
+          node-version: "24"
+
+      - name: Reset to 0.0.1
+        if: steps.pending.outputs.reset == 'true'
+        run: node scripts/new-project.mjs
+
+      # Two pushes on purpose. GITHUB_TOKEN has no `workflows` permission, and GitHub
+      # refuses some pushes that change files under .github/workflows/. The reset has
+      # to land either way, so it goes first; deleting this file is a second push that
+      # may fail. If it does, the file stays but skips every step, because the script
+      # it runs is gone.
+      - name: Commit and push
+        if: steps.pending.outputs.reset == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add -A -- . ':(exclude).github/workflows/template-cleanup.yml'
+          if git diff --cached --quiet; then
+            echo "The script made no changes; nothing to commit."
+            exit 0
+          fi
+          git commit -m "chore: start project at 0.0.1"
+          git push
+
+          git add -A -- .github/workflows/template-cleanup.yml
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "chore: remove template cleanup workflow"
+          if ! git push; then
+            echo "::notice::Could not delete .github/workflows/template-cleanup.yml with GITHUB_TOKEN. It no longer does anything; delete it by hand."
+          fi
