@@ -119,6 +119,10 @@ The template no longer ships an eval suite (removed in 0.21.0). A project that a
 `.claude/evals/`, `scripts/run-evals.mjs`, and `.github/workflows/agent-evals.yml` before
 then owns them now: do not sync, audit, or delete them.
 
+The same holds for the AI review (`claude-review.yml`) and scheduled security scan
+(`security-scan.yml`) workflows, removed in 0.21.8. A project that already has them owns
+them: do not sync, audit, or delete them.
+
 ### Files outside `.claude/` that MUST still sync
 
 These live outside `.claude/` but are load-bearing for checks that fail the build, so
@@ -130,7 +134,6 @@ template. This is a deliberate exception to the rule below.
 | `REVIEW.md` | Sync entirely if absent — `scripts/check-claude-wiring.mjs` errors without it. If present, merge new passes and exclusions but preserve the project's own severity bar and nit cap; those are local policy calls. |
 | `scripts/check-claude-wiring.mjs` | Replace with the template version, then re-run it: new checks routinely surface pre-existing defects, and that is the point. |
 | `scripts/check-claude-wiring.test.mjs` | Replace with the template version. |
-| `.github/workflows/security-scan.yml` | Sync entirely if absent. If present, leave the project's schedule alone. |
 
 After syncing any of these, run `npm run check:claude` and `npm test` before reporting
 success. A sync that leaves the guard red is

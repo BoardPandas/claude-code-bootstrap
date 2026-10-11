@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.21.8] - 2026-10-11
+
+### Removed
+- **The AI code review workflow.** `claude-review.yml` no longer reviews each push and pull request against `REVIEW.md`, and the repo no longer needs an `ANTHROPIC_API_KEY` secret. `REVIEW.md` still sets the policy for reviews run in a session. Guard check 11 stays: it still catches a headless `claude` restricted by `--allowed-tools` alone in any workflow or script.
+- **The scheduled security scan workflow.** `security-scan.yml` no longer runs every Monday. Run `/security-scan` when you need an audit. `update-practices` no longer copies the workflow into adopting repos, and leaves alone any repo that already has either workflow.
+
 ## [0.21.7] - 2026-10-08
 
 ### Fixed

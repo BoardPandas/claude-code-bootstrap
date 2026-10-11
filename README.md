@@ -128,8 +128,7 @@ npm run check:claude          # rule scoping, hook matchers, frontmatter, contex
 npm test                      # asserts every one of those checks still fires
 ```
 
-Both run in CI on every push and pull request. A weekly `security-scan` workflow audits
-dependencies and checks for tracked credential files.
+Both run in CI on every push and pull request.
 
 ## Full Documentation
 
