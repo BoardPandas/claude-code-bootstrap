@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.23.0] - 2026-10-15
+
+### Added
+- **Builders check their own work before reporting done.** The builder agent now writes its pass conditions as real commands before it edits anything (for example `npm test exits 0`), then repeats change → run → fix until every one passes. "Looks right" and "no errors were raised" no longer count as done. After 3 failed rounds it stops and reports BLOCKED with a fixed five-line block: UNIT, VERDICT, REASON, EVIDENCE (file:line, expected vs actual), SCOPE. You get the failing evidence, not a fourth rewrite.
+- **`/triage-issues` retries only the unit that failed.** When a fix passes on its own branch but fails verification after merging, the skill sends that one failure back to the builder that wrote it, using the five-line block, with an instruction to fix only that unit's files. Fixes that already passed are never re-dispatched. Each unit gets at most 3 correction rounds before it is reported as blocked with its last evidence. A merge conflict is still a hard stop.
+- **Plan steps declare their files and dependencies.** Each implementation step in a `/spec-developer` plan now lists `Files:` (what the step may touch) and `Needs:` (the earlier step whose output it actually reads, or `none`). Steps with `Needs: none` and no shared files can go to parallel builders, rather than waiting in typing order.
+
+### Fixed
+- **`/triage-issues` builders keep their own worktree when agent teams is on.** This template enables agent teams, and a named Agent call then starts a teammate that ignores the builder's `isolation: worktree`, so parallel builders could share one checkout. The skill now passes `isolation: "worktree"` on every dispatch. A resumed builder also `cd`s into the worktree named in the retry message before it touches anything.
+
 ## [0.22.0] - 2026-10-11
 
 ### Added

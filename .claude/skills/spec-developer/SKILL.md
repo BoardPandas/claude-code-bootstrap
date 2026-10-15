@@ -174,10 +174,17 @@ Produce an implementation plan sized per the table above, covering:
 
 ### 3. Implementation Steps
 Numbered steps in implementation order, grouped into **checkpoints**: commit-sized chunks that each complete well under 50% of a session's context, so the implementing session can commit, `/compact`, or hand off between them. For each step:
-- File to create or modify
+- `Files:` every file the step may create or modify. A builder working the step stays inside this list.
+- `Needs:` the earlier step(s) whose output this step actually reads (a type it imports, a function it calls, a table it queries), or `none`. Typing order is not a dependency: if you cannot name what crosses from that step into this one, write `none`. Steps with `Needs: none` and no overlapping `Files:` can run in parallel, one builder each.
 - What to add or change (specific, not vague)
 - Patterns to follow from existing code (reference specific files)
 - Potential gotchas (include the relevant LL-G entries found in Step 1b, cited by slug)
+
+```markdown
+**Step 3: Add the rate-limit middleware**
+Files: src/middleware/rate-limit.ts, src/middleware/rate-limit.test.ts
+Needs: step 1 (imports the `RateLimitConfig` type it defines)
+```
 
 ### 4. Data Model (if applicable)
 - Schema changes

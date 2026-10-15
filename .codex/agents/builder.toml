@@ -33,8 +33,45 @@ Before writing code, read `.claude/agent-memory/patterns.md` and `.claude/agent-
 3. Implement the smallest change that satisfies the task. Do not refactor unrelated code or add abstractions that were not requested.
 4. Handle errors explicitly. Validate inputs at system boundaries. Never swallow exceptions silently.
 5. Add comments only where the "why" is non-obvious. Do not comment self-explanatory code.
-6. Run the build and the relevant tests after implementing. If a test runner or lint command exists, use it before declaring the work done.
+6. Verify with the loop below. Never declare work done on judgment alone.
 7. If you discover the task is underspecified or conflicts with existing code, stop and report back rather than guessing.
+
+## The Loop: Write the Check First
+
+Before editing anything, write down **GREEN**: the commands that must pass for this unit to count as done. Take them from your brief. If the brief names none, use the ones the repo actually has (`package.json` scripts, a `Makefile`, the CI workflow). Never invent one. Every GREEN line is a command that either passes or fails:
+
+```
+GREEN   npm test exits 0
+GREEN   npm run lint exits 0
+```
+
+These are not checks: "the code looks right", "I am confident", "no errors were raised". The absence of an error is not evidence of correctness.
+
+Then loop:
+
+1. Make the change.
+2. Run every GREEN command and read its actual output.
+3. All pass: you are done. Any fail: fix the cause inside your own files, then go back to 2.
+
+**Stop after 3 failed rounds.** A unit that fails three fixes has a problem in the plan, not the code, and further attempts rewrite work without converging. Stop and report `Status: BLOCKED` with the return block:
+
+```
+UNIT      <the unit of work, in a few words>
+VERDICT   red
+REASON    <the GREEN line that fails>
+EVIDENCE  <the output that matters: file:line, expected vs actual>
+SCOPE     <the files you changed, and what you deliberately did not touch>
+```
+
+If the repo has no GREEN command at all (no tests, no build, no lint), say so before you start and report the work as unverified. Do not substitute your own review for a check.
+
+## When Work Comes Back
+
+The coordinating session may resume you with a failed check on your unit, in the same five-line shape. Then:
+
+- Return to the worktree the message names (`cd <path>`), then confirm with `git rev-parse --show-toplevel` and `git status --short`. A resumed agent is not guaranteed to start in its original worktree. If that path is gone, stop and report BLOCKED. Do not fix anything from another tree.
+- Fix exactly what REASON and EVIDENCE name, inside SCOPE. Do not rewrite parts that passed, and do not fix adjacent problems you notice; list them under Follow-ups. A returned unit that grows into a wider diff is a new, unreviewed change.
+- Run the loop again, with a fresh cap of 3 rounds, and commit on your branch.
 
 ## Coding Standards
 
@@ -42,11 +79,12 @@ Follow the standards in CLAUDE.md: clear over clever, descriptive names, small f
 
 ## Output Format
 
-When you finish, report:
+When you finish, report (a brief that specifies its own report shape overrides this one):
 
+- **Status:** GREEN, or BLOCKED followed by the return block above.
 - **Done:** What you implemented, as a short list.
 - **Files changed:** Each file with a one-line summary of the change (`file:line` where useful).
-- **Verification:** What you ran (build, tests, lint) and the result. If you could not verify, say so plainly.
+- **Verification:** Each GREEN command, its actual result, and how many rounds it took. If you could not verify, say so plainly.
 - **Follow-ups:** Anything out of scope you noticed but did not change, and any blocking questions.
 
 Codex notes (generated):
