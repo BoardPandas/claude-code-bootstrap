@@ -96,7 +96,7 @@ Autonomous code changes are only appropriate for the first row. Dispatching a bu
 
 ## Step 4: Dispatch one builder subagent per unit
 
-Call the **Agent** tool with `subagent_type: "builder"` — once per unit, **all in a single message** so they run concurrently. The builder agent is already `isolation: worktree`, so parallel agents cannot clobber each other.
+Call the **Agent** tool with `subagent_type: "builder"` **and `isolation: "worktree"` on the call itself** — once per unit, **all in a single message** so they run concurrently. Pass `isolation` even though the builder definition already declares it. With agent teams enabled (this template sets `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`), an Agent call that carries a `name` launches a teammate unless the call passes `isolation`, and a teammate does not inherit the definition's `isolation: worktree`. Without it, the builders share one checkout and clobber each other's edits.
 
 Give each agent a `name` derived from the issue numbers (e.g. `issue-283-290`) so you can address it later with SendMessage.
 
@@ -128,7 +128,10 @@ SCOPE:
   named in this brief.
 - Add or update tests where the logic is testable, using the project's existing
   test framework and file layout. Do not introduce a new test framework.
-- Run the verification commands given in this brief. Report the actual result.
+- Treat the verification commands in this brief as GREEN. Make the change, run
+  them all, fix, and repeat until every one passes. Stop after 3 failed rounds
+  and report BLOCKED, with the failing command, file:line, and expected vs
+  actual in VERIFICATION.
 
 DO NOT:
 - Do NOT edit CHANGELOG.md or bump any version. The coordinating session owns
@@ -136,6 +139,11 @@ DO NOT:
 - Do NOT commit to, merge into, or push the main branch.
 - Do NOT close, comment on, or label the GitHub issue.
 - Do NOT run a local dev server or any long-running process.
+
+IF YOU ARE RESUMED with a UNIT / VERDICT / REASON / EVIDENCE / SCOPE message,
+your fix failed verification after it was merged. Follow its SCOPE exactly:
+fix only what REASON names, do not rewrite what passed, run the loop again
+(a fresh cap of 3 rounds), commit, and report back in the shape below.
 
 COMMIT YOUR WORK ON YOUR OWN BRANCH before you finish, or it will be discarded
 when the worktree is removed:
@@ -155,8 +163,8 @@ REPORT BACK in exactly this shape:
   ISSUES: <the issue numbers this work closes>
   ROOT CAUSE: <what was actually wrong, one or two sentences>
   CHANGES: <each file changed, with a one-line summary>
-  VERIFICATION: <each command you ran and its actual result; say plainly if you
-                 could not run one>
+  VERIFICATION: <each command you ran, its actual result, and how many rounds
+                 it took; say plainly if you could not run one>
   BLOCKERS: <if not RESOLVED: what stopped you, and a concrete recommended next
              step the user can act on. Be specific — "needs a decision on
              whether X or Y is authoritative" beats "unclear requirements".>
@@ -189,7 +197,7 @@ Then for each unit that reported `STATUS: RESOLVED`:
    git merge --no-commit --no-ff <branch>
    ```
    **On conflict: stop this unit immediately.** Run `git merge --abort`, leave the issue open, record it as a blocker, and continue with the next unit. Never resolve a conflict on the main branch on the agent's behalf.
-2. **Run the verification commands yourself** on the merged tree. An agent's branch passing in isolation does not mean two merged fixes pass together. If verification fails, `git merge --abort`, record it as a blocker, and move on.
+2. **Run the verification commands yourself** on the merged tree. An agent's branch passing in isolation does not mean two merged fixes pass together. If verification fails, `git merge --abort`, send the unit back through the correction edge below, and move on to the next unit.
 3. **Update `CHANGELOG.md` and bump the version** if the repo has them, following the repo's own rule (in this template, `.claude/rules/commit-changelog.md`: patch for fixes, minor for features, never major without explicit user approval). Write entries from the user's perspective and reference the issue numbers. Skip this step entirely for repos with no changelog or version file.
 4. **Commit** — message to a file, never inline:
    ```bash
@@ -218,6 +226,29 @@ Then for each unit that reported `STATUS: RESOLVED`:
    git worktree prune
    ```
    Use `-d`, not `-D` — a branch git considers unmerged is a signal something went wrong, not something to force past.
+
+### Correction edge: return the unit, not the batch
+
+A unit that fails verification on the merged tree goes back to the builder that produced it, alone. Units that passed are never re-dispatched: their next version would be different, not better, and each would need re-verifying.
+
+1. **Resume that builder with SendMessage**, addressed by the `name` you gave it in Step 4, with this message:
+   ```
+   UNIT      issue(s) <numbers>, branch <branch>, worktree <path>
+   VERDICT   red: failed verification after merging into <main>
+   REASON    <the command that failed>
+   EVIDENCE  <the output that matters: test name, file:line, expected vs actual>
+   SCOPE     Work only in <worktree path>: `cd` there first and confirm that
+             `git rev-parse --show-toplevel` prints it. Run `git merge --no-edit
+             <main>` so your branch has what landed since you branched. Then fix only
+             what REASON names, in this unit's files. If the cause is in
+             another unit's files, report BLOCKED instead of editing them.
+   ```
+2. **Put the unit at the back of the landing queue** and continue with the next one. Do not sit idle while it runs. Do not report to the user (Step 6) while a correction is still running.
+3. When it reports `RESOLVED`, land it again through steps 1 to 7 above.
+4. **Cap: 3 correction rounds per unit.** A unit still failing after its third correction has a problem in the plan or the grouping, which the builder cannot see. Treat it as `BLOCKED` and carry the last EVIDENCE into the report.
+5. **If SendMessage fails** (the agent cannot be resumed), treat the unit as `BLOCKED`. Never spawn a fresh builder at the same branch: it has none of the context and will redo work that was already right.
+
+A merge **conflict** is not a correction. It stays a hard stop for that unit (step 1).
 
 For each unit that reported `BLOCKED` or `NOT-A-CODE-DEFECT`: leave the issue open, label it so the next default run skips it, and carry its recommendation into the report.
 
@@ -251,6 +282,7 @@ Report plainly. Landed work and blocked work get equal weight — an accurate bl
 - What the agent found: <root cause or dead end>
 - Why it stopped: <the actual blocker>
 - Recommended next step: <a concrete action the user can take>
+- Correction rounds: <0-3>; last EVIDENCE: <file:line, expected vs actual, or "n/a">
 - Branch preserved: <branch name, or "none">
 
 ## Not code defects
@@ -271,7 +303,8 @@ Close with what state the repo is in: whether the main branch was pushed, whethe
 
 - Never dispatch a subagent from a dirty working tree. Its worktree cannot see uncommitted work and will report confidently against stale files.
 - Never land a fix you did not verify on the merged tree.
-- A merge conflict, a failed verification, or a rejected push is a hard stop for that unit — never a thing to force through.
+- A merge conflict or a rejected push is a hard stop for that unit — never a thing to force through. A failed verification goes back through the correction edge, at most 3 rounds.
+- Return the unit, not the batch. Never re-dispatch a unit that passed.
 - Never close an issue before the fix is pushed.
 - Never force-push, never `git branch -D`, never `git merge --abort` without reporting it.
 - Subagents never touch `CHANGELOG.md`, the version, the main branch, or the GitHub issues. This session owns all four.
