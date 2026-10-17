@@ -486,7 +486,7 @@ Guardrails cover: component patterns, styling conventions, accessibility require
 
 The template includes hooks in `.claude/settings.json`:
 
-- **SessionStart:** Surfaces the LL-G / BP knowledge-base reminder once per session.
+- **SessionStart:** Surfaces the LL-G / BP knowledge-base reminder once per session. It defers to Roundtable's `rt` CLI. Suppose `rt install <client> --write` has put rt's own SessionStart hook in place for the running client (Claude Code or Codex), with rt's credentials file present and, for Codex, the hook trusted in `/hooks`. Then the script replaces the full reminder with a two-line note: RULE 1 and RULE 3 still apply, and here are the two `llms.txt` indexes. rt prints its digest, or the full reminder whenever Roundtable is unreachable. An Agent SDK session (`CLAUDE_CODE_ENTRYPOINT` `sdk-*`) and any failed check get the full reminder.
 - **PreToolUse (git commit):** Blocks PowerShell here-string syntax, reminds about the changelog/version bump, and blocks commits that do not stage `CHANGELOG.md` (merge commits and `SKIP_CHANGELOG=1` are exempt).
 - **PreToolUse (EnterPlanMode):** Prompts a knowledge-base check before planning.
 - **PreToolUse (Write|Edit):** Surfaces the LL-G shelf for the file's technology, once per session per shelf.
