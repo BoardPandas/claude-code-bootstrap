@@ -126,7 +126,7 @@ Verified against the official changelog. Each one changes what a hook in this co
 ## Hooks to configure based on project needs
 
 **Always configure:**
-- `SessionStart` — surface the LL-G / BP knowledge-base reminder once per session
+- `SessionStart` — surface the LL-G / BP knowledge-base reminder once per session. `session-start-kb-check.sh` defers to Roundtable's `rt` when rt's own SessionStart hook is installed and configured for the running client: rt prints its digest, or the full reminder when Roundtable is unreachable, and the script prints only a two-line note (the rules still apply, plus both `llms.txt` URLs). Agent SDK sessions always get the full reminder
 - `PreToolUse` on `Bash` with `if: "Bash(git commit*)"` — validation before commits
 - `Stop` — notification sound (use `printf '\a'`, not `echo '\a'` — `echo` prints a literal `\a` in most shells)
 - `Notification` — notification sound
