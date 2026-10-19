@@ -49,7 +49,7 @@ Each stage commits an artifact the next stage reads. One artifact, one owner, on
 | `spec.md` | `intent/<slug>/spec.md` | `/spec-developer` | Product owner |
 | `plan.md` | `tasks/<slug>-plan.md` | plan mode / `/spec-developer` | Engineer |
 | diff | git branch | `builder` / session | Code owner, per `REVIEW.md` |
-| lesson | LL-G / BP | `/add-lesson`, `/add-practice` | Author + KB review |
+| lesson | LL-G / BP | `/add-lesson`, `/add-practice` | Roundtable's checks (agent-managed) |
 
 Intent captures the problem in the originator's own words and needs no engineering
 knowledge. Spec turns it into requirements and design with policy already applied. Plan is
@@ -204,7 +204,7 @@ This applies to every session, every technician, every developer. Not optional. 
 
 ### Contributing back
 
-After implementation, route new discoveries to LL-G, not to local agent-memory alone: run `/add-lesson` (uses the GitHub API, no clone needed). Lessons stored locally stay local.
+After implementation, route new discoveries to LL-G, not to local agent-memory alone: run `/add-lesson` (publishes through Roundtable's `kb_propose`). Lessons stored locally stay local.
 
 ## RULE 3 -- Check BP Before Starting New Work
 

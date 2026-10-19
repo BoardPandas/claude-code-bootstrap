@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.25.0] - 2026-10-19
+
+### Changed
+- **`/add-lesson` and `/add-practice` publish through Roundtable.** Both skills now search for a duplicate with Roundtable's `kb_search`, then publish with `kb_propose` instead of committing to LL-G or BP `main` with `gh`. Roundtable refuses credentials, email addresses and IPs, refuses a duplicate slug, caps each agent at 10 proposals a day, writes the entry, its shelf index and the master count as one commit, and indexes it once that repository's CI passes. The direct `gh` path skipped all of that, and both repositories are public. Each skill also has a step to remove client names, internal hostnames and other details no scan can recognise.
+- **`gh` is kept only for a new shelf or concern,** which `kb_propose` cannot create. That path still writes the entry, its new index and the master index line as one commit with `kb-commit.mjs`.
+- **Without Roundtable the skills stop.** When the `roundtable` MCP tools are not available, the skills say how to set Roundtable up and do not fall back to `gh`.
+- The artifact table in `CLAUDE.md` and the skill notes in `instructions.md` now say lessons are published by Roundtable's checks, not reviewed by a person.
+
 ## [0.24.0] - 2026-10-17
 
 ### Changed
