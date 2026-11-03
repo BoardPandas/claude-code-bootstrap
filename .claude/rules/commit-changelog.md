@@ -22,7 +22,7 @@ each commit adds its own section directly below it, newest first:
 - New capability, described from the user's perspective.
 ```
 
-Categorise with [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) headings:
+Categorise with [Keep a Changelog](https://keepachangelog.com/en/2.0.0/) headings:
 **Added**, **Changed**, **Deprecated**, **Removed**, **Fixed**, **Security**. Use only
 those six, each once per version, in that order: no `### Notes` or dated variants.
 Review `git diff --cached` to see what actually changed, and write entries as effects
@@ -34,8 +34,7 @@ on the user, not as implementation notes.
   `compare/vX.Y.Z...HEAD`. `.github/workflows/tag-versions.yml` creates the `vX.Y.Z`
   tag when the commit reaches `main`; do not tag by hand. Without that workflow, link
   only versions that already have a tag.
-- Over 100 KB: move the oldest releases and their links into `CHANGELOG-archive.md`
-  (newest first) until CHANGELOG.md is under 50 KB, keeping at least the 10 newest there.
+- Over 100 KB: move releases older than 30 days, with their links, into `CHANGELOG-archive.md` (newest first), keeping at least the 10 newest releases in CHANGELOG.md. Archive only what is old enough that it won't need editing (Keep a Changelog 2.0.0).
 
 ## 2. Bump the version in package.json to match
 

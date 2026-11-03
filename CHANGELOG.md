@@ -2,10 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) from 0.0.1 on. Releases 1.3.0.0 to 1.8.1.3 came first and used a four-part version (Major.Minor.Patch.Build); the version was reset to 0.0.1 when the project moved to SemVer, so they are listed after 0.0.1.
 
 ## [Unreleased]
+
+## [0.26.1] - 2026-11-03
+
+### Changed
+- **The changelog follows Keep a Changelog 2.0.0, and so do new projects.** 2.0.0 keeps the 1.1.0 format, so only the header link moves and no entry is rewritten. The shipped commit rule, `init-repo` and `scripts/new-project.mjs` now write and describe 2.0.0, and the archive step follows its advice: past 100 KB, only releases older than 30 days move to `CHANGELOG-archive.md` (at least the 10 newest stay), and releases inside that window that had been archived are back in this changelog.
 
 ## [0.26.0] - 2026-11-03
 
@@ -273,7 +278,8 @@ knowing the solution.
 
 Older releases are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
-[Unreleased]: https://github.com/BoardPandas/claude-code-bootstrap/compare/v0.26.0...HEAD
+[Unreleased]: https://github.com/BoardPandas/claude-code-bootstrap/compare/v0.26.1...HEAD
+[0.26.1]: https://github.com/BoardPandas/claude-code-bootstrap/compare/v0.26.0...v0.26.1
 [0.26.0]: https://github.com/BoardPandas/claude-code-bootstrap/compare/v0.25.0...v0.26.0
 [0.25.0]: https://github.com/BoardPandas/claude-code-bootstrap/compare/v0.24.0...v0.25.0
 [0.24.0]: https://github.com/BoardPandas/claude-code-bootstrap/compare/v0.23.0...v0.24.0
