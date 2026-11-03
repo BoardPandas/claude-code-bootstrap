@@ -53,6 +53,12 @@
             "command": "bash \"$(git rev-parse --show-toplevel)\"/.claude/scripts/post-commit-kb-contribute.sh",
             "commandWindows": "bash .claude/scripts/post-commit-kb-contribute.sh",
             "statusMessage": "Checking for knowledge base contributions..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel)\"/.claude/scripts/post-push-cleanup.sh",
+            "commandWindows": "bash .claude/scripts/post-push-cleanup.sh",
+            "statusMessage": "Checking for merged worktrees and branches..."
           }
         ]
       }

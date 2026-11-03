@@ -131,8 +131,12 @@ is_command_prefix() {
 # `git config --get commit.gpgsign`. The walk gets both right by modelling what
 # git's argv actually looks like.
 # (LL-G kb/claude-code/hook-git-commit-filter-needs-argv-walk.md)
-is_git_commit() {
-  local normalized tok state result
+is_git_commit() { is_git_subcommand commit; }
+
+# The same walk for any subcommand: `is_git_subcommand push`. One walker, so a
+# fix to git's global-flag handling reaches every hook that asks.
+is_git_subcommand() {
+  local want=$1 normalized tok state result
 
   normalized=$(normalize_command)
   noglob_push
@@ -161,7 +165,7 @@ is_git_commit() {
           # here means its value gets read as the subcommand, and the gate stops
           # firing for every command that uses it.
           -C|-c|--git-dir|--work-tree|--namespace) state=skip ;;
-          commit)                                  result=0; break ;;
+          "$want")                                 result=0; break ;;
           -*)                                      ;;  # self-contained flag, incl. --git-dir=x
           *)                                       state=args ;;  # some other subcommand
         esac
@@ -234,8 +238,11 @@ resolve_dir() {
 #
 # Failure means ALLOW, not block. A gate that refuses commits in repos it cannot
 # even see gets bypassed wholesale, and it takes the changelog check with it.
-commit_target_dir() {
-  local base=${HOOK_CWD:-$PWD} tok state curdir gitdir found
+commit_target_dir() { git_target_dir commit; }
+
+# The same resolution for any subcommand: `git_target_dir push`.
+git_target_dir() {
+  local want=$1 base=${HOOK_CWD:-$PWD} tok state curdir gitdir found
 
   # Cheap view first: with no directory-changing token anywhere outside quotes,
   # the command runs where the hook does and there is nothing to walk.
@@ -283,7 +290,7 @@ commit_target_dir() {
           # An explicit git dir retargets the repo without moving the cwd, and
           # the tree it names may not be a working tree at all. Out of scope.
           --git-dir*|--work-tree*)        return 1 ;;
-          commit)                         printf '%s' "$gitdir"; return 0 ;;
+          "$want")                        printf '%s' "$gitdir"; return 0 ;;
           -*)                             ;;
           *)                              state=args ;;
         esac ;;
@@ -299,10 +306,11 @@ commit_target_dir() {
 
 # Anchors every subsequent git call to the root of the repo the COMMAND targets,
 # so a commit issued from a subdirectory -- or from another repo entirely -- is
-# judged against the tree it will actually land in.
+# judged against the tree it will actually land in. $1 names the subcommand
+# whose target counts (default: commit).
 anchor_to_repo_root() {
   local target root
-  target=$(commit_target_dir) || return 1
+  target=$(git_target_dir "${1:-commit}") || return 1
   [ -d "$target" ] || return 1
   cd "$target" || return 1
   root=$(git rev-parse --show-toplevel 2>/dev/null) || return 1
