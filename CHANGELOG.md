@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.28.0] - 2026-11-03
+
+### Added
+- **After you push the default branch, Claude offers to clean up what it merged.** A new `PostToolUse` hook, `post-push-cleanup.sh`, runs after any push that moves `origin/<default>`. It lists the local branches now merged into it, the worktrees on those branches that have no uncommitted changes, and worktree entries whose directory is gone, then has Claude ask you once before removing anything. It never deletes anything itself, and the commands it suggests are `git worktree remove` and `git branch -d`, never `--force` or `-D`, so git still refuses to drop unmerged or modified work. It leaves alone locked worktrees, the worktree the session is working in, and any worktree with uncommitted changes, which it reports. It confirms the push from the `origin/<default>` reflog rather than trusting the command text, so a dry run, a rejected push or a push of another branch stays silent. It also catches `git -C <repo> push`, the form `/merge-worktrees` uses.
+
+### Changed
+- **The shared git-command parser can test for any subcommand.** `_git-commit-filter.sh` gains `is_git_subcommand` and `git_target_dir`. The commit hooks use them unchanged through `is_git_commit` and `commit_target_dir`, so a fix to the argv walk reaches every hook that relies on it.
+
 ## [0.27.0] - 2026-11-03
 
 ### Changed
@@ -283,7 +291,8 @@ knowing the solution.
 
 Older releases are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
-[Unreleased]: https://github.com/BoardPandas/claude-code-bootstrap/compare/v0.27.0...HEAD
+[Unreleased]: https://github.com/BoardPandas/claude-code-bootstrap/compare/v0.28.0...HEAD
+[0.28.0]: https://github.com/BoardPandas/claude-code-bootstrap/compare/v0.27.0...v0.28.0
 [0.27.0]: https://github.com/BoardPandas/claude-code-bootstrap/compare/v0.26.1...v0.27.0
 [0.26.1]: https://github.com/BoardPandas/claude-code-bootstrap/compare/v0.26.0...v0.26.1
 [0.26.0]: https://github.com/BoardPandas/claude-code-bootstrap/compare/v0.25.0...v0.26.0

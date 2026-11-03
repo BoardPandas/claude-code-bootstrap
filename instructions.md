@@ -491,6 +491,7 @@ The template includes hooks in `.claude/settings.json`:
 - **PreToolUse (EnterPlanMode):** Prompts a knowledge-base check before planning.
 - **PreToolUse (Write|Edit):** Surfaces the LL-G shelf for the file's technology, once per session per shelf.
 - **PostToolUse (git commit):** Prompts evaluation of whether the committed work should be contributed back to LL-G or BP.
+- **PostToolUse (git push):** After a push that moves `origin/<default>`, lists the local branches merged into it and the linked worktrees on those branches that have no uncommitted changes, and has Claude ask before removing them. It never deletes anything itself, and it skips locked worktrees, the session's own worktree, and any worktree with uncommitted changes. The `if` is `Bash(git *)` rather than `Bash(git push*)` so that `git -C <repo> push`, the form `/merge-worktrees` uses, is caught; the script checks the command and the reflog itself.
 - **PostToolUse (Write|Edit):** Formats the edited file with whatever formatter the *project* declares (biome, prettier, ruff, black, rustfmt, gofmt, shfmt). Non-blocking by design: a formatter that refuses an edit turns every unformattable file into a wall. This is why `REVIEW.md` forbids reporting formatting in review -- a hook owns it.
 - **Stop:** Bell sound when Claude finishes a task (useful with multiple sessions).
 - **Notification:** Bell sound when Claude needs attention.

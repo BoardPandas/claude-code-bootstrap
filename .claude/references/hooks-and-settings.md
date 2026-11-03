@@ -133,6 +133,7 @@ Verified against the official changelog. Each one changes what a hook in this co
 
 **Recommended for active development:**
 - `PostToolUse` on `Write|Edit` — auto-lint after file changes (if a linter is configured); the script reads the path from `tool_input.file_path`
+- `PostToolUse` on `Bash` with `if: "Bash(git *)"` — after a push of the default branch, list merged branches and clean worktrees for Claude to offer to remove (`post-push-cleanup.sh`). Advisory: it never deletes, and it confirms the push from the `origin/<default>` reflog rather than the command text
 - `PreToolUse` on `Bash` with `if: "Bash(rm -rf*)"` — block dangerous deletes; the script still checks the command itself, heredoc bodies fed to a shell included (LL-G `claude-code/delete-gate-cannot-skip-heredoc-bodies`)
 - `SubagentStop` — notification when long-running subagents complete
 
