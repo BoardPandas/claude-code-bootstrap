@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.27.0] - 2026-11-03
+
+### Changed
+- **`/dependency-audit` now audits GitHub Actions.** A new step checks every action the workflows use against its latest release (SHA pins are resolved to their real tag, and each action is checked against GitHub's advisory database, for an archived repo, and for a deprecated Node runtime), every `runs-on` label against GitHub's current runner images and their retirement dates, the tool versions workflows install against current releases and the repo's own pins, container images, and whether Dependabot covers `github-actions`. Self-hosted runners are listed for a manual version check.
+
 ## [0.26.1] - 2026-11-03
 
 ### Changed
@@ -278,7 +283,8 @@ knowing the solution.
 
 Older releases are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
-[Unreleased]: https://github.com/BoardPandas/claude-code-bootstrap/compare/v0.26.1...HEAD
+[Unreleased]: https://github.com/BoardPandas/claude-code-bootstrap/compare/v0.27.0...HEAD
+[0.27.0]: https://github.com/BoardPandas/claude-code-bootstrap/compare/v0.26.1...v0.27.0
 [0.26.1]: https://github.com/BoardPandas/claude-code-bootstrap/compare/v0.26.0...v0.26.1
 [0.26.0]: https://github.com/BoardPandas/claude-code-bootstrap/compare/v0.25.0...v0.26.0
 [0.25.0]: https://github.com/BoardPandas/claude-code-bootstrap/compare/v0.24.0...v0.25.0
