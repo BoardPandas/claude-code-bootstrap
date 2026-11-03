@@ -32,6 +32,7 @@ const TEMPLATE_PKG = {
   engines: { node: ">=24" },
 };
 const TEMPLATE_CHANGELOG = "# Changelog\n\n## [0.21.8] - 2026-10-11\n\n### Removed\n- The AI code review workflow.\n";
+const TEMPLATE_ARCHIVE = "# Changelog archive\n\n## [0.0.1] - 2026-06-01\n\n### Changed\n- Switched to SemVer.\n";
 
 const write = (root, p, s) => {
   mkdirSync(join(root, dirname(p)), { recursive: true });
@@ -43,6 +44,7 @@ function fixture(pkg = TEMPLATE_PKG) {
   const dir = mkdtempSync(join(tmpdir(), "new-project-"));
   write(dir, "package.json", JSON.stringify(pkg, null, 2) + "\n");
   write(dir, "CHANGELOG.md", TEMPLATE_CHANGELOG);
+  write(dir, "CHANGELOG-archive.md", TEMPLATE_ARCHIVE);
   mkdirSync(join(dir, "scripts"), { recursive: true });
   copyFileSync(SCRIPT, join(dir, "scripts/new-project.mjs"));
   write(dir, "scripts/new-project.test.mjs", "// stand-in\n");
@@ -66,6 +68,7 @@ function run(dir, { repo, args = [] } = {}) {
 function assertUntouched(dir, pkg = TEMPLATE_PKG) {
   assert.deepEqual(JSON.parse(read(dir, "package.json")), pkg);
   assert.equal(read(dir, "CHANGELOG.md"), TEMPLATE_CHANGELOG);
+  assert.equal(read(dir, "CHANGELOG-archive.md"), TEMPLATE_ARCHIVE);
   for (const p of SELF) assert.ok(existsSync(join(dir, p)), `${p} should still exist`);
 }
 
@@ -82,7 +85,12 @@ test("a fresh copy is reset to 0.0.1 and the one-shot files are removed", () => 
   assert.match(changelog, /^# Changelog\n/);
   assert.match(changelog, /\n## \[0\.0\.1\] - \d{4}-\d{2}-\d{2}\n/);
   assert.doesNotMatch(changelog, /0\.21\.8|AI code review/, "no template history survives");
-  assert.equal(changelog.match(/^## \[/gm).length, 1, "exactly one release");
+  assert.equal(changelog.match(/^## \[\d/gm).length, 1, "exactly one release");
+  assert.match(changelog, /\nand this project adheres to \[Semantic Versioning\]/);
+  assert.match(changelog, /\n## \[Unreleased\]\n\n## \[0\.0\.1\] - /, "an empty [Unreleased] sits above 0.0.1");
+  assert.match(changelog, /\n\[Unreleased\]: https:\/\/github\.com\/acme\/widget-api\/compare\/v0\.0\.1\.\.\.HEAD\n/);
+  assert.match(changelog, /\n\[0\.0\.1\]: https:\/\/github\.com\/acme\/widget-api\/releases\/tag\/v0\.0\.1\n$/);
+  assert.ok(!existsSync(join(dir, "CHANGELOG-archive.md")), "the template's archive is removed");
 
   for (const p of SELF) assert.ok(!existsSync(join(dir, p)), `${p} should be deleted`);
 });
@@ -99,6 +107,8 @@ test("outside Actions the name comes from the directory", () => {
   const r = run(dir);
   assert.equal(r.status, 0, r.stderr);
   assert.equal(JSON.parse(read(dir, "package.json")).name, basename(dir).toLowerCase());
+  // No Actions repo and no origin: there is no URL to link to, so no link block.
+  assert.doesNotMatch(read(dir, "CHANGELOG.md"), /^\[(Unreleased|0\.0\.1)\]:/m);
 });
 
 test("a project with its own package.json is left alone", () => {

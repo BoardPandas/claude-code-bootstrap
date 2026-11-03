@@ -5,8 +5,8 @@
 // A repo made from claude-code-bootstrap (by `git clone` or GitHub's "Use this
 // template") arrives with the template's CHANGELOG.md and package.json, so it starts
 // life claiming a version and a release log it never had. This resets both to a 0.0.1
-// baseline, then deletes itself, its test, and the template-cleanup workflow, which
-// have nothing left to do.
+// baseline (removing the template's CHANGELOG-archive.md too), then deletes itself,
+// its test, and the template-cleanup workflow, which have nothing left to do.
 //
 // It only acts on a fresh copy: a package.json whose name is no longer the template's
 // means the reset already happened, or this is someone's own project, so it exits
@@ -45,6 +45,16 @@ function originUrl() {
     // Not a git repo, or no origin: exactly the state after `rm -rf .git && git init`.
     return "";
   }
+}
+
+// The project's GitHub URL, for the changelog's compare links: the Actions repo, else
+// a GitHub origin. Null when neither is known (a fresh `git init` with no remote).
+function githubUrl() {
+  if (process.env.GITHUB_REPOSITORY) {
+    return `${process.env.GITHUB_SERVER_URL || "https://github.com"}/${process.env.GITHUB_REPOSITORY}`;
+  }
+  const m = originUrl().match(/github\.com[/:]([^/]+\/[^/]+?)(\.git)?\/?$/i);
+  return m ? `https://github.com/${m[1]}` : null;
 }
 
 // npm names: lowercase, URL-safe, no leading dot or underscore, at most 214 chars.
@@ -101,6 +111,10 @@ function main() {
   // the guard, engines); only the identity of the package changes.
   writeFileSync(pkgPath, JSON.stringify({ ...pkg, name, version: "0.0.1", description: "" }, null, 2) + "\n");
 
+  // Keep a Changelog layout, as .claude/rules/commit-changelog.md expects: an empty
+  // [Unreleased] on top and a compare-link block at the bottom for the next release
+  // to extend. The v0.0.1 tag comes from the Tag versions workflow.
+  const url = githubUrl();
   const changelogPath = join(root, "CHANGELOG.md");
   writeFileSync(
     changelogPath,
@@ -109,13 +123,17 @@ function main() {
       "",
       "All notable changes to this project will be documented in this file.",
       "",
-      "The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).",
+      "The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),",
+      "and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).",
+      "",
+      "## [Unreleased]",
       "",
       `## [0.0.1] - ${today()}`,
       "",
       "### Added",
       "- Initial project setup and Claude Code configuration.",
       "",
+      ...(url ? [`[Unreleased]: ${url}/compare/v0.0.1...HEAD`, `[0.0.1]: ${url}/releases/tag/v0.0.1`, ""] : []),
     ].join("\n"),
   );
 
@@ -125,6 +143,8 @@ function main() {
   if (written.version !== "0.0.1" || written.name !== name) fail("package.json did not take the reset.");
   if (!readFileSync(changelogPath, "utf8").includes("## [0.0.1] - ")) fail("CHANGELOG.md did not take the reset.");
 
+  // The template's older releases, if it has archived any, are template history too.
+  rmSync(join(root, "CHANGELOG-archive.md"), { force: true });
   for (const p of SELF) rmSync(join(root, p), { force: true });
 
   console.log(`new-project: "${name}" now starts at 0.0.1 with a fresh CHANGELOG.md.`);

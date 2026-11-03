@@ -1,0 +1,71 @@
+name: Tag versions
+
+# Every CHANGELOG.md heading links to a compare view between two version tags
+# (`[1.2.3]: .../compare/v1.2.2...v1.2.3`). This tags each package.json version
+# that reaches main, so those links resolve without anyone tagging by hand.
+# Each version is tagged at the last pushed commit that carries it; an existing
+# tag is never moved. Only versions with a heading in CHANGELOG.md or
+# CHANGELOG-archive.md are tagged.
+#
+# Shipped with the template, so a repo made from it tags its own releases from
+# 0.0.1. Until template-cleanup has reset that repo, its history is the
+# template's, so this skips. Its first run after that has no version tag to
+# start from and reads the whole history: the cleanup commit is pushed with
+# GITHUB_TOKEN, which starts no workflow, so 0.0.1 would otherwise never be tagged.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tag-versions
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      # Pinned to commit SHAs, as in ci.yml.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Tag new package.json versions
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_REPOSITORY" != "BoardPandas/claude-code-bootstrap" ] && [ -f scripts/new-project.mjs ]; then
+            echo "Template reset still pending (scripts/new-project.mjs exists); nothing to tag yet."
+            exit 0
+          fi
+          git fetch --tags --force --quiet
+          range=HEAD
+          if [ -n "$(git tag -l 'v[0-9]*')" ] && [ -n "$BEFORE" ] \
+             && [ "$BEFORE" != "0000000000000000000000000000000000000000" ] \
+             && git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            range="$BEFORE..HEAD"
+          fi
+          declare -A headed=()
+          while read -r v; do
+            [ -n "$v" ] && headed[$v]=1
+          done < <(grep -ohE '^## \[?v?[0-9]+(\.[0-9]+)+' CHANGELOG.md CHANGELOG-archive.md 2>/dev/null \
+                     | sed -E 's/^## \[?v?//' || true)
+          declare -A last=()
+          while read -r sha; do
+            v=$(git show "$sha:package.json" 2>/dev/null | jq -r '.version // empty' || true)
+            [ -n "$v" ] && [ -n "${headed[$v]:-}" ] && last[$v]=$sha
+          done < <(git rev-list --topo-order --reverse "$range")
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for v in "${!last[@]}"; do
+            tag="v$v"
+            git rev-parse -q --verify "refs/tags/$tag" >/dev/null && continue
+            GIT_COMMITTER_DATE=$(git show -s --format=%cI "${last[$v]}") \
+              git tag -a "$tag" "${last[$v]}" -m "Release $v"
+            git push --quiet origin "refs/tags/$tag" || echo "::warning::could not push $tag (already created by another run?)"
+            echo "tagged $tag at ${last[$v]}"
+          done

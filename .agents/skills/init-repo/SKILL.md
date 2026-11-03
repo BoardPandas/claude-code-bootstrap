@@ -408,15 +408,21 @@ When 15a says to reset, overwrite `CHANGELOG.md` with:
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
 
 ## [0.0.1] - <YYYY-MM-DD>
 
 ### Added
 - Initial project setup and Claude Code configuration.
+
+[Unreleased]: https://github.com/<owner>/<repo>/compare/v0.0.1...HEAD
+[0.0.1]: https://github.com/<owner>/<repo>/releases/tag/v0.0.1
 ```
 
-Use today's actual date (from the date check at the top of this skill), not a placeholder and not a date copied from the template's entries.
+Use today's actual date (from the date check at the top of this skill), not a placeholder and not a date copied from the template's entries. Fill the link block from `git remote get-url origin`; with no GitHub remote, leave the two link lines out. Delete a template-inherited `CHANGELOG-archive.md` along with it: it holds the template's older releases.
 
 **15c. Reset the version field to 0.0.1**
 

@@ -31,12 +31,15 @@ You are about to commit, but the changelog contract is not satisfied yet. The
 next hook will block this command. Before committing, you MUST:
 
 1. Review what you are shipping: git diff --cached --stat
-2. Add a new section at the TOP of CHANGELOG.md, in Keep a Changelog form:
+2. Add a new section to CHANGELOG.md, directly below '## [Unreleased]', in
+   Keep a Changelog form:
 
      ## [<new version>] - $(date +%Y-%m-%d)
 
-     ### Added / Changed / Fixed / Removed / Security
+     ### Added / Changed / Deprecated / Removed / Fixed / Security
      - Entries written from the user's perspective, not implementation details.
+
+   Then add its compare link at the bottom (see .claude/rules/commit-changelog.md).
 
 3. Bump version in package.json to that same version (Major.Minor.Patch,
    every commit bumps at least Patch):

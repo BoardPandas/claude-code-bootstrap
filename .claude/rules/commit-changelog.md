@@ -10,10 +10,12 @@ otherwise -- the steps below are the contract it checks, not advice.
 
 ## 1. Add a new CHANGELOG.md section
 
-There is no `[Unreleased]` staging area. Each commit adds its own section at the
-top of the file, newest first:
+Nothing is staged under `[Unreleased]`. That heading stays at the top, empty, and
+each commit adds its own section directly below it, newest first:
 
 ```markdown
+## [Unreleased]
+
 ## [0.9.1] - 2026-08-21
 
 ### Added
@@ -21,9 +23,19 @@ top of the file, newest first:
 ```
 
 Categorise with [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) headings:
-**Added**, **Changed**, **Fixed**, **Removed**, **Security**. Review `git diff --cached`
-to see what actually changed, and write entries as effects on the user, not as
-implementation notes.
+**Added**, **Changed**, **Deprecated**, **Removed**, **Fixed**, **Security**. Use only
+those six, each once per version, in that order: no `### Notes` or dated variants.
+Review `git diff --cached` to see what actually changed, and write entries as effects
+on the user, not as implementation notes.
+
+- Heading format: `## [X.Y.Z] - YYYY-MM-DD`, one heading per version.
+- Add a link for the new version at the bottom of CHANGELOG.md, copying the existing
+  pattern (`[X.Y.Z]: .../compare/vPREV...vX.Y.Z`), and point `[Unreleased]` at
+  `compare/vX.Y.Z...HEAD`. `.github/workflows/tag-versions.yml` creates the `vX.Y.Z`
+  tag when the commit reaches `main`; do not tag by hand. Without that workflow, link
+  only versions that already have a tag.
+- Over 100 KB: move the oldest releases and their links into `CHANGELOG-archive.md`
+  (newest first) until CHANGELOG.md is under 50 KB, keeping at least the 10 newest there.
 
 ## 2. Bump the version in package.json to match
 
@@ -44,6 +56,8 @@ the version in the new CHANGELOG.md heading must be identical.
 - If unsure between Minor and Patch, ask.
 
 ## 3. Make the edits their own step, then commit
+
+Stage both files (plus `CHANGELOG-archive.md` if you archived):
 
 ```bash
 git add CHANGELOG.md package.json
