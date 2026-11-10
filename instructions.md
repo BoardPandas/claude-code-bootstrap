@@ -247,13 +247,13 @@ defect come out, and defect classes that reached main become a pass or a guard c
 ### add-lesson
 
 - **Trigger:** "add lesson", "add gotcha", "add to LL-G"
-- **What it does:** Adds a gotcha or lesson learned to the LL-G knowledge base (`BoardPandas/LL-G` repo) through Roundtable's `kb_propose`, which checks it and publishes at once. Only a new shelf is committed with `gh`.
+- **What it does:** Adds a gotcha or lesson learned to the LL-G knowledge base (`BoardPandas/LL-G` repo) through authenticated `gh`, with privacy review and one atomic commit for the entry and indexes, followed by exact-commit CI verification.
 - **When to use:** After discovering a non-obvious failure pattern during implementation.
 
 ### add-practice
 
 - **Trigger:** "add practice", "add best practice", "add to BP"
-- **What it does:** Adds a new best practice entry to the BP knowledge base (`BoardPandas/BP` repo) through Roundtable's `kb_propose`, which checks it and publishes at once. Only a new concern is committed with `gh`.
+- **What it does:** Adds a new best practice entry to the BP knowledge base (`BoardPandas/BP` repo) through authenticated `gh`, with privacy review and one atomic commit for the entry and indexes, followed by exact-commit CI verification.
 - **When to use:** When establishing a proven pattern that should apply across repos.
 
 ### apply-practice
@@ -486,7 +486,7 @@ Guardrails cover: component patterns, styling conventions, accessibility require
 
 The template includes hooks in `.claude/settings.json`:
 
-- **SessionStart:** Surfaces the LL-G / BP knowledge-base reminder once per session. It defers to Roundtable's `rt` CLI. Suppose `rt install <client> --write` has put rt's own SessionStart hook in place for the running client (Claude Code or Codex), with rt's credentials file present and, for Codex, the hook trusted in `/hooks`. Then the script replaces the full reminder with a two-line note: RULE 1 and RULE 3 still apply, and here are the two `llms.txt` indexes. rt prints its digest, or the full reminder whenever Roundtable is unreachable. An Agent SDK session (`CLAUDE_CODE_ENTRYPOINT` `sdk-*`) and any failed check get the full reminder.
+- **SessionStart:** Always surfaces RULE 1 and RULE 3 with the public LL-G/BP GitHub indexes. It does not inspect client credentials or depend on a coordination service.
 - **PreToolUse (git commit):** Blocks PowerShell here-string syntax, reminds about the changelog/version bump, and blocks commits that do not stage `CHANGELOG.md` (merge commits and `SKIP_CHANGELOG=1` are exempt).
 - **PreToolUse (EnterPlanMode):** Prompts a knowledge-base check before planning.
 - **PreToolUse (Write|Edit):** Surfaces the LL-G shelf for the file's technology, once per session per shelf.
