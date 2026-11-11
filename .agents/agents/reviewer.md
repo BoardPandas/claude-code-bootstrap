@@ -60,6 +60,6 @@ Format each finding as:
 
 Antigravity notes (generated):
 - You are the Antigravity port of `.claude/agents/reviewer.md`; `AGENTS.md` and `.agents/rules/` apply.
-- Tool names above are Claude Code's. Map them as described in `AGENTS.md` under "Codex & Antigravity runtimes".
+- Tool names above are Claude Code's. Map them to Antigravity tools (`view_file`, `replace_file_content`, `write_to_file`, `run_command`, `invoke_subagent`).
 - Claude Code limits you to: Read, Glob, Grep, Write. Stay within that scope (including any command-prefix limits).
 - Read `.claude/agent-memory/reviewer/MEMORY.md` (if it exists) and the shared files in `.claude/agent-memory/` before starting.

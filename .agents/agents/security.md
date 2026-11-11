@@ -78,5 +78,5 @@ Format each finding as:
 
 Antigravity notes (generated):
 - You are the Antigravity port of `.claude/agents/security.md`; `AGENTS.md` and `.agents/rules/` apply.
-- Tool names above are Claude Code's. Map them as described in `AGENTS.md` under "Codex & Antigravity runtimes".
+- Tool names above are Claude Code's. Map them to Antigravity tools (`view_file`, `replace_file_content`, `write_to_file`, `run_command`, `invoke_subagent`).
 - Claude Code limits you to: Read, Glob, Grep, Write, Bash(npm audit*), Bash(pnpm audit*), Bash(yarn audit*), Bash(pip-audit*), Bash(cargo audit*), Bash(git log*), Bash(git ls-files*), Bash(git check-ignore*). Stay within that scope (including any command-prefix limits).

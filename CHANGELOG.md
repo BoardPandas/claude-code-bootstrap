@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.29.1] - 2026-11-11
+
+### Added
+- **Standalone `sync-antigravity.mjs` CLI mode for custom-mirror repositories.** Projects that maintain a hand-authored `AGENTS.md` or a custom `.codex/` sync script can now run `node scripts/sync-antigravity.mjs [--check] [--with-skills]` directly to generate and verify `.agents/` (`agents/`, `rules/` including `always_on` rules when `AGENTS.md` is not generated, `hooks.json`, `README.md`, and optionally `skills/` with automatic `references/antigravity-overflow.md` splitting above 24,000 bytes).
+
+### Changed
+- **Broader hook and MCP tool coverage in the Antigravity bridge.** `_antigravity-hook.sh` and `sync-antigravity.mjs` now support `Stop` hooks, Node `.js`/`.mjs` hook scripts, compound `--eval` hook commands, `view_file` → `Read` payloads, `CLAUDE_PROJECT_DIR` export, `ToolSearch`, and `mcp__*` agent tool mappings (`call_mcp_tool`).
+
 ## [0.29.0] - 2026-11-11
 
 ### Added
@@ -305,7 +313,8 @@ knowing the solution.
 
 Older releases are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
-[Unreleased]: https://github.com/BoardPandas/claude-code-bootstrap/compare/v0.29.0...HEAD
+[Unreleased]: https://github.com/BoardPandas/claude-code-bootstrap/compare/v0.29.1...HEAD
+[0.29.1]: https://github.com/BoardPandas/claude-code-bootstrap/compare/v0.29.0...v0.29.1
 [0.29.0]: https://github.com/BoardPandas/claude-code-bootstrap/compare/v0.28.1...v0.29.0
 [0.28.1]: https://github.com/BoardPandas/claude-code-bootstrap/compare/v0.28.0...v0.28.1
 [0.28.0]: https://github.com/BoardPandas/claude-code-bootstrap/compare/v0.27.0...v0.28.0

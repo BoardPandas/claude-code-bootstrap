@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# Adapter that runs canonical .claude/scripts/*.sh hooks under Google Antigravity.
+# Adapter that runs canonical .claude/scripts/* and .claude/hooks/* hooks under Antigravity.
 #
-# Usage (generated into .agents/hooks.json by scripts/sync-codex.mjs):
+# Usage (generated into .agents/hooks.json by scripts/sync-codex.mjs / sync-antigravity.mjs):
 #   bash "$(git rev-parse --show-toplevel)"/.claude/scripts/_antigravity-hook.sh SessionStart .claude/scripts/session-start-kb-check.sh
 #   bash "$(git rev-parse --show-toplevel)"/.claude/scripts/_antigravity-hook.sh PreInvocation
 #   bash "$(git rev-parse --show-toplevel)"/.claude/scripts/_antigravity-hook.sh PreToolUse  .claude/scripts/check-changelog-staged.sh
 #   bash "$(git rev-parse --show-toplevel)"/.claude/scripts/_antigravity-hook.sh PostToolUse .claude/scripts/post-edit-format.sh
+#   bash "$(git rev-parse --show-toplevel)"/.claude/scripts/_antigravity-hook.sh PostToolUse --eval 'HOOK_PROBE_LOG=... bash ...'
 #
 # Why an adapter instead of a second set of hook scripts:
 #   1. Antigravity runs hooks with .agents/ as cwd, sends camelCase payloads
@@ -14,7 +15,7 @@
 #      -- including Claude/Codex's blocking exit 2 -- is logged as a hook error
 #      and fails open.
 #   2. PreToolUse returns {"decision":"allow"} or {"decision":"deny","reason":"..."}
-#      and cannot carry additionalContext directly; PostToolUse returns {} only.
+#      and cannot carry additionalContext directly; PostToolUse and Stop return {}.
 #      Advisory text from PreToolUse/PostToolUse is queued per conversationId and
 #      flushed on the next PreInvocation as {"injectSteps":[{"ephemeralMessage":"..."}]}.
 #   3. On SessionStart, ephemeralMessage lasts only one model call, so startup
@@ -28,11 +29,13 @@ SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
 . "$SCRIPT_DIR/_hook-context.sh"
 
 EVENT=${1:-}
-TARGET_REL=${2:-}
+MODE_OR_TARGET=${2:-}
+EVAL_CMD=${3:-}
 
 REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null) \
   || REPO_ROOT=$(cd "$SCRIPT_DIR/../.." 2>/dev/null && pwd -P) \
   || REPO_ROOT=$PWD
+export CLAUDE_PROJECT_DIR="$REPO_ROOT"
 
 RAW_INPUT=""
 if [ ! -t 0 ]; then
@@ -93,6 +96,11 @@ build_claude_payload() {
       fpath=$(json_field "$RAW_INPUT" toolCall.args.TargetFile)
       [ -n "$fpath" ] || fpath=$(json_field_flat "$RAW_INPUT" TargetFile)
       ;;
+    view_file)
+      claude_tool="Read"
+      fpath=$(json_field "$RAW_INPUT" toolCall.args.AbsolutePath)
+      [ -n "$fpath" ] || fpath=$(json_field_flat "$RAW_INPUT" AbsolutePath)
+      ;;
     *)
       claude_tool="$agy_tool"
       ;;
@@ -116,16 +124,33 @@ build_claude_payload() {
 }
 
 resolve_target() {
-  case "$TARGET_REL" in
-    /*) printf '%s' "$TARGET_REL" ;;
+  local rel=${1:-}
+  case "$rel" in
+    /*) printf '%s' "$rel" ;;
     .claude/scripts/*)
-      if [ -f "$REPO_ROOT/$TARGET_REL" ]; then
-        printf '%s/%s' "$REPO_ROOT" "$TARGET_REL"
+      if [ -f "$REPO_ROOT/$rel" ]; then
+        printf '%s/%s' "$REPO_ROOT" "$rel"
       else
-        printf '%s/%s' "$SCRIPT_DIR" "${TARGET_REL#.claude/scripts/}"
+        printf '%s/%s' "$SCRIPT_DIR" "${rel#.claude/scripts/}"
       fi
       ;;
-    *)  printf '%s/%s' "$REPO_ROOT" "$TARGET_REL" ;;
+    *) printf '%s/%s' "$REPO_ROOT" "$rel" ;;
+  esac
+}
+
+invoke_target() {
+  local payload=$1 target=""
+  if [ "$MODE_OR_TARGET" = "--eval" ]; then
+    [ -n "$EVAL_CMD" ] || return 0
+    (cd "$REPO_ROOT" && printf '%s' "$payload" | bash -c "$EVAL_CMD")
+    return $?
+  fi
+  [ -n "$MODE_OR_TARGET" ] || return 0
+  target=$(resolve_target "$MODE_OR_TARGET")
+  [ -f "$target" ] || return 0
+  case "$target" in
+    *.js|*.mjs|*.cjs) (cd "$REPO_ROOT" && printf '%s' "$payload" | node "$target") ;;
+    *)                (cd "$REPO_ROOT" && printf '%s' "$payload" | bash "$target") ;;
   esac
 }
 
@@ -147,10 +172,8 @@ case "$EVENT" in
     ;;
 
   SessionStart)
-    [ -n "$TARGET_REL" ] || { printf '{}\n'; exit 0; }
-    TARGET=$(resolve_target)
-    [ -f "$TARGET" ] || { printf '{}\n'; exit 0; }
-    OUT=$(cd "$REPO_ROOT" && printf '%s' "$RAW_INPUT" | bash "$TARGET" 2>/dev/null) || true
+    [ -n "$MODE_OR_TARGET" ] || { printf '{}\n'; exit 0; }
+    OUT=$(invoke_target "$RAW_INPUT" 2>/dev/null) || true
     CTX=$(extract_additional_context "$OUT")
     [ -n "$CTX" ] || CTX="$OUT"
     if [ -n "$CTX" ]; then
@@ -162,24 +185,22 @@ case "$EVENT" in
     ;;
 
   PreToolUse)
-    [ -n "$TARGET_REL" ] || { printf '{"decision":"allow"}\n'; exit 0; }
-    TARGET=$(resolve_target)
-    [ -f "$TARGET" ] || { printf '{"decision":"allow"}\n'; exit 0; }
+    [ -n "$MODE_OR_TARGET" ] || { printf '{"decision":"allow"}\n'; exit 0; }
     SYNTH=$(build_claude_payload)
     ERR_FILE=$(mktemp "${TMPDIR:-/tmp}/agy-hook-err.XXXXXX" 2>/dev/null || printf '')
     if [ -n "$ERR_FILE" ]; then
-      OUT=$(cd "$REPO_ROOT" && printf '%s' "$SYNTH" | bash "$TARGET" 2>"$ERR_FILE")
+      OUT=$(invoke_target "$SYNTH" 2>"$ERR_FILE")
       RC=$?
       ERR=$(cat "$ERR_FILE")
       rm -f "$ERR_FILE"
     else
-      OUT=$(cd "$REPO_ROOT" && printf '%s' "$SYNTH" | bash "$TARGET")
+      OUT=$(invoke_target "$SYNTH")
       RC=$?
       ERR=""
     fi
 
     if [ "$RC" -eq 2 ]; then
-      [ -n "$ERR" ] || ERR="Blocked by $TARGET_REL"
+      [ -n "$ERR" ] || ERR="Blocked by ${EVAL_CMD:-$MODE_OR_TARGET}"
       printf '{"decision":"deny","reason":"%s"}\n' "$(json_escape "$ERR")"
       exit 0
     fi
@@ -195,13 +216,18 @@ case "$EVENT" in
     ;;
 
   PostToolUse)
-    [ -n "$TARGET_REL" ] || { printf '{}\n'; exit 0; }
-    TARGET=$(resolve_target)
-    [ -f "$TARGET" ] || { printf '{}\n'; exit 0; }
+    [ -n "$MODE_OR_TARGET" ] || { printf '{}\n'; exit 0; }
     SYNTH=$(build_claude_payload)
-    OUT=$(cd "$REPO_ROOT" && printf '%s' "$SYNTH" | bash "$TARGET" 2>/dev/null) || true
+    OUT=$(invoke_target "$SYNTH" 2>/dev/null) || true
     ADVICE=$(extract_additional_context "$OUT")
     queue_advice "$ADVICE"
+    printf '{}\n'
+    exit 0
+    ;;
+
+  Stop)
+    [ -n "$MODE_OR_TARGET" ] || { printf '{}\n'; exit 0; }
+    invoke_target "$RAW_INPUT" >/dev/null 2>&1 || true
     printf '{}\n'
     exit 0
     ;;
