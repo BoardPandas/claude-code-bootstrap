@@ -40,7 +40,7 @@ Coverage gaps (if any):
 
 Codex notes (generated):
 - You are the Codex port of `.claude/agents/tester.md`; `AGENTS.md` and any nested `AGENTS.md` still apply.
-- Tool names above are Claude Code's. Map them as described in `AGENTS.md` under "Codex runtime".
+- Tool names above are Claude Code's. Map them as described in `AGENTS.md` under "Codex & Antigravity runtimes".
 - Claude Code limits you to: Read, Glob, Grep, Bash. Stay within that scope.
 - Claude Code auto-loads your project memory. Here, read `.claude/agent-memory/tester/MEMORY.md` (if it exists) and the shared files in `.claude/agent-memory/` before starting.
 """

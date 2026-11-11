@@ -3,7 +3,7 @@ name: doc-sync
 description: "Build, audit, or incrementally refresh comprehensive project documentation in the `Docs/` folder. Generates a TOC-driven wiki with categorized pages (core, features, operations, api, design, runbooks), AUTOGEN markers for safe updates, evidence-based citations with line numbers, Mermaid diagrams, and a README index. Use after significant code changes, when onboarding a new repo, or to audit existing docs for staleness."
 ---
 
-> Generated from `.claude/skills/doc-sync/SKILL.md` by `scripts/sync-codex.mjs`. Edit the source, then run `npm run sync:codex`. Claude Code tool and command names below map to Codex as described in `AGENTS.md` under "Codex runtime".
+> Generated from `.claude/skills/doc-sync/SKILL.md` by `scripts/sync-codex.mjs`. Edit the source, then run `npm run sync:codex`. Claude Code tool and command names below map to Codex and Antigravity as described in `AGENTS.md` under "Codex & Antigravity runtimes".
 
 # Documentation Sync
 

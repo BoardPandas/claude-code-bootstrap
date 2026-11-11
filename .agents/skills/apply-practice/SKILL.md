@@ -3,7 +3,7 @@ name: apply-practice
 description: "Apply a specific best practice from the BP knowledge base to a target repository. Use this whenever the user says \"apply a practice\", \"apply slug to this repo\", \"adopt the BP pattern for X\", \"bring this repo up to the BP standard\", or wants a proven convention/config/workflow from BP installed into the current project -- even if they don't say \"BP\" explicitly."
 ---
 
-> Generated from `.claude/skills/apply-practice/SKILL.md` by `scripts/sync-codex.mjs`. Edit the source, then run `npm run sync:codex`. Claude Code tool and command names below map to Codex as described in `AGENTS.md` under "Codex runtime".
+> Generated from `.claude/skills/apply-practice/SKILL.md` by `scripts/sync-codex.mjs`. Edit the source, then run `npm run sync:codex`. Claude Code tool and command names below map to Codex and Antigravity as described in `AGENTS.md` under "Codex & Antigravity runtimes".
 
 You are applying a specific best practice from the BP knowledge base to a target repository.
 

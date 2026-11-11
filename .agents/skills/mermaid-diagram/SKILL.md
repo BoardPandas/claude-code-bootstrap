@@ -1,11 +1,11 @@
 ---
 name: mermaid-diagram
-description: "Generate Mermaid diagrams to visualize data flow, architecture, or state machines. Use for debugging, documentation, or understanding complex systems."
+description: "Explicit command only (/mermaid-diagram or $mermaid-diagram) -- never invoke implicitly. Generate Mermaid diagrams to visualize data flow, architecture, or state machines. Use for debugging, documentation, or understanding complex systems."
 ---
 
-> Generated from `.claude/skills/mermaid-diagram/SKILL.md` by `scripts/sync-codex.mjs`. Edit the source, then run `npm run sync:codex`. Claude Code tool and command names below map to Codex as described in `AGENTS.md` under "Codex runtime".
+> Generated from `.claude/skills/mermaid-diagram/SKILL.md` by `scripts/sync-codex.mjs`. Edit the source, then run `npm run sync:codex`. Claude Code tool and command names below map to Codex and Antigravity as described in `AGENTS.md` under "Codex & Antigravity runtimes".
 >
-> Explicit only: runs when the user invokes `$mermaid-diagram` (`/mermaid-diagram` in Claude Code), never implicitly.
+> Explicit only: runs when the user invokes `$mermaid-diagram` or `/mermaid-diagram`, never implicitly.
 
 # Mermaid Diagram Generator
 

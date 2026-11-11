@@ -1,11 +1,11 @@
 ---
 name: triage-issues
-description: "Triage the open GitHub issues for any repository, dispatch one worktree-isolated builder subagent per issue (or per duplicate group) to fix it, then land the resolved fixes on the main branch and close the issues. Blockers come back to the main session with concrete recommendations. Commits and pushes autonomously, so it runs only via the explicit /triage-issues command."
+description: "Explicit command only (/triage-issues or $triage-issues) -- never invoke implicitly. Triage the open GitHub issues for any repository, dispatch one worktree-isolated builder subagent per issue (or per duplicate group) to fix it, then land the resolved fixes on the main branch and close the issues. Blockers come back to the main session with concrete recommendations. Commits and pushes autonomously, so it runs only via the explicit /triage-issues command."
 ---
 
-> Generated from `.claude/skills/triage-issues/SKILL.md` by `scripts/sync-codex.mjs`. Edit the source, then run `npm run sync:codex`. Claude Code tool and command names below map to Codex as described in `AGENTS.md` under "Codex runtime".
+> Generated from `.claude/skills/triage-issues/SKILL.md` by `scripts/sync-codex.mjs`. Edit the source, then run `npm run sync:codex`. Claude Code tool and command names below map to Codex and Antigravity as described in `AGENTS.md` under "Codex & Antigravity runtimes".
 >
-> Explicit only: runs when the user invokes `$triage-issues` (`/triage-issues` in Claude Code), never implicitly.
+> Explicit only: runs when the user invokes `$triage-issues` or `/triage-issues`, never implicitly.
 
 # Triage Issues
 

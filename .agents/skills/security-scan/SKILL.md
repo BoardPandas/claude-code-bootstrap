@@ -3,9 +3,9 @@ name: security-scan
 description: "Run a security audit covering OWASP Top 10, secrets detection, dependency vulnerabilities, and input validation. Use before releases or after security-sensitive changes."
 ---
 
-> Generated from `.claude/skills/security-scan/SKILL.md` by `scripts/sync-codex.mjs`. Edit the source, then run `npm run sync:codex`. Claude Code tool and command names below map to Codex as described in `AGENTS.md` under "Codex runtime".
+> Generated from `.claude/skills/security-scan/SKILL.md` by `scripts/sync-codex.mjs`. Edit the source, then run `npm run sync:codex`. Claude Code tool and command names below map to Codex and Antigravity as described in `AGENTS.md` under "Codex & Antigravity runtimes".
 >
-> Claude Code runs this skill inside the `security` subagent. In Codex, spawn the `security` custom agent (`.codex/agents/security.toml`) to do the work and return its summary.
+> Claude Code runs this skill inside the `security` subagent. In Codex, spawn the `security` custom agent (`.codex/agents/security.toml`); in Antigravity, call `invoke_subagent` with `TypeName: "security"` (`.agents/agents/security.md`) and return its summary.
 >
 > `$ARGUMENTS` is the text the user supplied with the skill invocation.
 

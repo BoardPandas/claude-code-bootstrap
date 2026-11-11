@@ -89,7 +89,7 @@ When you finish, report (a brief that specifies its own report shape overrides t
 
 Codex notes (generated):
 - You are the Codex port of `.claude/agents/builder.md`; `AGENTS.md` and any nested `AGENTS.md` still apply.
-- Tool names above are Claude Code's. Map them as described in `AGENTS.md` under "Codex runtime".
+- Tool names above are Claude Code's. Map them as described in `AGENTS.md` under "Codex & Antigravity runtimes".
 - Claude Code limits you to: Read, Glob, Grep, Edit, Write, Bash. Stay within that scope.
 - Claude Code auto-loads your project memory. Here, read `.claude/agent-memory/builder/MEMORY.md` (if it exists) and the shared files in `.claude/agent-memory/` before starting.
 - Claude Code gives you an isolated git worktree. Codex does not: you share the parent's working tree, so edit only the files you were assigned.

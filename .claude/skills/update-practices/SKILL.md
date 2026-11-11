@@ -73,125 +73,19 @@ Run `git remote get-url origin` and compare it against the template repo URL fro
 2. Read `.claude/references/template-sync-state.json` (if it exists). It stores `lastSyncedCommit`, `lastSyncedDate`, and `deadUrls` from the previous run.
 3. If the remote SHA equals `lastSyncedCommit`, **skip the rest of this step** and note `TEMPLATE-CURRENT (commit <SHA> already synced)` in the report.
 
-### Fetch the template file tree
+### Categorize and apply template changes
 
-Fetch the tree API URL from the registry using Bash so you get raw JSON:
+Read `${CLAUDE_SKILL_DIR}/references/template-sync-and-report.md` in full before proceeding. It contains the exact git blob-SHA categorization commands, the `.claude/` sync whitelist, the load-bearing files outside `.claude/` that MUST still sync (`REVIEW.md`, `scripts/check-claude-wiring*.mjs`, `scripts/sync-codex*.mjs`, `scripts/sync-antigravity.mjs`, `scripts/antigravity-hooks.test.mjs`), the NEVER-sync list, and the `template-sync-state.json` schema.
 
-```bash
-curl -s "<tree-api-url>"
-```
-
-The response contains every path in the template plus each file's git blob SHA. Extract all paths under `.claude/`; these are the canonical template files. Ignore files outside `.claude/` (CLAUDE.md, README.md, package.json, etc.) since those are project-specific.
-
-### Categorize each template file by blob SHA
-
-Do NOT use WebFetch to compare file contents. WebFetch runs pages through a model and can truncate or reformat long files, so it cannot support an exact comparison. Compare git blob SHAs instead; they are byte-exact and require no downloads for unchanged files.
-
-For each `.claude/` path in the template tree:
-
-1. **Check if it exists locally.** If not, check the ignore list (see below):
-   - Listed in `.claude/references/template-sync-ignore.md` → mark as **TEMPLATE-IGNORED** (deliberately removed by this project; do not re-create).
-   - Not listed → mark as **TEMPLATE-NEW**.
-2. If it exists locally, compute the local blob SHA and compare with the tree entry's SHA:
-   ```bash
-   git hash-object <local-path>
-   ```
-   - SHAs match → mark as **TEMPLATE-CURRENT** (byte-for-byte identical, no action needed).
-   - SHAs differ → download the template version's raw bytes into the scratchpad and diff locally:
-     ```bash
-     curl -s "<raw-base-url>/<path>" -o <scratchpad>/<path>
-     git diff --no-index <local-path> <scratchpad>/<path>
-     ```
-     - The diff touches a few lines/sections (incremental edits) → mark as **TEMPLATE-UPDATED**.
-     - The body has been substantially rewritten (most steps/sections changed, reordered, or replaced) → mark as **TEMPLATE-REWRITTEN**. A rewrite is when a merge would produce a Frankenstein file; the template's version is the new canonical source.
-
-   Do not rely on quick heuristics like "the file exists, so it's current." A skill that exists locally can still be stale if its instructions were rewritten in the template. Always classify from the real diff.
-
-### Files to sync (whitelist)
-
-Only sync these categories of `.claude/` files from the template:
-
-| Category | Path pattern | Sync strategy |
-|----------|-------------|---------------|
-| Skills | `.claude/skills/**` (SKILL.md plus supporting files under `references/`, `templates/`, `evals/`, etc.) | Sync new skills entirely, including their supporting files. For **TEMPLATE-UPDATED** files, merge new steps/sections but preserve project-specific customizations (e.g., custom matchers, stack-specific checks). For **TEMPLATE-REWRITTEN** files, **replace the body wholesale with the template version**, then re-apply only the genuinely project-specific additions (custom stack checks, custom paths). Do not try to merge a rewrite line-by-line. |
-| Agents | `.claude/agents/*.md` | Sync new agents entirely. For **TEMPLATE-UPDATED** agents, update frontmatter fields and instructions but preserve project-specific `context` or `skills` overrides. For **TEMPLATE-REWRITTEN** agents, replace the body with the template version, preserving only project-specific `context`/`skills`/`tools` overrides. |
-| Rules | `.claude/rules/*.md` | Sync new rules entirely. For **TEMPLATE-UPDATED** rules, update content but preserve custom `paths:` frontmatter if the project has different file structure. For **TEMPLATE-REWRITTEN** rules, replace the body with the template version, preserving only the project's custom `paths:` frontmatter. |
-| Scripts | `.claude/scripts/*.sh` | Sync new scripts entirely. For existing scripts, replace with template version unless local version has project-specific logic (check for project-specific paths, env vars, or tool references). |
-| References | `.claude/references/source-urls.md` | Merge: add any new URLs from template that are not already present. A URL may be removed only when it was verified unreachable on two consecutive runs (tracked via `deadUrls` in the sync state file). |
-| References | `.claude/references/hooks-and-settings.md` | Generic catalog, not project-specific. Replace with the template version unless the local copy has project-specific notes appended, in which case merge new rows in. |
-| References | `.claude/references/ux-laws.md` | Generic catalog, not project-specific. Replace with the template version unless the local copy has project-specific notes appended, in which case merge new entries in. |
-| References | `.claude/references/infrastructure.md` | Do NOT sync; infrastructure is project-specific. |
-| References | `.claude/references/tools.md` | Do NOT sync; tools depend on project stack. |
-| References | `.claude/references/design-guardrails.md` | Do NOT sync; guardrails depend on project stack. |
-| Settings | `.claude/settings.json` | Deep-merge: add new hooks, permissions, and env vars from template. Never remove existing entries. Preserve project-specific matchers and custom hooks. |
-| Settings | `.claude/settings.local.json.example` | Replace with template version (it is just an example file). |
-| References | `.claude/references/managed-settings.example.json` | Generic example, not project-specific. Replace with the template version. |
-
-The template no longer ships an eval suite (removed in 0.21.0). A project that adopted
-`.claude/evals/`, `scripts/run-evals.mjs`, and `.github/workflows/agent-evals.yml` before
-then owns them now: do not sync, audit, or delete them.
-
-The same holds for the AI review (`claude-review.yml`) and scheduled security scan
-(`security-scan.yml`) workflows, removed in 0.21.8. A project that already has them owns
-them: do not sync, audit, or delete them.
-
-### Files outside `.claude/` that MUST still sync
-
-These live outside `.claude/` but are load-bearing for checks that fail the build, so
-skipping them leaves the adopting repo permanently red with no way to fix it from the
-template. This is a deliberate exception to the rule below.
-
-| File | Sync strategy |
-|------|---------------|
-| `REVIEW.md` | Sync entirely if absent — `scripts/check-claude-wiring.mjs` errors without it. If present, merge new passes and exclusions but preserve the project's own severity bar and nit cap; those are local policy calls. |
-| `scripts/check-claude-wiring.mjs` | Replace with the template version, then re-run it: new checks routinely surface pre-existing defects, and that is the point. |
-| `scripts/check-claude-wiring.test.mjs` | Replace with the template version. |
-
-After syncing any of these, run `npm run check:claude` and `npm test` before reporting
-success. A sync that leaves the guard red is
-not finished.
-
-### Files to NEVER sync
-
-- `.claude/agent-memory/*`: project-specific memory, never overwrite.
-- `.claude/references/template-sync-state.json`: generated locally by this skill.
-- `.claude/references/template-sync-ignore.md`: project-specific removal list; never overwrite local entries.
-- `intent/**` and `tasks/**`: the project's own artifact chain, never template content.
-- Any file not in `.claude/` and not named in the exception table above.
-- `CLAUDE.md`, `.claude/references/agent-registry.md`, `instructions.md`: these are project-tailored.
-- `AGENTS.md`, `.agents/**`, `.codex/**`: generated Codex mirrors. Never sync or hand-edit them; regenerate with `npm run sync:codex` once the template changes are applied.
-
-### Apply template changes
-
-For each **TEMPLATE-NEW** file:
-- Create it locally with the template content.
-- If the file previously existed and was deleted (visible in `git log`, or the user tells you), do not re-create it; add its path to `.claude/references/template-sync-ignore.md` instead and report it as TEMPLATE-IGNORED.
-
-For each **TEMPLATE-UPDATED** file:
-- Apply the sync strategy from the table above.
-- When merging, use the non-destructive rules: never remove project-specific content, append/merge rather than replace.
-
-For each **TEMPLATE-REWRITTEN** file:
-- The upstream body is the new canonical source. Replace the local body with the template version per the sync strategy above.
-- Before replacing, scan the local file for genuinely project-specific content (custom stack checks, custom paths, custom `paths:`/`context`/`skills` frontmatter). Re-apply ONLY those after pulling in the rewrite.
-- Do not attempt a line-by-line merge of a rewrite; that produces an incoherent hybrid. Take the template body whole, then graft back the small project-specific pieces.
-
-For each **TEMPLATE-IGNORED** file:
-- Take no action. List it in the report so the user knows the ignore entry is still active.
-
-### Persist sync state
-
-After syncing, write `.claude/references/template-sync-state.json`:
-
-```json
-{
-  "lastSyncedCommit": "<SHA from git ls-remote>",
-  "lastSyncedDate": "<today's date>",
-  "deadUrls": ["<registry URLs that were unreachable this run>"]
-}
-```
-
-`deadUrls` drives the two-strikes rule for the source URL registry: a URL that appears in `deadUrls` from the previous run AND is unreachable again this run may be removed from `source-urls.md` (report the removal). A URL that recovers is dropped from `deadUrls`.
+1. Fetch the tree API URL via `curl -s "<tree-api-url>"` (never WebFetch, which can truncate or reformat files) and classify each whitelisted path by git blob SHA (`git hash-object <local-path>`) into **TEMPLATE-IGNORED** (in `template-sync-ignore.md`), **TEMPLATE-NEW**, **TEMPLATE-CURRENT**, **TEMPLATE-UPDATED** (incremental diff), or **TEMPLATE-REWRITTEN** (body substantially replaced).
+2. Apply changes per category:
+   - **TEMPLATE-NEW:** create locally unless previously deleted intentionally (record in `template-sync-ignore.md` as TEMPLATE-IGNORED).
+   - **TEMPLATE-UPDATED:** merge non-destructively per the whitelist table; preserve project-specific customizations.
+   - **TEMPLATE-REWRITTEN:** replace the body wholesale with the upstream version, then re-apply only genuinely project-specific customizations (never merge a rewrite line-by-line).
+   - **TEMPLATE-IGNORED:** skip and report as active.
+3. Never sync `.claude/agent-memory/*`, `template-sync-state.json`, `template-sync-ignore.md`, `intent/**`, `tasks/**`, `CLAUDE.md`, `instructions.md`, or generated Codex/Antigravity mirrors (`AGENTS.md`, `.agents/**`, `.codex/**` — regenerate those in Step 7 via `npm run sync:codex`).
+4. Write `.claude/references/template-sync-state.json` (`lastSyncedCommit`, `lastSyncedDate`, `deadUrls`) per the reference schema. Remove a registry URL from `source-urls.md` only on two consecutive unreachable runs (`deadUrls` two-strikes rule).
+5. Run `npm run check:claude` and `npm test` after syncing outside-`.claude/` guard/sync scripts.
 
 ## Step 2c: Health Audit of the `.claude/` Folder
 
@@ -297,208 +191,39 @@ A check that could not be run is its own finding. Never record it as HEALTHY.
 
 ## Step 3: Compare and Identify Changes
 
-Categorize findings as:
+Walk every category in `${CLAUDE_SKILL_DIR}/references/template-sync-and-report.md` ("Step 3: Detailed Comparison Checklist") and categorize findings as **NEW**, **UPDATED**, **DEPRECATED**, or **CURRENT** across:
 
-- **NEW:** Features or patterns not yet reflected in the current config.
-- **UPDATED:** Patterns that exist but need modification to match current best practices.
-- **DEPRECATED:** Patterns in use that are no longer recommended.
-- **CURRENT:** Patterns that already match best practices (no action needed).
-
-Check each of these areas explicitly:
-
-### Core files
-- Skills (all template skills present and current)
-- Agents (all template agents present and current)
-- Settings (permissions, hooks, env)
-- Tools reference
-- Design guardrails
-
-### Path-scoped rules (.claude/rules/*.md)
-- Are existing rules still valid for the current stack?
-- Are there new path patterns that should have rules (e.g., new source directories added)?
-- Do rule frontmatter `paths:` patterns still match the actual file structure?
-- Are there new best-practice rule templates from official/community sources?
-
-### Agent memory (.claude/agent-memory/)
-- Does the directory exist? If not, it should be created.
-- Are the standard files present (README.md, patterns.md, decisions.md, debugging.md)?
-- Is the README still accurate about conventions?
-- Have any memory entries become stale or contradicted by current code?
-- Does `debugging.md` have the standard gotchas structure? If empty or unstructured, initialize with the template from init-repo.
-
-### Agent frontmatter
-Review each agent for new frontmatter fields:
-- `background`: Should any agents run in the background?
-- `isolation`: Should security agent use isolation?
-- `context`: Should any agents have injected context?
-- `skills`: Should any agents be bound to specific skills?
-- `memory`: Should any agents read agent-memory files on startup?
-
-### Skill frontmatter
-Review each skill for new frontmatter fields:
-- `context: fork`: Should any skills run in isolated context?
-- `agent`: Should any skills be bound to a specific agent? A binding takes effect only with `context: fork`.
-- Are `model` assignments still optimal?
-
-### Hook events
-- Are all recommended hooks configured?
-- Are there new hook events available that should be adopted?
-- Are any configured hooks using deprecated event names or syntax?
-- Should HTTP hooks be added for team workflows?
-- Are matchers using the correct syntax?
-
-The full event catalog, hook types, and matcher syntax live in `.claude/references/hooks-and-settings.md`; check configured hooks against it. When the fetched sources reveal a hook event or type not yet in that reference, add it there (not into a skill body), so the catalog stays in one place.
-
-### Settings
-Check configured settings against the optional-settings catalog in `.claude/references/hooks-and-settings.md`. That reference is the single source of truth for which settings exist; do not maintain a settings list inside this skill. If the latest Claude Code version introduces a new setting, add it to that reference.
-
-### Cost / token efficiency
-
-Audit the config for token-efficiency patterns. Do NOT recommend disabling the 1M context window (the 200K default is intentionally not used in this template).
-
-- **Per-prompt effort:** Are skills setting `effort:` in frontmatter where appropriate? Mechanical, step-by-step skills should use `low` or `medium`; analysis skills `medium`; orchestration/planning `high` or `max`. Flag skills missing `effort` where a non-default would save tokens.
-- **Model routing:** Are skills and agents assigned the cheapest model that fits? Step-by-step: haiku. Analysis: sonnet. Orchestration/planning: opus. Flag any opus assignment that could be sonnet/haiku.
-- **Cache preservation:** Skills and agents should not switch model mid-session unnecessarily (model switches invalidate the prompt cache). Flag skills that change model partway through a multi-step flow.
-- **Input format swaps:** Where the project ingests PDFs, web pages, or screenshots, prefer cheaper extractors (`pdftotext` for PDFs, an agent-browser / DOM read over screenshot capture, code knowledge graphs over raw repo dumps). Note any tool reference in `tools.md` that should be added.
-- **Subagent delegation:** Long mechanical work (log scans, repo-wide searches, doc fetches) should be delegated to subagents with cheaper models so the main session's cache stays intact.
+1. **Core files, path-scoped rules (`.claude/rules/*.md`), and agent memory (`.claude/agent-memory/`).**
+2. **Skill and agent frontmatter** (`model`, `effort`, `context: fork` + `agent`, `memory`, `isolation`, `skills`, `maxTurns`).
+3. **Hook events and settings** against `.claude/references/hooks-and-settings.md` (single source of truth — add newly discovered upstream hook events, types, or settings to that reference rather than inside a skill).
+4. **Cost / token efficiency** (`effort` levels, cheapest fitting `model` routing, prompt-cache preservation by avoiding mid-session model switches, cheaper extractors, and subagent delegation — do NOT disable the 1M context window).
 
 ## Step 4: Implement Changes
 
-For each NEW or UPDATED item:
+1. **NEW / UPDATED / DEPRECATED items:** apply non-destructively (append rather than replace sections; deep-merge JSON preserving existing keys; never overwrite `.claude/agent-memory/` entries; preserve existing rules while adding or rescoping `paths:`; replace deprecated patterns with current equivalents).
+2. **BROKEN / DEGRADED findings from Step 2c:**
+   - Fix **BROKEN** first and re-run the check that caught it (confirm behavioral hook fixes by re-running both payload directions, never just re-reading).
+   - Fix **DEGRADED** when unambiguous (dangling refs, duplicated instructions, phrase triggers on `disable-model-invocation: true` skills); report judgment calls (narrowing tools, deleting memory) instead of guessing.
+   - Never apply **SUGGESTION** items; add mechanically checkable invariants to `scripts/check-claude-wiring.mjs` and verify they fail on the target defect.
+3. **Canonical inventory:** derive from the Step 2b template tree (or local tree when this repo IS the template) minus `template-sync-ignore.md`. Never hardcode a list here.
+4. Refresh `tools.md`, `design-guardrails.md`, skill/agent frontmatter, hooks (`allowedHttpHookUrls` where team webhooks apply), `.claude/settings.json` / `settings.local.json.example` (against `.claude/references/hooks-and-settings.md`), and `source-urls.md` (applying the `deadUrls` two-strikes rule).
 
-1. Determine which file(s) need to change.
-2. Make the change. Follow the non-destructive merge rules:
-   - Never remove custom project-specific content.
-   - Append new sections rather than replacing existing ones.
-   - For JSON files, deep-merge; preserve existing keys.
-   - For agent-memory files, never overwrite; only add missing files.
-   - For rules, preserve existing rules; only add new ones or update paths.
-3. For DEPRECATED items: update the pattern to the recommended alternative.
+## Step 5: Prune CLAUDE.md and Rules
 
-For each BROKEN or DEGRADED finding from Step 2c:
+1. **CLAUDE.md hierarchy:** remove advice current models handle natively, outdated version references, and rules duplicated from a parent `CLAUDE.md`. Keep root `CLAUDE.md` under 16 KB and total always-on context under 20 KB (`wc -c`).
+2. **`.claude/rules/*.md`:** remove rules duplicating `CLAUDE.md`, verify `paths:` globs match real files, update conventions for stack changes, and delete rules for removed directories.
 
-1. Fix BROKEN findings first, and re-run the check that caught it to confirm the fix. A behavioral hook finding is confirmed by re-running both payload directions, not by re-reading the script -- the whole class of defect is that the script reads correctly.
-2. Fix DEGRADED findings where the fix is unambiguous (dangling reference, duplicated instruction, a trigger documented as a phrase on a `disable-model-invocation: true` skill). Where the fix involves a judgment call about project intent (narrowing an agent's tools, deleting a memory entry), report it instead of guessing.
-3. Never act on a SUGGESTION. New agents and restructuring go in the report for the user to decide.
-4. If a fix would be better enforced mechanically, add the assertion to `scripts/check-claude-wiring.mjs` as well, and verify the new assertion actually fails on the defect it targets before trusting it.
+## Step 7: Update Documentation and Regenerate Mirrors
 
-**Canonical skill and agent inventory:** derive it from the template tree fetched in Step 2b (every `.claude/skills/*/SKILL.md` and `.claude/agents/*.md` path in the tree). Do not maintain a hardcoded list here; it drifts. Every template skill and agent should exist locally and be current unless it is listed in `template-sync-ignore.md`. If Step 2b was skipped because this repo is the template, the local tree IS the canonical inventory.
-
-Update `.claude/references/tools.md` if any tools have new versions or new tools should be added.
-
-Update `.claude/references/design-guardrails.md` if UI best practices have changed.
-
-Review skill frontmatter and update `model`, `disable-model-invocation`, `context`, and `agent` fields if recommendations have changed.
-
-Review agent frontmatter and update `background`, `isolation`, `context`, `skills`, and `memory` fields if recommendations have changed.
-
-Review hook configuration:
-- Verify all hook events are still valid.
-- Add new recommended hooks.
-- Update matchers if file paths have changed.
-- Add HTTP hooks if `allowedHttpHookUrls` is configured and team webhooks are in use.
-
-Review settings against the catalog in `.claude/references/hooks-and-settings.md`, and ensure `settings.local.json.example` exists if it should.
-
-Apply the two-strikes dead-URL rule to `.claude/references/source-urls.md` using `deadUrls` from the sync state file (see Step 2b).
-
-## Step 5: Prune CLAUDE.md Files
-
-Review all CLAUDE.md files in the hierarchy. Remove:
-- Advice the model now handles natively (check against current model capabilities)
-- Outdated version references
-- Redundant rules that duplicate parent CLAUDE.md content
-
-Keep each CLAUDE.md focused and under 200 lines.
-
-## Step 6: Prune and Validate Rules
-
-Review `.claude/rules/*.md` files:
-- Remove rules that duplicate CLAUDE.md content (rules should be path-specific, not general).
-- Verify `paths:` patterns still match actual files in the project.
-- Update rules if stack conventions have changed.
-- Remove rules for deleted source directories.
-
-## Step 7: Update Documentation
-
-1. Update `CLAUDE.md` if skill or agent inventory changed.
-2. Update `.claude/references/agent-registry.md` if agent inventory changed.
-3. Update `instructions.md` if usage patterns, available features, or configuration options changed. Ensure it documents:
-   - Path-scoped rules (`.claude/rules/*.md`)
-   - Agent memory (`.claude/agent-memory/`)
-   - All agent and skill frontmatter fields
-   - All hook events and types (command, http, prompt, agent)
-   - All settings options including settings.local.json overrides
-4. If `scripts/sync-codex.mjs` exists, run `npm run sync:codex` last, after every other edit. `AGENTS.md`, `.agents/skills/`, and `.codex/` are generated from `CLAUDE.md` and `.claude/`, and `npm run check:claude` fails while they are stale.
+1. Update `CLAUDE.md` and `.claude/references/agent-registry.md` if skill or agent inventory changed.
+2. Update `instructions.md` if features or configuration options changed (covering path-scoped rules, agent memory, skill/agent frontmatter, hook events/types, and settings overrides).
+3. If `scripts/sync-codex.mjs` exists, run `npm run sync:codex` last, after every other edit (`AGENTS.md`, `.agents/`, and `.codex/` are generated mirrors; `npm run check:claude` fails while stale).
 
 ## Step 8: Report
 
 Determine the installed Claude Code version by running `claude --version` locally; use web sources only as a fallback if the CLI is unavailable.
 
-Print a diff-style summary:
-
-```
-BOOTSTRAP TEMPLATE SYNC:
-  Template repo: <repo URL from source-urls.md>
-  Template commit: <SHA from git ls-remote>
-  [TEMPLATE-NEW] Added <path>: <description>
-  [TEMPLATE-UPDATED] Updated <path>: <what changed (incremental merge)>
-  [TEMPLATE-REWRITTEN] Replaced body of <path>: <upstream rewrite; project-specific bits re-applied: ...>
-  [TEMPLATE-CURRENT] No changes needed: <list>
-  [TEMPLATE-IGNORED] Skipped per template-sync-ignore.md: <list>
-  [TEMPLATE-SKIPPED] Skipped <path or step>: <reason, e.g., project-specific, this repo is the template, commit already synced>
-
-CHANGES APPLIED:
-  [NEW] Added skill <name>: <reason>
-  [NEW] Added rule <path>: <scope description>
-  [NEW] Added agent-memory file <path>: <purpose>
-  [NEW] Added hook <event>/<matcher>: <reason>
-  [NEW] Added setting <key> = <value>: <reason>
-  [UPDATED] Modified .claude/settings.json: <what changed>
-  [UPDATED] Modified agent <name> frontmatter: <fields added/changed>
-  [UPDATED] Modified skill <name> frontmatter: <fields added/changed>
-  [UPDATED] Modified rule <path>: <what changed>
-  [DEPRECATED] Replaced <old pattern> with <new pattern> in <file>
-  [CURRENT] No changes needed for: <list>
-  [PRUNED] Removed from <file>: <what was removed and why>
-  [DEAD-URL] Flagged (strike 1) or removed (strike 2): <url list>
-
-FEATURES IN USE:
-  - Path-scoped rules: <count> rules in .claude/rules/
-  - Agent memory: <count> files in .claude/agent-memory/
-  - Hook events: <list of configured events>
-  - Hook types: <command|http|prompt|agent|mcp_tool>
-  - Advanced agent frontmatter: <agents using background/isolation/context/skills/memory>
-  - Advanced skill frontmatter: <skills using context/agent>
-  - Settings: <list of configured optional settings>
-
-FEATURES AVAILABLE BUT NOT CONFIGURED:
-  <list any features that could be enabled but aren't, with instructions>
-
-HEALTH AUDIT:
-  Wiring guard: <PASS|FAIL> (npm run check:claude)
-  Hooks: <n> verified in both directions, <n> fire-only, <n> unverifiable
-  Skills: <n> checked, <n> BROKEN, <n> DEGRADED
-  Agents: <n> checked, <n> BROKEN, <n> DEGRADED
-  Memory: <n> files, <n> stale entries, <n> gotchas not yet routed to LL-G
-  CLAUDE.md: <bytes> / <ceiling>; <n> duplication findings
-  [BROKEN] <what> in <file>: <why it cannot work> -> <fix applied, and how it was re-verified>
-  [DEGRADED] <what> in <file>: <cost> -> <fix applied, or why reported instead>
-  [SUGGESTION] <proposal>: <evidence it is needed> -- NOT applied, your call
-  [HEALTHY] <what was verified, not just the name>
-  [UNVERIFIABLE] <check>: <why it could not be run>
-
-WEB SEARCH:
-  Window: <cutoff date> to <today's date> (7 days)
-  Version gate: <current Claude Code version>
-  <N> of <total> results passed both gates
-  [CORROBORATED] <finding>: applied to <file> (confirmed by <official source>)
-  [UNCORROBORATED] <finding> (<url>, published <date>): reported only, not applied
-
-CLAUDE CODE VERSION: <version from claude --version>
-CURRENT DATE: <today's date>
-SOURCES CHECKED: <count> of <total> fetched successfully
-```
+Print the diff-style summary using the exact section structure in `${CLAUDE_SKILL_DIR}/references/template-sync-and-report.md` ("Step 8: Verbatim Report Format"), covering `BOOTSTRAP TEMPLATE SYNC`, `CHANGES APPLIED`, `FEATURES IN USE`, `FEATURES AVAILABLE BUT NOT CONFIGURED`, `HEALTH AUDIT`, `WEB SEARCH`, `CLAUDE CODE VERSION`, `CURRENT DATE`, and `SOURCES CHECKED`.
 
 ## Idempotency
 

@@ -82,6 +82,6 @@ Format each finding as:
 
 Codex notes (generated):
 - You are the Codex port of `.claude/agents/performance.md`; `AGENTS.md` and any nested `AGENTS.md` still apply.
-- Tool names above are Claude Code's. Map them as described in `AGENTS.md` under "Codex runtime".
+- Tool names above are Claude Code's. Map them as described in `AGENTS.md` under "Codex & Antigravity runtimes".
 - Claude Code limits you to: Read, Glob, Grep, Write, Bash(npm ls*), Bash(du*). Stay within that scope.
 """

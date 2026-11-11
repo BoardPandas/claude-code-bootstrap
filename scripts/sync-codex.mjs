@@ -1,37 +1,22 @@
 #!/usr/bin/env node
 //
-// sync-codex.mjs -- generate Codex's view of this repo's Claude Code configuration.
+// sync-codex.mjs -- generate Codex and Antigravity views of this repo's Claude Code config.
 //
-//   node scripts/sync-codex.mjs           write the mirror
+//   node scripts/sync-codex.mjs           write the mirrors
 //   node scripts/sync-codex.mjs --check   write nothing; exit 1 listing every stale,
 //                                         missing, or unexpected generated file
 //
-// Claude Code's configuration is canonical. Everything this script writes is derived
-// from it and is overwritten on the next run:
+// Claude Code's configuration is canonical. Everything written here is derived from it:
 //
-//   CLAUDE.md + .claude/rules + settings.json  ->  AGENTS.md
-//   .claude/skills/<name>/**                   ->  .agents/skills/<name>/**
-//   .claude/agents/<name>.md                   ->  .codex/agents/<name>.toml
-//   .claude/settings.json hooks                ->  .codex/hooks.json (+ .codex/config.toml)
+//   CLAUDE.md + .claude/rules + settings.json  ->  AGENTS.md (shared by Codex & Antigravity)
+//   .claude/skills/<name>/**                   ->  .agents/skills/<name>/** (shared)
+//   .claude/agents/<name>.md                   ->  .codex/agents/<name>.toml + .agents/agents/<name>.md
+//   .claude/rules/*.md (with paths:)           ->  .agents/rules/*.md (trigger: glob)
+//   .claude/settings.json hooks                ->  .codex/hooks.json (+ config.toml) + .agents/hooks.json
 //
-// Why generate rather than copy by hand: every sibling repo that hand-maintained these
-// mirrors drifted. Skills went missing, a blind "Claude" -> "Codex" replace produced
-// `.Codex/agent-memory/` paths that do not exist, model names went stale, and a copied
-// hook script kept a bug after the original was fixed. A mirror nobody regenerates is a
-// second, silently diverging configuration.
-//
-// Hooks are NOT copied. .codex/hooks.json runs the same .claude/scripts/*.sh, so there is
-// one copy of each script and one place to fix it.
-//
-// Codex surfaces used here were checked against the Codex docs on 2026-09-28: AGENTS.md
-// discovery and its 32 KiB default cap, `.agents/skills` discovery, agents/openai.yaml
-// `policy.allow_implicit_invocation`, `.codex/agents/*.toml` custom agents, and the
-// hooks.json schema (no handler-level `if`; `apply_patch` sends a patch in
-// tool_input.command, not tool_input.file_path; Stop requires JSON on stdout; plain
-// stdout on PreToolUse/PostToolUse is ignored, additionalContext JSON is read).
-//
-// Node built-ins only, no dependencies. scripts/sync-codex.test.mjs asserts the --check
-// paths still fire.
+// Hooks are NOT copied: .codex/hooks.json invokes .claude/scripts/*.sh directly, and
+// .agents/hooks.json wraps the same scripts via .claude/scripts/_antigravity-hook.sh.
+// Node built-ins only, no dependencies.
 
 import { execFileSync } from "node:child_process";
 import {
@@ -45,25 +30,27 @@ import {
   writeFileSync,
 } from "node:fs";
 import { dirname, join, relative } from "node:path";
+import {
+  AGY_DOC_CEILING,
+  AGY_SKILL_CEILING,
+  generateAntigravityAgents,
+  generateAntigravityHooks,
+  generateAntigravityReadme,
+  generateAntigravityRules,
+} from "./sync-antigravity.mjs";
 
 const ROOT = process.cwd();
 const CHECK = process.argv.includes("--check");
 const GENERATOR = "scripts/sync-codex.mjs";
 const SYNC_CMD = "npm run sync:codex";
 
-// Codex stops reading AGENTS.md at project_doc_max_bytes, 32 KiB by default. Past that the
-// tail is silently dropped, so the always-on rules appended at the end would vanish first.
-// Stay under the default so the file works even before the project config is trusted.
-const AGENTS_MD_CEILING = 32 * 1024;
+// Antigravity truncates AGENTS.md at 24,000 B (stricter than Codex's 32 KiB default cap).
+// Stay under the tighter ceiling so neither runtime drops the always-on rules at the tail.
+const AGENTS_MD_CEILING = AGY_DOC_CEILING;
 
-// Claude model tiers -> Codex model tiers (Codex docs, 2026-09-28). A model not listed
-// here is omitted, so the agent inherits the parent session's model rather than
-// pinning a name that may not exist.
 const MODEL_MAP = { opus: "gpt-6-sol", sonnet: "gpt-6-luna", haiku: "gpt-6-luna" };
 const EFFORTS = new Set(["low", "medium", "high", "xhigh", "max", "ultra"]);
 
-// Claude hook events with a same-named Codex event. Anything else is reported as not
-// carried over -- never dropped silently.
 const CODEX_EVENTS = new Set([
   "SessionStart",
   "SessionEnd",
@@ -79,8 +66,6 @@ const CODEX_EVENTS = new Set([
 ]);
 const TOOL_EVENTS = new Set(["PreToolUse", "PostToolUse", "PermissionRequest"]);
 
-// Claude tool name -> Codex hook matcher name. `null` = Codex has no hookable equivalent.
-// An unlisted tool is an error: a new matcher needs a deliberate decision, not a guess.
 const TOOL_MAP = {
   Bash: "Bash",
   Edit: "Edit",
@@ -101,6 +86,7 @@ const TOOL_MAP = {
 
 const BELL = /^(printf|echo(\s+-e)?)\s+(['"])\\a\3$/;
 const GIT_ROOT = "$(git rev-parse --show-toplevel)";
+const WRITE_TOOLS = /^(Edit|Write|MultiEdit|NotebookEdit|Bash)\b|^\*$/;
 
 const failures = [];
 const notCarried = [];
@@ -113,10 +99,10 @@ const posix = (p) => p.split("\\").join("/");
 const rel = (p) => posix(relative(ROOT, p));
 const normalizeEol = (s) => s.replace(/\r\n/g, "\n");
 const readText = (p) => normalizeEol(readFileSync(join(ROOT, p), "utf8"));
+const code = (s) => `\`${s}\``;
+const tomlString = (s) => JSON.stringify(s);
 
 function gitListFiles(dir) {
-  // Tracked plus untracked-but-not-ignored files, so gitignored scaffolding (skill-creator
-  // *-workspace/ dirs, .DS_Store) is never mirrored and never reported as drift.
   try {
     const out = execFileSync(
       "git",
@@ -147,8 +133,6 @@ function walk(dir) {
 
 const listFiles = (dir) => [...new Set(gitListFiles(dir) ?? walk(dir))].sort();
 
-// Minimal YAML frontmatter reader: scalars (plain, quoted, folded), block and inline
-// lists. Nested maps are skipped. Enough for Claude skill and agent frontmatter.
 function unquote(v) {
   if (/^".*"$/.test(v)) {
     try {
@@ -197,9 +181,6 @@ function parseFrontmatter(text, file) {
   return { data, body: src.slice(m[0].length) };
 }
 
-// TOML basic strings accept every escape JSON.stringify emits.
-const tomlString = (s) => JSON.stringify(s);
-
 function tomlMultiline(s) {
   const escaped = s
     .replace(/\\/g, "\\\\")
@@ -208,13 +189,9 @@ function tomlMultiline(s) {
   return `"""\n${escaped.endsWith("\n") ? escaped : `${escaped}\n`}"""`;
 }
 
-const code = (s) => `\`${s}\``;
-
 const asList = (v) =>
   Array.isArray(v) ? v : typeof v === "string" && v ? v.split(",").map((s) => s.trim()).filter(Boolean) : [];
 
-// Push a document's headings `by` levels down, capped at h6, leaving fenced code alone:
-// a rule's example changelog ("## [0.9.1]") must survive verbatim.
 function demoteHeadings(markdown, by) {
   let fence = null;
   return markdown
@@ -231,7 +208,8 @@ function demoteHeadings(markdown, by) {
 
 // ------------------------------------------------------------- write / compare
 
-const expected = new Map(); // repo-relative path -> Buffer
+const expected = new Map();
+const OWNED_DIRS = [".agents/skills", ".agents/agents", ".agents/rules", ".codex/agents"];
 
 function emit(path, content) {
   if (expected.has(path)) throw new Error(`${path}: generated twice (conflicting sources)`);
@@ -239,14 +217,15 @@ function emit(path, content) {
 }
 
 const isBinary = (buf) => buf.includes(0);
+const sameContent = (a, b) =>
+  isBinary(a) || isBinary(b) ? a.equals(b) : normalizeEol(a.toString("utf8")) === normalizeEol(b.toString("utf8"));
 
-function sameContent(a, b) {
-  if (isBinary(a) || isBinary(b)) return a.equals(b);
-  return normalizeEol(a.toString("utf8")) === normalizeEol(b.toString("utf8"));
+function pruneEmptyDirs(dir, stopAt) {
+  while (dir.startsWith(stopAt) && dir !== stopAt && readdirSync(dir).length === 0) {
+    rmdirSync(dir);
+    dir = dirname(dir);
+  }
 }
-
-// Directories this script owns outright: anything in them it did not generate is drift.
-const OWNED_DIRS = [".agents/skills", ".codex/agents"];
 
 function reconcile() {
   for (const [path, content] of expected) {
@@ -275,21 +254,12 @@ function reconcile() {
   }
 }
 
-function pruneEmptyDirs(dir, stopAt) {
-  while (dir.startsWith(stopAt) && dir !== stopAt && readdirSync(dir).length === 0) {
-    rmdirSync(dir);
-    dir = dirname(dir);
-  }
-}
-
-// ------------------------------------------------------------------- skills
+// ------------------------------------------------------------ skills + agents
 
 function generateSkills() {
   const files = listFiles(".claude/skills");
   const skillDirs = [
-    ...new Set(
-      files.filter((p) => /^\.claude\/skills\/[^/]+\/SKILL\.md$/.test(p)).map((p) => p.split("/")[2]),
-    ),
+    ...new Set(files.filter((p) => /^\.claude\/skills\/[^/]+\/SKILL\.md$/.test(p)).map((p) => p.split("/")[2])),
   ];
   const skills = [];
   for (const name of skillDirs) {
@@ -297,35 +267,52 @@ function generateSkills() {
     const target = `.agents/skills/${name}`;
     const { data, body } = parseFrontmatter(readText(`${source}/SKILL.md`), `${source}/SKILL.md`);
 
-    // Codex (and the agent-skills standard) require name + description; the name must be
-    // lowercase-hyphenated and match its directory, and the description is capped.
     if (data.name !== name) failures.push(`${source}/SKILL.md: name "${data.name}" must match its directory "${name}"`);
-    if (!/^[a-z0-9-]{1,64}$/.test(name)) failures.push(`${source}: skill names must be lowercase letters, digits, and hyphens (max 64)`);
-    // Angle brackets read as XML tags to skill loaders; "<slug>" becomes "slug".
-    const description = String(data.description ?? "").replace(/[<>]/g, "");
-    if (!description) failures.push(`${source}/SKILL.md: missing description`);
-    if (description.length > 1024) failures.push(`${source}/SKILL.md: description is ${description.length} chars; Codex caps it at 1024`);
+    if (!/^[a-z0-9-]{1,64}$/.test(name)) {
+      failures.push(`${source}: skill names must be lowercase letters, digits, and hyphens (max 64)`);
+    }
+    const rawDesc = String(data.description ?? "").replace(/[<>]/g, "");
+    if (!rawDesc) failures.push(`${source}/SKILL.md: missing description`);
 
     const explicitOnly = String(data["disable-model-invocation"]) === "true";
+    // Antigravity ignores agents/openai.yaml and routes solely from description.
+    const description = explicitOnly
+      ? `Explicit command only (/${name} or $${name}) -- never invoke implicitly. ${rawDesc}`
+      : rawDesc;
+    if (description.length > 1024) {
+      failures.push(`${source}/SKILL.md: description is ${description.length} chars; skill loaders cap it at 1024`);
+    }
+
     const agent = typeof data.agent === "string" && data.agent ? data.agent : null;
     const forked = data.context === "fork";
 
     const notes = [
-      `Generated from ${code(`${source}/SKILL.md`)} by ${code(GENERATOR)}. Edit the source, then run ${code(SYNC_CMD)}. Claude Code tool and command names below map to Codex as described in ${code("AGENTS.md")} under "Codex runtime".`,
+      `Generated from ${code(`${source}/SKILL.md`)} by ${code(GENERATOR)}. Edit the source, then run ${code(SYNC_CMD)}. Claude Code tool and command names below map to Codex and Antigravity as described in ${code("AGENTS.md")} under "Codex & Antigravity runtimes".`,
     ];
-    if (explicitOnly) notes.push(`Explicit only: runs when the user invokes ${code(`$${name}`)} (${code(`/${name}`)} in Claude Code), never implicitly.`);
-    if (agent) notes.push(`Claude Code runs this skill inside the ${code(agent)} subagent. In Codex, spawn the ${code(agent)} custom agent (${code(`.codex/agents/${agent}.toml`)}) to do the work and return its summary.`);
-    else if (forked) notes.push(`Claude Code runs this skill in a forked subagent context. In Codex, delegate it to a subagent and return its summary.`);
+    if (explicitOnly) {
+      notes.push(`Explicit only: runs when the user invokes ${code(`$${name}`)} or ${code(`/${name}`)}, never implicitly.`);
+    }
+    if (agent) {
+      notes.push(
+        `Claude Code runs this skill inside the ${code(agent)} subagent. In Codex, spawn the ${code(agent)} custom agent (${code(`.codex/agents/${agent}.toml`)}); in Antigravity, call ${code("invoke_subagent")} with ${code(`TypeName: "${agent}"`)} (${code(`.agents/agents/${agent}.md`)}) and return its summary.`,
+      );
+    } else if (forked) {
+      notes.push(`Claude Code runs this skill in a forked subagent context. Delegate it to a subagent and return its summary.`);
+    }
     if (body.includes("$ARGUMENTS")) notes.push(`${code("$ARGUMENTS")} is the text the user supplied with the skill invocation.`);
 
-    // ${CLAUDE_SKILL_DIR} is expanded by Claude Code only. Point it at the mirrored copy.
     const expandSkillDir = (s) => s.replaceAll("${CLAUDE_SKILL_DIR}", target);
-
-    emit(
-      `${target}/SKILL.md`,
+    const skillMd =
       `---\nname: ${name}\ndescription: ${JSON.stringify(description)}\n---\n\n` +
-        `${notes.map((n) => `> ${n}`).join("\n>\n")}\n\n${expandSkillDir(body).trim()}\n`,
-    );
+      `${notes.map((n) => `> ${n}`).join("\n>\n")}\n\n${expandSkillDir(body).trim()}\n`;
+    const skillBytes = Buffer.byteLength(skillMd, "utf8");
+    if (skillBytes > AGY_SKILL_CEILING) {
+      failures.push(
+        `${target}/SKILL.md would be ${skillBytes} B, over Antigravity's ${AGY_SKILL_CEILING} B skill ceiling. Move detail into ${source}/references/.`,
+      );
+    }
+    emit(`${target}/SKILL.md`, skillMd);
+
     for (const file of files.filter((p) => p.startsWith(`${source}/`) && p !== `${source}/SKILL.md`)) {
       const buf = readFileSync(join(ROOT, file));
       const out = isBinary(buf) ? buf : expandSkillDir(normalizeEol(buf.toString("utf8")));
@@ -342,12 +329,8 @@ function generateSkills() {
   return skills;
 }
 
-// ------------------------------------------------------------------- agents
-
-const WRITE_TOOLS = /^(Edit|Write|MultiEdit|NotebookEdit|Bash)\b|^\*$/;
-
-function generateAgents() {
-  const agents = [];
+function collectAgentSources() {
+  const sources = [];
   for (const file of listFiles(".claude/agents").filter((p) => /^\.claude\/agents\/[^/]+\.md$/.test(p))) {
     const { data, body } = parseFrontmatter(readText(file), file);
     const fileName = file.split("/").pop().replace(/\.md$/, "");
@@ -355,6 +338,15 @@ function generateAgents() {
       failures.push(`${file}: name and description are required`);
       continue;
     }
+    const tools = data.tools === undefined ? null : asList(data.tools);
+    const readOnly = data.permissionMode === "plan" || (tools !== null && !tools.some((t) => WRITE_TOOLS.test(t)));
+    sources.push({ file, fileName, data, body, tools, readOnly });
+  }
+  return sources;
+}
+
+function generateCodexAgents(agentSources) {
+  for (const { file, fileName, data, body, tools, readOnly } of agentSources) {
     const lines = [
       `# GENERATED by ${GENERATOR} from ${file}. Edit the source, then run ${SYNC_CMD}.`,
       `name = ${tomlString(data.name)}`,
@@ -362,37 +354,42 @@ function generateAgents() {
     ];
     if (MODEL_MAP[data.model]) lines.push(`model = ${tomlString(MODEL_MAP[data.model])}`);
     if (EFFORTS.has(data.effort)) lines.push(`model_reasoning_effort = ${tomlString(data.effort)}`);
-
-    // Only ever NARROW the sandbox. An agent whose Claude tool list cannot write or run
-    // commands is read-only here too; every other agent inherits the parent's sandbox,
-    // so a generated file can never grant more than the session already has.
-    const tools = data.tools === undefined ? null : asList(data.tools);
-    const readOnly = data.permissionMode === "plan" || (tools !== null && !tools.some((t) => WRITE_TOOLS.test(t)));
     if (readOnly) lines.push(`sandbox_mode = "read-only"`);
 
     const notes = [
       "Codex notes (generated):",
       `- You are the Codex port of ${code(file)}; ${code("AGENTS.md")} and any nested ${code("AGENTS.md")} still apply.`,
-      `- Tool names above are Claude Code's. Map them as described in ${code("AGENTS.md")} under "Codex runtime".`,
+      `- Tool names above are Claude Code's. Map them as described in ${code("AGENTS.md")} under "Codex & Antigravity runtimes".`,
     ];
     if (tools?.length) notes.push(`- Claude Code limits you to: ${tools.join(", ")}. Stay within that scope.`);
-    if (data.memory === "project") notes.push(`- Claude Code auto-loads your project memory. Here, read ${code(`.claude/agent-memory/${fileName}/MEMORY.md`)} (if it exists) and the shared files in ${code(".claude/agent-memory/")} before starting.`);
-    if (data.isolation === "worktree") notes.push("- Claude Code gives you an isolated git worktree. Codex does not: you share the parent's working tree, so edit only the files you were assigned.");
-
+    if (data.memory === "project") {
+      notes.push(
+        `- Claude Code auto-loads your project memory. Here, read ${code(`.claude/agent-memory/${fileName}/MEMORY.md`)} (if it exists) and the shared files in ${code(".claude/agent-memory/")} before starting.`,
+      );
+    }
+    if (data.isolation === "worktree") {
+      notes.push(
+        "- Claude Code gives you an isolated git worktree. Codex does not: you share the parent's working tree, so edit only the files you were assigned.",
+      );
+    }
     lines.push(`developer_instructions = ${tomlMultiline(`${body.trim()}\n\n${notes.join("\n")}\n`)}`, "");
     emit(`.codex/agents/${fileName}.toml`, lines.join("\n"));
-    agents.push({ name: data.name, model: data.model, readOnly });
   }
-  return agents;
+  return agentSources;
+}
+
+function collectRules() {
+  return listFiles(".claude/rules")
+    .filter((p) => /^\.claude\/rules\/[^/]+\.md$/.test(p))
+    .map((p) => {
+      const { data, body } = parseFrontmatter(readText(p), p);
+      return { path: p, description: data.description, paths: asList(data.paths), body };
+    });
 }
 
 // -------------------------------------------------------------------- hooks
 
 function codexCommands(command) {
-  // Codex runs hooks with the session cwd, which may be a subdirectory, so anchor repo
-  // paths at the git root (the Codex docs' recommendation). Claude Code's own anchor,
-  // $CLAUDE_PROJECT_DIR, is not set under Codex. $(...) is POSIX-shell syntax, so Windows
-  // falls back to the cwd-relative form.
   const projectDir = /"?\$\{?CLAUDE_PROJECT_DIR\}?"?/g;
   const unix = command
     .replace(projectDir, `"${GIT_ROOT}"`)
@@ -401,9 +398,7 @@ function codexCommands(command) {
   return unix === command ? { command } : { command: unix, commandWindows: windows };
 }
 
-function scriptOf(command) {
-  return command.match(/(?:^|[\s"/])(\.claude\/[\w./-]+\.(?:sh|mjs|js|py))/)?.[1] ?? null;
-}
+const scriptOf = (command) => command.match(/(?:^|[\s"/])(\.claude\/[\w./-]+\.(?:sh|mjs|js|py))/)?.[1] ?? null;
 
 function generateHooks(settings) {
   const out = {};
@@ -440,10 +435,6 @@ function generateHooks(settings) {
             notCarried.push(`${label} -- Codex has no hookable ${tokens.join("/")} tool.`);
             continue;
           }
-          // Codex edits files with apply_patch, which carries a patch in tool_input.command
-          // rather than tool_input.file_path. A script that reads file_path would run on
-          // every Codex edit and silently do nothing, so mirror it only once it says it
-          // understands apply_patch.
           if (mapped.every((t) => t === "Edit" || t === "Write")) {
             const script = scriptOf(handler.command ?? "");
             const aware = script && existsSync(join(ROOT, script)) && readText(script).includes("apply_patch");
@@ -492,20 +483,13 @@ function generateHooks(settings) {
 
 // ---------------------------------------------------------------- AGENTS.md
 
-function denyList(settings, tool) {
-  return (settings.permissions?.deny ?? [])
+const denyList = (settings, tool) =>
+  (settings.permissions?.deny ?? [])
     .map((rule) => rule.match(/^(\w+)\((.*)\)$/))
     .filter((m) => m && tool.includes(m[1]))
     .map((m) => code(m[2]));
-}
 
-function generateAgentsMd(settings, skills) {
-  const rules = listFiles(".claude/rules")
-    .filter((p) => /^\.claude\/rules\/[^/]+\.md$/.test(p))
-    .map((p) => {
-      const { data, body } = parseFrontmatter(readText(p), p);
-      return { path: p, description: data.description, paths: asList(data.paths), body };
-    });
+function generateAgentsMd(settings, skills, rules) {
   const alwaysOn = rules.filter((r) => r.paths.length === 0);
   const scoped = rules.filter((r) => r.paths.length > 0);
   const explicitOnly = skills.filter((s) => s.explicitOnly).map((s) => code(`$${s.name}`));
@@ -513,27 +497,27 @@ function generateAgentsMd(settings, skills) {
   const section = [
     "---",
     "",
-    "## Codex runtime",
+    "## Codex & Antigravity runtimes",
     "",
     `This file is ${code("CLAUDE.md")} plus this section, generated by ${code(GENERATOR)}. Everything above`,
     "was written for Claude Code; read it through this mapping.",
     "",
-    "| Claude Code | Codex |",
-    "|---|---|",
-    `| ${code("CLAUDE.md")} | this file |`,
-    `| ${code(".claude/skills/<name>/")}, invoked as ${code("/name")} | ${code(".agents/skills/<name>/")}, invoked as ${code("$name")} |`,
-    `| ${code(".claude/agents/<name>.md")} | ${code(".codex/agents/<name>.toml")} |`,
-    `| ${code(".claude/settings.json")} hooks | ${code(".codex/hooks.json")}, running the same ${code(".claude/scripts/")} |`,
-    `| ${code(".claude/rules/*.md")} | inlined or indexed below |`,
-    `| Read / Glob / Grep | shell reads and ${code("rg")} |`,
-    `| Edit / Write | ${code("apply_patch")} |`,
-    `| Agent / Task, ${code("SendMessage")} | spawn / message a subagent |`,
-    `| AskUserQuestion | ask in chat |`,
-    `| EnterPlanMode, ${code("plansDirectory")} | plan before editing; save plans to ${code(`${settings.plansDirectory ?? "tasks"}/`)} |`,
+    "| Claude Code | Codex | Antigravity |",
+    "|---|---|---|",
+    `| ${code("CLAUDE.md")} | this file | this file |`,
+    `| ${code(".claude/skills/<name>/")} (${code("/name")}) | ${code(".agents/skills/<name>/")} (${code("$name")}) | ${code(".agents/skills/<name>/")} |`,
+    `| ${code(".claude/agents/<name>.md")} | ${code(".codex/agents/<name>.toml")} | ${code(".agents/agents/<name>.md")} |`,
+    `| ${code(".claude/settings.json")} hooks | ${code(".codex/hooks.json")} | ${code(".agents/hooks.json")} (${code("_antigravity-hook.sh")}) |`,
+    `| ${code(".claude/rules/*.md")} | inlined or indexed below | ${code(".agents/rules/*.md")} (${code("glob")}) + always-on below |`,
+    `| Read / Glob / Grep | shell reads and ${code("rg")} | ${code("view_file")} / ${code("find_by_name")}, ${code("list_dir")} / ${code("grep_search")} |`,
+    `| Edit / Write / Bash | ${code("apply_patch")} / ${code("Bash")} | ${code("replace_file_content")} / ${code("write_to_file")} / ${code("run_command")} |`,
+    `| WebFetch / WebSearch | web tools | ${code("read_url_content")} / ${code("search_web")} |`,
+    `| Agent / Task, ${code("SendMessage")} | spawn / message a subagent | ${code("invoke_subagent")}, ${code("send_message")} |`,
+    `| AskUserQuestion / Plan mode | ask in chat / save plans to ${code(`${settings.plansDirectory ?? "tasks"}/`)} | ${code("ask_question")} / save plans to ${code(`${settings.plansDirectory ?? "tasks"}/`)} |`,
     "",
-    `${code("AGENTS.md")}, ${code(".agents/skills/")}, and ${code(".codex/")} are generated. Never hand-edit them: change`,
+    `${code("AGENTS.md")}, ${code(".agents/")}, and ${code(".codex/")} are generated. Never hand-edit them: change`,
     `the Claude source and run ${code(SYNC_CMD)}. ${code("npm run check:claude")} fails while they are stale.`,
-    `Codex runs project hooks only in a trusted project, after you approve them in ${code("/hooks")}.`,
+    `Codex runs project hooks after approval in ${code("/hooks")}; Antigravity loads ${code(".agents/hooks.json")} automatically.`,
   ];
   if (explicitOnly.length) {
     section.push("", `Explicit-only skills (never start them implicitly): ${explicitOnly.join(", ")}.`);
@@ -543,28 +527,24 @@ function generateAgentsMd(settings, skills) {
   const edits = denyList(settings, ["Edit", "Write"]);
   const runs = denyList(settings, ["Bash"]);
   if (reads.length || edits.length || runs.length) {
-    section.push("", "### Denied paths and commands", "", "Claude Code enforces these; Codex does not, so treat them as hard rules.", "");
+    section.push("", "### Denied paths and commands", "", "Claude Code enforces these; Codex and Antigravity do not, so treat them as hard rules.", "");
     if (reads.length) section.push(`- Never read: ${reads.join(", ")}`);
     if (edits.length) section.push(`- Never edit: ${edits.join(", ")}`);
     if (runs.length) section.push(`- Never run: ${runs.join(", ")}`);
   }
 
   if (notCarried.length) {
-    section.push("", "### Hooks that do not carry over", "");
+    section.push("", "### Hooks that do not carry over to Codex", "");
     for (const n of notCarried) section.push(`- ${n}`);
-    // Neither runtime shows a tool event's plain stdout to the model; both read
-    // hookSpecificOutput.additionalContext JSON. Saying advisory hooks "reach Claude
-    // but not Codex" was wrong on both counts while they printed plain text.
     section.push(
       "",
-      "Blocking hooks (exit 2 + stderr) behave the same in Codex, and so do the mirrored advisory hooks,",
-      "which emit `additionalContext` JSON that both runtimes read. The hooks listed above do not run in",
-      "Codex at all, so follow the rules above without them.",
+      "Antigravity mirrors Write/Edit hooks (`pre-write-kb-check.sh`, `post-edit-format.sh`) via `TargetFile`",
+      "and delivers advisory context on `PreInvocation`, but neither Codex nor Antigravity hooks `EnterPlanMode`.",
     );
   }
 
   if (scoped.length) {
-    section.push("", "### Path-scoped rules", "", "Before editing a file that matches a rule's paths, read that rule.", "");
+    section.push("", "### Path-scoped rules", "", "Antigravity loads `.agents/rules/*.md` by glob; in Codex, read a matching rule before editing:", "");
     for (const r of scoped) {
       section.push(`- ${code(r.path)}${r.description ? ` -- ${r.description}` : ""}. Paths: ${r.paths.map(code).join(", ")}`);
     }
@@ -582,7 +562,7 @@ function generateAgentsMd(settings, skills) {
   const bytes = Buffer.byteLength(content, "utf8");
   if (bytes > AGENTS_MD_CEILING) {
     failures.push(
-      `AGENTS.md would be ${bytes} B; Codex stops reading at ${AGENTS_MD_CEILING} B by default and drops the tail. Trim CLAUDE.md or the always-on rules.`,
+      `AGENTS.md would be ${bytes} B; Antigravity stops reading at ${AGENTS_MD_CEILING} B (Codex at 32768 B) and drops the tail. Trim CLAUDE.md or the always-on rules.`,
     );
   }
   emit("AGENTS.md", content);
@@ -600,15 +580,7 @@ function generateConfig(bell) {
     "hooks = true",
   ];
   if (bell) {
-    lines.push(
-      "",
-      "# Claude Code rings a terminal bell from its Stop and Notification hooks. Codex has",
-      "# no Notification event and requires JSON on Stop's stdout, so use its native",
-      "# notifications instead.",
-      "[tui]",
-      "notifications = true",
-      'notification_method = "bel"',
-    );
+    lines.push("", "[tui]", "notifications = true", 'notification_method = "bel"');
   }
   emit(".codex/config.toml", `${lines.join("\n")}\n`);
 }
@@ -617,8 +589,8 @@ function generateReadme(summary) {
   const lines = [
     "# Codex configuration (generated)",
     "",
-    `Everything here, plus the root ${code("AGENTS.md")} and ${code(".agents/skills/")}, is generated from the Claude Code`,
-    `configuration by ${code(GENERATOR)}. Edit the Claude source, never these files, then run:`,
+    `Everything here, plus the root ${code("AGENTS.md")} and ${code(".agents/")} (skills + Antigravity config), is generated from`,
+    `the Claude Code configuration by ${code(GENERATOR)}. Edit the Claude source, never these files, then run:`,
     "",
     "```bash",
     SYNC_CMD,
@@ -632,15 +604,15 @@ function generateReadme(summary) {
     `| ${code(".claude/agents/<name>.md")} | ${code(".codex/agents/<name>.toml")} |`,
     `| ${code(".claude/settings.json")} hooks | ${code(".codex/hooks.json")} (runs ${code(".claude/scripts/")} in place) |`,
     "",
-    `Current output: ${summary.skills} skills, ${summary.agents} agents, ${summary.hooks} hook handlers, AGENTS.md ${summary.agentsMdBytes} B.`,
+    `Current output: ${summary.skills} skills, ${summary.agents} agents, ${summary.hooks} Codex hook handlers (${summary.agyHooks} Antigravity), AGENTS.md ${summary.agentsMdBytes} B.`,
     "",
     "## How the mapping works",
     "",
-    `- **Models.** Claude tiers map to Codex tiers: ${Object.entries(MODEL_MAP).map(([k, v]) => `${code(k)} -> ${code(v)}`).join(", ")}. Update ${code("MODEL_MAP")} in the generator when Codex models change; an unmapped model is omitted so the agent inherits the session's.`,
-    `- **Sandbox.** Agents whose Claude tool list cannot write or run commands get ${code('sandbox_mode = "read-only"')}. The rest inherit the session's sandbox; the generator never widens it.`,
-    `- **Hooks.** Codex has no handler-level ${code("if")}, so every mirrored script must filter its own input (the commit hooks do, via ${code("_git-commit-filter.sh")}). Paths are anchored at the git root, with a cwd-relative ${code("commandWindows")} fallback.`,
-    `- **Edit hooks.** Codex edits files with ${code("apply_patch")}, whose input is a patch in ${code("tool_input.command")}, not ${code("tool_input.file_path")}. An ${code("Edit|Write")} hook is mirrored only once its script mentions ${code("apply_patch")}.`,
-    `- **Trust.** Codex loads ${code(".codex/")} only for trusted projects and runs each hook only after it is approved in ${code("/hooks")}. Re-approve after ${code("hooks.json")} changes.`,
+    `- **Models.** Claude tiers map to Codex tiers: ${Object.entries(MODEL_MAP).map(([k, v]) => `${code(k)} -> ${code(v)}`).join(", ")}.`,
+    `- **Sandbox.** Agents whose Claude tool list cannot write or run commands get ${code('sandbox_mode = "read-only"')}. The rest inherit the session's sandbox.`,
+    `- **Hooks.** Codex has no handler-level ${code("if")}, so every mirrored script filters its own input (via ${code("_git-commit-filter.sh")}). Paths are anchored at the git root, with a cwd-relative ${code("commandWindows")} fallback.`,
+    `- **Edit hooks.** Codex edits files with ${code("apply_patch")} (${code("tool_input.command")}), so ${code("Edit|Write")} hooks mirror only once a script parses ${code("apply_patch")}. (Antigravity mirrors them in ${code(".agents/hooks.json")} via ${code("_antigravity-hook.sh")}.)`,
+    `- **Trust.** Codex loads ${code(".codex/")} only for trusted projects after hook approval in ${code("/hooks")}.`,
   ];
   if (notCarried.length) {
     lines.push("", "## Not carried over", "");
@@ -652,8 +624,6 @@ function generateReadme(summary) {
 // --------------------------------------------------------------------- main
 
 function main() {
-  // A root agents.md and AGENTS.md are the same path on Windows and default macOS: writing
-  // one silently overwrites the other. Refuse rather than clobber whichever exists.
   const clash = readdirSync(ROOT).find((n) => n.toLowerCase() === "agents.md" && n !== "AGENTS.md");
   if (clash) {
     failures.push(
@@ -674,14 +644,36 @@ function main() {
   }
 
   const skills = generateSkills();
-  const agents = generateAgents();
+  const agentSources = collectAgentSources();
+  const agents = generateCodexAgents(agentSources);
+  generateAntigravityAgents({ agentSources, emit, failures, generator: GENERATOR, syncCmd: SYNC_CMD });
+  const rules = collectRules();
+  const agyRules = generateAntigravityRules({ rules, emit, generator: GENERATOR, syncCmd: SYNC_CMD });
   const { bell, mirrored } = generateHooks(settings);
-  const agentsMdBytes = generateAgentsMd(settings, skills);
+  const { mirrored: agyMirrored, agyNotCarried } = generateAntigravityHooks({
+    settings,
+    bellRe: BELL,
+    gitRoot: GIT_ROOT,
+    scriptOf,
+    emit,
+    failures,
+    generator: GENERATOR,
+  });
+  const agentsMdBytes = generateAgentsMd(settings, skills, rules);
   generateConfig(bell);
-  generateReadme({ skills: skills.length, agents: agents.length, hooks: mirrored, agentsMdBytes });
+  const summary = {
+    skills: skills.length,
+    agents: agents.length,
+    rules: agyRules,
+    hooks: mirrored,
+    agyHooks: agyMirrored,
+    agentsMdBytes,
+  };
+  generateReadme(summary);
+  generateAntigravityReadme({ summary, agyNotCarried, emit, generator: GENERATOR, syncCmd: SYNC_CMD });
   if (failures.length) return;
   reconcile();
-  return { skills: skills.length, agents: agents.length, hooks: mirrored, agentsMdBytes };
+  return summary;
 }
 
 let summary;
@@ -694,14 +686,14 @@ try {
 if (failures.length) {
   for (const f of failures) console.error(`FAIL: ${f}`);
   console.error(
-    `\n${failures.length} Codex mirror problem(s).${CHECK ? ` Fix the source, then run ${SYNC_CMD}.` : ""}`,
+    `\n${failures.length} Codex/Antigravity mirror problem(s).${CHECK ? ` Fix the source, then run ${SYNC_CMD}.` : ""}`,
   );
   process.exit(1);
 }
 
-const counts = `${summary.skills} skills, ${summary.agents} agents, ${summary.hooks} hooks, AGENTS.md ${summary.agentsMdBytes} B`;
-if (CHECK) console.log(`OK -- Codex mirror current (${counts}).`);
+const counts = `${summary.skills} skills, ${summary.agents} agents, ${summary.rules} glob rules, ${summary.hooks} Codex / ${summary.agyHooks} Antigravity hooks, AGENTS.md ${summary.agentsMdBytes} B`;
+if (CHECK) console.log(`OK -- Codex & Antigravity mirrors current (${counts}).`);
 else {
-  console.log(`Codex mirror regenerated (${counts}): ${written} written, ${removed} removed.`);
-  for (const n of notCarried) console.log(`  not carried over: ${n}`);
+  console.log(`Codex & Antigravity mirrors regenerated (${counts}): ${written} written, ${removed} removed.`);
+  for (const n of notCarried) console.log(`  Codex not carried over: ${n}`);
 }

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.29.0] - 2026-11-11
+
+### Added
+- **Google Antigravity mirror generation and hook bridge.** `npm run sync:codex` (and the new `npm run sync:agents` / `check:agents` aliases) now generates `.agents/agents/*.md`, `.agents/rules/*.md` (`trigger: glob`), `.agents/hooks.json`, and `.agents/README.md` alongside Codex's `.codex/` mirror via `scripts/sync-antigravity.mjs`. A new pure-bash adapter, `.claude/scripts/_antigravity-hook.sh`, runs existing `.claude/scripts/*.sh` hooks under Antigravity by anchoring at the git root, mapping `run_command`, `write_to_file`, and `replace_file_content` payloads, turning blocking `exit 2` responses into `{"decision":"deny"}` (exit `0`), emitting `SessionStart` output as `systemMessage`, and queueing `PreToolUse` / `PostToolUse` advisory context per `conversationId` for `PreInvocation`.
+
+### Changed
+- **24,000-byte skill and `AGENTS.md` ceilings.** `sync-codex.mjs` enforces Antigravity's 24,000-byte limit on `AGENTS.md` and generated `SKILL.md` files, prefixes `disable-model-invocation: true` skill descriptions so Antigravity never invokes them implicitly, and extracts static reference material from `init-repo`, `plan-repo`, and `update-practices` into `references/`.
+- **Review policy wired into `reviewer` and `/repo-review`.** Both now read `REVIEW.md` directly and enforce its `[IMPORTANT|NIT]` format, concrete `Failure:` line, 3-nit cap, and exclusions.
+
 ## [0.28.1] - 2026-11-10
 
 ### Changed
@@ -296,7 +305,9 @@ knowing the solution.
 
 Older releases are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 
-[Unreleased]: https://github.com/BoardPandas/claude-code-bootstrap/compare/v0.28.1...HEAD
+[Unreleased]: https://github.com/BoardPandas/claude-code-bootstrap/compare/v0.29.0...HEAD
+[0.29.0]: https://github.com/BoardPandas/claude-code-bootstrap/compare/v0.28.1...v0.29.0
+[0.28.1]: https://github.com/BoardPandas/claude-code-bootstrap/compare/v0.28.0...v0.28.1
 [0.28.0]: https://github.com/BoardPandas/claude-code-bootstrap/compare/v0.27.0...v0.28.0
 [0.27.0]: https://github.com/BoardPandas/claude-code-bootstrap/compare/v0.26.1...v0.27.0
 [0.26.1]: https://github.com/BoardPandas/claude-code-bootstrap/compare/v0.26.0...v0.26.1
@@ -326,5 +337,3 @@ Older releases are in [CHANGELOG-archive.md](CHANGELOG-archive.md).
 [0.16.0]: https://github.com/BoardPandas/claude-code-bootstrap/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/BoardPandas/claude-code-bootstrap/compare/v0.14.1...v0.15.0
 [0.14.1]: https://github.com/BoardPandas/claude-code-bootstrap/compare/v0.14.0...v0.14.1
-
-[0.28.1]: https://github.com/BoardPandas/claude-code-bootstrap/compare/v0.28.0...v0.28.1

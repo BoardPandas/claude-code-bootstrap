@@ -3,9 +3,9 @@ name: performance-review
 description: "Analyze the codebase for performance bottlenecks, inefficiencies, and optimization opportunities. Use when investigating slowness or preparing for scale."
 ---
 
-> Generated from `.claude/skills/performance-review/SKILL.md` by `scripts/sync-codex.mjs`. Edit the source, then run `npm run sync:codex`. Claude Code tool and command names below map to Codex as described in `AGENTS.md` under "Codex runtime".
+> Generated from `.claude/skills/performance-review/SKILL.md` by `scripts/sync-codex.mjs`. Edit the source, then run `npm run sync:codex`. Claude Code tool and command names below map to Codex and Antigravity as described in `AGENTS.md` under "Codex & Antigravity runtimes".
 >
-> Claude Code runs this skill inside the `performance` subagent. In Codex, spawn the `performance` custom agent (`.codex/agents/performance.toml`) to do the work and return its summary.
+> Claude Code runs this skill inside the `performance` subagent. In Codex, spawn the `performance` custom agent (`.codex/agents/performance.toml`); in Antigravity, call `invoke_subagent` with `TypeName: "performance"` (`.agents/agents/performance.md`) and return its summary.
 
 # Performance Review
 

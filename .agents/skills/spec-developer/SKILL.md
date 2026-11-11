@@ -1,11 +1,11 @@
 ---
 name: spec-developer
-description: "Turn an approved intent (or a feature description) into a requirements-and-design spec.md plus an implementation plan.md. Explores the codebase, applies design/UX/security policy, checks LL-G and BP, asks scoped clarifying questions. Use for any feature larger than a single file change."
+description: "Explicit command only (/spec-developer or $spec-developer) -- never invoke implicitly. Turn an approved intent (or a feature description) into a requirements-and-design spec.md plus an implementation plan.md. Explores the codebase, applies design/UX/security policy, checks LL-G and BP, asks scoped clarifying questions. Use for any feature larger than a single file change."
 ---
 
-> Generated from `.claude/skills/spec-developer/SKILL.md` by `scripts/sync-codex.mjs`. Edit the source, then run `npm run sync:codex`. Claude Code tool and command names below map to Codex as described in `AGENTS.md` under "Codex runtime".
+> Generated from `.claude/skills/spec-developer/SKILL.md` by `scripts/sync-codex.mjs`. Edit the source, then run `npm run sync:codex`. Claude Code tool and command names below map to Codex and Antigravity as described in `AGENTS.md` under "Codex & Antigravity runtimes".
 >
-> Explicit only: runs when the user invokes `$spec-developer` (`/spec-developer` in Claude Code), never implicitly.
+> Explicit only: runs when the user invokes `$spec-developer` or `/spec-developer`, never implicitly.
 >
 > `$ARGUMENTS` is the text the user supplied with the skill invocation.
 

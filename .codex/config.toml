@@ -4,9 +4,6 @@
 [features]
 hooks = true
 
-# Claude Code rings a terminal bell from its Stop and Notification hooks. Codex has
-# no Notification event and requires JSON on Stop's stdout, so use its native
-# notifications instead.
 [tui]
 notifications = true
 notification_method = "bel"

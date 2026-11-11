@@ -3,7 +3,7 @@ name: dependency-audit
 description: "Audit project dependencies for outdated versions, known vulnerabilities, and unused packages, plus stale runtimes and package managers (Node, npm, pnpm) and GitHub Actions (action versions, runner images, and the tool versions workflows install). Use periodically or before releases."
 ---
 
-> Generated from `.claude/skills/dependency-audit/SKILL.md` by `scripts/sync-codex.mjs`. Edit the source, then run `npm run sync:codex`. Claude Code tool and command names below map to Codex as described in `AGENTS.md` under "Codex runtime".
+> Generated from `.claude/skills/dependency-audit/SKILL.md` by `scripts/sync-codex.mjs`. Edit the source, then run `npm run sync:codex`. Claude Code tool and command names below map to Codex and Antigravity as described in `AGENTS.md` under "Codex & Antigravity runtimes".
 
 # Dependency Audit
 

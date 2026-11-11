@@ -3,9 +3,9 @@ name: test-scaffold
 description: "Generate test files for untested modules. Detects the test framework and creates test stubs matching existing patterns. Use to improve test coverage."
 ---
 
-> Generated from `.claude/skills/test-scaffold/SKILL.md` by `scripts/sync-codex.mjs`. Edit the source, then run `npm run sync:codex`. Claude Code tool and command names below map to Codex as described in `AGENTS.md` under "Codex runtime".
+> Generated from `.claude/skills/test-scaffold/SKILL.md` by `scripts/sync-codex.mjs`. Edit the source, then run `npm run sync:codex`. Claude Code tool and command names below map to Codex and Antigravity as described in `AGENTS.md` under "Codex & Antigravity runtimes".
 >
-> Claude Code runs this skill in a forked subagent context. In Codex, delegate it to a subagent and return its summary.
+> Claude Code runs this skill in a forked subagent context. Delegate it to a subagent and return its summary.
 >
 > `$ARGUMENTS` is the text the user supplied with the skill invocation.
 

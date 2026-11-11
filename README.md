@@ -36,8 +36,8 @@ cp -r path/to/claude-code-bootstrap/scripts/ your-repo/scripts/
 `REVIEW.md` and `scripts/` are not optional: `npm run check:claude` fails without the
 review policy, and the guard lives in `scripts/`.
 
-For Codex, generate its mirror of the same configuration (`AGENTS.md`, `.agents/skills/`,
-`.codex/`) instead of copying it, then keep it current with the same command:
+For Codex and Antigravity, generate their mirrors of the same configuration (`AGENTS.md`,
+`.agents/`, `.codex/`) instead of copying them by hand, and keep them current with:
 
 ```bash
 node scripts/sync-codex.mjs

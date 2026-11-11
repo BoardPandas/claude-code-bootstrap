@@ -3,9 +3,9 @@ name: ux-review
 description: "Review UI/UX code against Laws of UX and Gestalt principles. Produces severity-ranked findings with specific improvement recommendations. Use on frontend repos or targeted components."
 ---
 
-> Generated from `.claude/skills/ux-review/SKILL.md` by `scripts/sync-codex.mjs`. Edit the source, then run `npm run sync:codex`. Claude Code tool and command names below map to Codex as described in `AGENTS.md` under "Codex runtime".
+> Generated from `.claude/skills/ux-review/SKILL.md` by `scripts/sync-codex.mjs`. Edit the source, then run `npm run sync:codex`. Claude Code tool and command names below map to Codex and Antigravity as described in `AGENTS.md` under "Codex & Antigravity runtimes".
 >
-> Claude Code runs this skill inside the `ux-reviewer` subagent. In Codex, spawn the `ux-reviewer` custom agent (`.codex/agents/ux-reviewer.toml`) to do the work and return its summary.
+> Claude Code runs this skill inside the `ux-reviewer` subagent. In Codex, spawn the `ux-reviewer` custom agent (`.codex/agents/ux-reviewer.toml`); in Antigravity, call `invoke_subagent` with `TypeName: "ux-reviewer"` (`.agents/agents/ux-reviewer.md`) and return its summary.
 
 # UX Review
 

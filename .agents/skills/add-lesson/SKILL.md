@@ -3,7 +3,7 @@ name: add-lesson
 description: "Add a new gotcha, lesson learned, or \"thing to avoid\" to the shared LL-G knowledge base. Use this whenever the user says \"add a lesson\", \"record this gotcha\", \"save this to LL-G\", \"document this dead end\", or describes a non-obvious failure, a silent-wrong-output bug, or a hard-won fix that future sessions should not have to rediscover -- even if they don't say \"LL-G\" explicitly."
 ---
 
-> Generated from `.claude/skills/add-lesson/SKILL.md` by `scripts/sync-codex.mjs`. Edit the source, then run `npm run sync:codex`. Claude Code tool and command names below map to Codex as described in `AGENTS.md` under "Codex runtime".
+> Generated from `.claude/skills/add-lesson/SKILL.md` by `scripts/sync-codex.mjs`. Edit the source, then run `npm run sync:codex`. Claude Code tool and command names below map to Codex and Antigravity as described in `AGENTS.md` under "Codex & Antigravity runtimes".
 
 You are adding a new entry to the LL-G lessons-learned knowledge base.
 

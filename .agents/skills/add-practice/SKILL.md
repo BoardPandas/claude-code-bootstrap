@@ -3,7 +3,7 @@ name: add-practice
 description: "Add a new best-practice entry to the shared BP knowledge base. Use this whenever the user says \"add a practice\", \"record this pattern\", \"save this to BP\", \"this should be a best practice\", or describes a proven, reusable convention, config, or workflow that other repos should adopt -- even if they don't say \"BP\" explicitly."
 ---
 
-> Generated from `.claude/skills/add-practice/SKILL.md` by `scripts/sync-codex.mjs`. Edit the source, then run `npm run sync:codex`. Claude Code tool and command names below map to Codex as described in `AGENTS.md` under "Codex runtime".
+> Generated from `.claude/skills/add-practice/SKILL.md` by `scripts/sync-codex.mjs`. Edit the source, then run `npm run sync:codex`. Claude Code tool and command names below map to Codex and Antigravity as described in `AGENTS.md` under "Codex & Antigravity runtimes".
 
 You are adding a new entry to the BP best practices knowledge base.
 

@@ -5,7 +5,7 @@
 This repository provides a pre-configured `.claude/` folder that gives Claude Code a set of skills, agents, and settings aligned with current best practices. It works in two modes:
 
 1. **Clone for new projects** -- Start a new repo with Claude Code already configured. `node scripts/new-project.mjs` (or, for a repo made with GitHub's "Use this template", the `template-cleanup` workflow) resets `CHANGELOG.md` and `package.json` to a fresh `0.0.1` so the project does not inherit the template's release history.
-2. **Copy into existing projects** -- Drop the `.claude/` folder (plus CLAUDE.md) into any existing repo to add Claude Code capabilities. Add `scripts/sync-codex.mjs` and run `npm run sync:codex` to give Codex the same configuration.
+2. **Copy into existing projects** -- Drop the `.claude/` folder (plus CLAUDE.md) into any existing repo to add Claude Code capabilities. Add `scripts/sync-codex.mjs` + `scripts/sync-antigravity.mjs` and run `npm run sync:codex` to give Codex and Antigravity the same configuration.
 
 ## Folder Structure
 
@@ -64,14 +64,15 @@ This repository provides a pre-configured `.claude/` folder that gives Claude Co
   settings.local.json.example  # Template for personal (git-ignored) overrides
 CLAUDE.md                  # Master project rules for Claude Code
 REVIEW.md                  # Review policy: passes, severity bar, nit cap, exclusions
-AGENTS.md                  # GENERATED Codex instructions (from CLAUDE.md + .claude/rules)
+AGENTS.md                  # GENERATED Codex & Antigravity instructions (from CLAUDE.md + .claude/rules)
 instructions.md            # This file
 README.md                  # GitHub-facing README
-.agents/skills/            # GENERATED Codex copies of .claude/skills
+.agents/                   # GENERATED Antigravity agents, rules, hooks.json + shared skills/ (see .agents/README.md)
 .codex/                    # GENERATED Codex agents, hooks, config (see .codex/README.md)
 scripts/
   check-claude-wiring.mjs  # Wiring guard (npm run check:claude)
-  sync-codex.mjs           # Codex mirror generator (npm run sync:codex; --check runs in check:claude)
+  sync-codex.mjs           # Codex & Antigravity mirror generator (npm run sync:codex; --check runs in check:claude)
+  sync-antigravity.mjs     # Antigravity (.agents/) emitter imported by sync-codex.mjs
   new-project.mjs          # One-shot reset of CHANGELOG.md + package.json to 0.0.1 in a new project; deletes itself
   *.test.mjs               # Self-tests asserting each check still fires
 intent/<slug>/             # intent.md + spec.md (created on first use)

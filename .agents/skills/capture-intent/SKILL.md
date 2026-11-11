@@ -1,11 +1,11 @@
 ---
 name: capture-intent
-description: "Capture an idea, problem, or request as a committed intent.md before any spec or code exists. Use when someone has a need but not a solution -- \"I have an idea\", \"we should build\", \"this is broken and I do not know why\", \"capture this request\". The first artifact in the chain; no engineering knowledge required from the originator."
+description: "Explicit command only (/capture-intent or $capture-intent) -- never invoke implicitly. Capture an idea, problem, or request as a committed intent.md before any spec or code exists. Use when someone has a need but not a solution -- \"I have an idea\", \"we should build\", \"this is broken and I do not know why\", \"capture this request\". The first artifact in the chain; no engineering knowledge required from the originator."
 ---
 
-> Generated from `.claude/skills/capture-intent/SKILL.md` by `scripts/sync-codex.mjs`. Edit the source, then run `npm run sync:codex`. Claude Code tool and command names below map to Codex as described in `AGENTS.md` under "Codex runtime".
+> Generated from `.claude/skills/capture-intent/SKILL.md` by `scripts/sync-codex.mjs`. Edit the source, then run `npm run sync:codex`. Claude Code tool and command names below map to Codex and Antigravity as described in `AGENTS.md` under "Codex & Antigravity runtimes".
 >
-> Explicit only: runs when the user invokes `$capture-intent` (`/capture-intent` in Claude Code), never implicitly.
+> Explicit only: runs when the user invokes `$capture-intent` or `/capture-intent`, never implicitly.
 >
 > `$ARGUMENTS` is the text the user supplied with the skill invocation.
 
