@@ -57,7 +57,7 @@ These live outside `.claude/` and are load-bearing for CI guards and generated m
 
 | File | Sync strategy |
 |------|---------------|
-| `REVIEW.md` | Sync entirely if absent — `scripts/check-claude-wiring.mjs` errors without it. If present, merge new passes and exclusions while preserving the project's own severity bar and nit cap. |
+| `REVIEW.md` | Sync entirely if absent -- `scripts/check-claude-wiring.mjs` errors without it. If present, merge new passes and exclusions while preserving the project's own severity bar and nit cap. |
 | `scripts/check-claude-wiring.mjs` | Replace with template version, then re-run it. |
 | `scripts/check-claude-wiring.test.mjs` | Replace with template version. |
 | `scripts/sync-codex.mjs` | Replace with template version (if project uses generated Codex/Antigravity mirrors). |

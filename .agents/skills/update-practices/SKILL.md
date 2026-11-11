@@ -71,7 +71,7 @@ Read `.agents/skills/update-practices/references/template-sync-and-report.md` in
    - **TEMPLATE-UPDATED:** merge non-destructively per the whitelist table; preserve project-specific customizations.
    - **TEMPLATE-REWRITTEN:** replace the body wholesale with the upstream version, then re-apply only genuinely project-specific customizations (never merge a rewrite line-by-line).
    - **TEMPLATE-IGNORED:** skip and report as active.
-3. Never sync `.claude/agent-memory/*`, `template-sync-state.json`, `template-sync-ignore.md`, `intent/**`, `tasks/**`, `CLAUDE.md`, `instructions.md`, or generated Codex/Antigravity mirrors (`AGENTS.md`, `.agents/**`, `.codex/**` — regenerate those in Step 7 via `npm run sync:codex`).
+3. Never sync `.claude/agent-memory/*`, `template-sync-state.json`, `template-sync-ignore.md`, `intent/**`, `tasks/**`, `CLAUDE.md`, `instructions.md`, or generated Codex/Antigravity mirrors (`AGENTS.md`, `.agents/**`, `.codex/**` -- regenerate those in Step 7 via `npm run sync:codex`).
 4. Write `.claude/references/template-sync-state.json` (`lastSyncedCommit`, `lastSyncedDate`, `deadUrls`) per the reference schema. Remove a registry URL from `source-urls.md` only on two consecutive unreachable runs (`deadUrls` two-strikes rule).
 5. Run `npm run check:claude` and `npm test` after syncing outside-`.claude/` guard/sync scripts.
 
@@ -154,9 +154,9 @@ neither is statically checkable beyond existence.
 
 **Review policy.** Read `REVIEW.md` against the last month of actual defects:
 
-- Passes that have never caught a real defect are DEGRADED — recommend removal.
+- Passes that have never caught a real defect are DEGRADED -- recommend removal.
 - Defect classes that reached main and are not covered by any pass or guard check are
-  BROKEN — recommend which of the two should own it.
+  BROKEN -- recommend which of the two should own it.
 - A policy that only ever grows is a policy nobody finishes reading. Report its size trend.
 
 **Artifact chain.** Spot-check `intent/` and `tasks/`:
@@ -183,8 +183,8 @@ Walk every category in `.agents/skills/update-practices/references/template-sync
 
 1. **Core files, path-scoped rules (`.claude/rules/*.md`), and agent memory (`.claude/agent-memory/`).**
 2. **Skill and agent frontmatter** (`model`, `effort`, `context: fork` + `agent`, `memory`, `isolation`, `skills`, `maxTurns`).
-3. **Hook events and settings** against `.claude/references/hooks-and-settings.md` (single source of truth — add newly discovered upstream hook events, types, or settings to that reference rather than inside a skill).
-4. **Cost / token efficiency** (`effort` levels, cheapest fitting `model` routing, prompt-cache preservation by avoiding mid-session model switches, cheaper extractors, and subagent delegation — do NOT disable the 1M context window).
+3. **Hook events and settings** against `.claude/references/hooks-and-settings.md` (single source of truth -- add newly discovered upstream hook events, types, or settings to that reference rather than inside a skill).
+4. **Cost / token efficiency** (`effort` levels, cheapest fitting `model` routing, prompt-cache preservation by avoiding mid-session model switches, cheaper extractors, and subagent delegation -- do NOT disable the 1M context window).
 
 ## Step 4: Implement Changes
 

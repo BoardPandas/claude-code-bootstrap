@@ -7,17 +7,17 @@ Referenced by `init-repo` Steps 7, 8, 14, and 15. Read this file when creating p
 ### Standard rules to create based on detected stack
 
 For every project:
-- `.claude/rules/tests.md` — Testing conventions, paths: `["**/test/**", "**/*.test.*", "**/*.spec.*", "**/__tests__/**"]`
-- `.claude/rules/bp-check.md` — RULE 3 enforcement: check BP before modifying infrastructure/tooling configs. Paths: `["CLAUDE.md", ".claude/**", "Dockerfile*", "biome.*", "turbo.json", "vitest.config.*", "jest.config.*", ".github/**"]` (prune any glob matching zero files per `npm run check:claude`).
-- `.claude/rules/llg-check.md` — RULE 1 enforcement: check LL-G before writing code. Paths: real source directories in this repo (e.g., `["src/**", "scripts/**"]`). Copy from the bootstrap repo's `.claude/rules/llg-check.md` and prune dead globs.
+- `.claude/rules/tests.md` -- Testing conventions, paths: `["**/test/**", "**/*.test.*", "**/*.spec.*", "**/__tests__/**"]`
+- `.claude/rules/bp-check.md` -- RULE 3 enforcement: check BP before modifying infrastructure/tooling configs. Paths: `["CLAUDE.md", ".claude/**", "Dockerfile*", "biome.*", "turbo.json", "vitest.config.*", "jest.config.*", ".github/**"]` (prune any glob matching zero files per `npm run check:claude`).
+- `.claude/rules/llg-check.md` -- RULE 1 enforcement: check LL-G before writing code. Paths: real source directories in this repo (e.g., `["src/**", "scripts/**"]`). Copy from the bootstrap repo's `.claude/rules/llg-check.md` and prune dead globs.
 
 For frontend projects:
-- `.claude/rules/frontend.md` — Component patterns, styling rules, accessibility (paths matching frontend source dirs).
-- `.claude/rules/styles.md` — CSS/styling conventions (paths matching style files).
+- `.claude/rules/frontend.md` -- Component patterns, styling rules, accessibility (paths matching frontend source dirs).
+- `.claude/rules/styles.md` -- CSS/styling conventions (paths matching style files).
 
 For backend/API projects:
-- `.claude/rules/api.md` — API conventions, error handling, auth patterns (paths matching API source dirs).
-- `.claude/rules/database.md` — Migration rules, query patterns, ORM conventions (paths matching schema/migration files).
+- `.claude/rules/api.md` -- API conventions, error handling, auth patterns (paths matching API source dirs).
+- `.claude/rules/database.md` -- Migration rules, query patterns, ORM conventions (paths matching schema/migration files).
 
 For monorepos: scope rules to each package/app.
 
@@ -140,24 +140,24 @@ Use today's actual date (never a placeholder or a date copied from template entr
 ### 15c. Manifest version fields to reset to `0.0.1`
 
 Reset only the manifest(s) the project actually has (do not create missing manifests):
-- `package.json` — `"version": "0.0.1"`
-- `pyproject.toml` — `version = "0.0.1"`
-- `Cargo.toml` — `version = "0.0.1"`
-- `*.csproj` — `<Version>0.0.1</Version>`
+- `package.json` -- `"version": "0.0.1"`
+- `pyproject.toml` -- `version = "0.0.1"`
+- `Cargo.toml` -- `version = "0.0.1"`
+- `*.csproj` -- `<Version>0.0.1</Version>`
 
 ## Steps 9 & 10: Skill and Agent Frontmatter Field Reference
 
 ### Skill frontmatter fields (Step 9)
-- `disable-model-invocation: true` — manual slash-command invocation only.
-- `model: haiku | sonnet | opus` — `haiku` for mechanical step-by-step tasks, `sonnet` for analysis/research, `opus` for orchestration/planning.
-- `effort: low | medium | high | xhigh | max` — match reasoning depth to task complexity.
-- `context: fork` — run in isolated subagent context to prevent main-session context pollution.
-- `agent: <agent-name>` — bind execution to a `.claude/agents/<agent-name>.md` persona/toolset. **Requires `context: fork`** (ignored without it), and every `allowed-tools` entry must be covered by that agent's `tools:`.
+- `disable-model-invocation: true` -- manual slash-command invocation only.
+- `model: haiku | sonnet | opus` -- `haiku` for mechanical step-by-step tasks, `sonnet` for analysis/research, `opus` for orchestration/planning.
+- `effort: low | medium | high | xhigh | max` -- match reasoning depth to task complexity.
+- `context: fork` -- run in isolated subagent context to prevent main-session context pollution.
+- `agent: <agent-name>` -- bind execution to a `.claude/agents/<agent-name>.md` persona/toolset. **Requires `context: fork`** (ignored without it), and every `allowed-tools` entry must be covered by that agent's `tools:`.
 
 ### Agent frontmatter fields (Step 10)
-- `memory: user | project | local` — persistent memory scope (`project` = `.claude/agent-memory/`, recommended on `reviewer`, `architect`, `builder`, `explorer`, `tester`).
-- `skills: [skill1, skill2]` — skills available to the agent (e.g., `[plan-repo, spec-developer]` on `architect`).
-- `isolation: worktree` — temporary git worktree for file-writing agents (`builder`). Never add to read-only analysis agents (`explorer`, `reviewer`, `security`, `performance`, `ux-reviewer`).
-- `background: true` — avoid setting as a frontmatter default; pass `run_in_background` per spawn instead so inline parallel workflows are not broken.
-- `context: <instructions>` — extra system-prompt instructions scoped to this agent.
-- `maxTurns: N` — iteration cap (e.g., `20`–`40`).
+- `memory: user | project | local` -- persistent memory scope (`project` = `.claude/agent-memory/`, recommended on `reviewer`, `architect`, `builder`, `explorer`, `tester`).
+- `skills: [skill1, skill2]` -- skills available to the agent (e.g., `[plan-repo, spec-developer]` on `architect`).
+- `isolation: worktree` -- temporary git worktree for file-writing agents (`builder`). Never add to read-only analysis agents (`explorer`, `reviewer`, `security`, `performance`, `ux-reviewer`).
+- `background: true` -- avoid setting as a frontmatter default; pass `run_in_background` per spawn instead so inline parallel workflows are not broken.
+- `context: <instructions>` -- extra system-prompt instructions scoped to this agent.
+- `maxTurns: N` -- iteration cap (e.g., `20`–`40`).

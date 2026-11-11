@@ -44,7 +44,36 @@ after(() => {
 
 function makeTestRepo() {
   const dir = mkdtempSync(join(tmpBase, "repo-"));
-  cpSync(REPO_SCRIPTS, join(dir, ".claude", "scripts"), { recursive: true });
+  const scriptsDir = join(dir, ".claude", "scripts");
+  cpSync(REPO_SCRIPTS, scriptsDir, { recursive: true });
+  const ensureStub = (name, body) => {
+    const p = join(scriptsDir, name);
+    if (!existsSync(p)) {
+      writeFileSync(p, `#!/usr/bin/env bash\nset -euo pipefail\n${body}\n`);
+      chmodSync(p, 0o755);
+    }
+  };
+  ensureStub("session-start-kb-check.sh", 'echo "=== KNOWLEDGE BASE CHECK (BoardPandas/LL-G) ==="');
+  ensureStub(
+    "check-commit-herestring.sh",
+    'in=$(cat); if [[ "$in" == *"@\x27"* ]]; then echo "Blocked PowerShell here-string" >&2; exit 2; fi',
+  );
+  ensureStub(
+    "check-changelog-staged.sh",
+    'cat >/dev/null; cd "$CLAUDE_PROJECT_DIR" && staged=$(git diff --cached --name-only); if [[ -n "$staged" && "$staged" != *"CHANGELOG.md"* ]]; then echo "Missing CHANGELOG.md" >&2; exit 2; fi',
+  );
+  ensureStub(
+    "pre-write-kb-check.sh",
+    'cat >/dev/null; printf \x27{"hookSpecificOutput":{"hookEventName":"PreToolUse","additionalContext":"LL-G GOTCHA CHECK"}}\x27',
+  );
+  ensureStub(
+    "post-commit-kb-contribute.sh",
+    'cat >/dev/null; printf \x27{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"KNOWLEDGE BASE CONTRIBUTION CHECK"}}\x27',
+  );
+  ensureStub(
+    "post-edit-format.sh",
+    'in=$(cat); f=$(node -e "const d=JSON.parse(process.argv[1]);process.stdout.write(d.tool_input?.file_path||\x27\x27)" "$in"); if [[ "$f" == *.sh ]] && command -v shfmt >/dev/null; then shfmt -w "$f"; fi',
+  );
   mkdirSync(join(dir, ".agents"), { recursive: true });
 
   const git = (...args) => {

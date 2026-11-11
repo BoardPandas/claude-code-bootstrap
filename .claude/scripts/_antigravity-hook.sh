@@ -66,15 +66,22 @@ queue_advice() {
 }
 
 extract_additional_context() {
-  local out=${1:-} ctx=""
+  local out=${1:-} ctx="" trimmed=""
   [ -n "$out" ] || return 0
   ctx=$(json_field "$out" hookSpecificOutput.additionalContext)
   [ -n "$ctx" ] || ctx=$(json_field_flat "$out" additionalContext)
+  if [ -z "$ctx" ]; then
+    trimmed=${out#"${out%%[![:space:]]*}"}
+    case "$trimmed" in
+      "{"*) ;;
+      *) ctx="$out" ;;
+    esac
+  fi
   printf '%s' "$ctx"
 }
 
 build_claude_payload() {
-  local agy_tool claude_tool="" cmd="" fpath="" arg_cwd=""
+  local agy_tool claude_tool="" cmd="" fpath="" arg_cwd="" mcp_payload=""
   agy_tool=$(json_field "$RAW_INPUT" toolCall.name)
   [ -n "$agy_tool" ] || agy_tool=$(json_field_flat "$RAW_INPUT" name)
 
@@ -100,6 +107,38 @@ build_claude_payload() {
       claude_tool="Read"
       fpath=$(json_field "$RAW_INPUT" toolCall.args.AbsolutePath)
       [ -n "$fpath" ] || fpath=$(json_field_flat "$RAW_INPUT" AbsolutePath)
+      ;;
+    call_mcp_tool)
+      mcp_payload=$(printf '%s' "$RAW_INPUT" | node -e '
+        let raw = "";
+        process.stdin.on("data", (c) => { raw += c; });
+        process.stdin.on("end", () => {
+          try {
+            const p = JSON.parse(raw);
+            const a = p?.toolCall?.args ?? {};
+            const srv = String(a.ServerName || "mcp");
+            let tool = String(a.ToolName || "unknown");
+            let input = a.Arguments && typeof a.Arguments === "object" ? a.Arguments : {};
+            if (tool === "MULTI_EXECUTE_TOOL" && Array.isArray(input.tools) && input.tools.length === 1 && input.tools[0]?.tool_slug) {
+              tool = String(input.tools[0].tool_slug);
+              input = input.tools[0].arguments && typeof input.tools[0].arguments === "object" ? input.tools[0].arguments : {};
+            }
+            process.stdout.write(JSON.stringify({
+              session_id: process.argv[1],
+              cwd: process.argv[2],
+              tool_name: `mcp__${srv}__${tool}`,
+              tool_input: input,
+            }));
+          } catch {
+            process.exit(1);
+          }
+        });
+      ' "$SAFE_ID" "$REPO_ROOT" 2>/dev/null) || mcp_payload=""
+      if [ -n "$mcp_payload" ]; then
+        printf '%s' "$mcp_payload"
+        return 0
+      fi
+      claude_tool="call_mcp_tool"
       ;;
     *)
       claude_tool="$agy_tool"
@@ -200,6 +239,7 @@ case "$EVENT" in
     fi
 
     if [ "$RC" -eq 2 ]; then
+      [ -n "$ERR" ] || ERR="$OUT"
       [ -n "$ERR" ] || ERR="Blocked by ${EVAL_CMD:-$MODE_OR_TARGET}"
       printf '{"decision":"deny","reason":"%s"}\n' "$(json_escape "$ERR")"
       exit 0

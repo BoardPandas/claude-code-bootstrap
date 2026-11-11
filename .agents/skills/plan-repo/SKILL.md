@@ -187,7 +187,7 @@ Tools to include:
 
 For each tool: name, install command, version check command, common usage patterns.
 
-Also preserve the **Available MCP Servers** section in tools.md; it documents all MCP integrations available to Claude Code (Cloudflare, GitHub, Slack, Gmail, Google Calendar, Notion, Railway, Doppler, NinjaOne, Zendesk, browser automation). Do not remove or overwrite this section.
+Also preserve the **Available MCP Servers** section in tools.md; it documents all MCP integrations available to Claude Code (Cloudflare, GitHub, Slack, Gmail, Google Calendar, Notion, Railway, Doppler, NinjaOne, SupportForge, browser automation). Do not remove or overwrite this section.
 
 ## Step 9: Plan the Hierarchical CLAUDE.md Structure
 

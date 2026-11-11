@@ -118,10 +118,10 @@ For each gap identified, create or update the file. Follow these rules:
   - Update root `CLAUDE.md` with project-specific stack info and conventions.
   - Plan (but do not create) subfolder CLAUDE.md files where distinct rules will apply.
   - Budget by **bytes, not lines**: 16 KB for CLAUDE.md, 20 KB for all always-on context. A line budget keeps passing while single lines grow to thousands of characters. `npm run check:claude` fails on either ceiling.
-  - Do not restate what `instructions.md` or `.claude/references/` already cover. Detail goes down into those; CLAUDE.md keeps pointers. Do not duplicate the skill table either — skills are auto-discovered and their own `description:` is what triggers them; list only which ones are slash-only.
-  - **Required section — `## Commands`:** the build, test, and lint commands, one line each. This is the first thing a new session needs and the last thing anyone remembers to write down.
-  - **Required section — `## Verifying your work`:** the single command that proves a change is good, an example of healthy output, and an explicit statement that a failing check is never to be skipped, deleted, or narrowed. Make verification part of the definition of done.
-  - **Required section — `## Things Claude Gets Wrong`:** seeded from the LL-G entries loaded in Step 3 for this project's stack, plus anything the gap analysis surfaced. The standing rule to write into the section: when a mistake happens twice, the correction goes here.
+  - Do not restate what `instructions.md` or `.claude/references/` already cover. Detail goes down into those; CLAUDE.md keeps pointers. Do not duplicate the skill table either -- skills are auto-discovered and their own `description:` is what triggers them; list only which ones are slash-only.
+  - **Required section -- `## Commands`:** the build, test, and lint commands, one line each. This is the first thing a new session needs and the last thing anyone remembers to write down.
+  - **Required section -- `## Verifying your work`:** the single command that proves a change is good, an example of healthy output, and an explicit statement that a failing check is never to be skipped, deleted, or narrowed. Make verification part of the definition of done.
+  - **Required section -- `## Things Claude Gets Wrong`:** seeded from the LL-G entries loaded in Step 3 for this project's stack, plus anything the gap analysis surfaced. The standing rule to write into the section: when a mistake happens twice, the correction goes here.
   - Include in the Planning section: "Every plan MUST end with a Lessons Learned / Gotchas section. After implementation, route discoveries to LL-G via `/add-lesson`, not to local files only."
   - If the project uses the artifact chain, document it: `intent.md` → `spec.md` → `plan.md` → diff, with the owner and approver of each.
 - **Agent registry:** Update `.claude/references/agent-registry.md` to register all agents, preserving project-specific content. A lowercase root `agents.md` from an older template moves there: it collides with Codex's `AGENTS.md` on case-insensitive filesystems (Windows, default macOS), where one silently overwrites the other.
@@ -146,7 +146,7 @@ Apply the skill and agent frontmatter guidelines in `.agents/skills/init-repo/re
 
 ## Step 11: Configure Hooks
 
-Read `.claude/references/hooks-and-settings.md` for the full catalog: every hook event, the five hook types (command, http, prompt, agent, mcp_tool), the `if:` field, matcher syntax, and the "Hooks to configure based on project needs" recommendations. That file is the single source of truth — do not re-paste the event table into any skill or CLAUDE.md.
+Read `.claude/references/hooks-and-settings.md` for the full catalog: every hook event, the five hook types (command, http, prompt, agent, mcp_tool), the `if:` field, matcher syntax, and the "Hooks to configure based on project needs" recommendations. That file is the single source of truth -- do not re-paste the event table into any skill or CLAUDE.md.
 
 For init, configure the always-on defaults from that reference (`SessionStart` knowledge-base reminder, `PreToolUse` on `Bash` with `if: "Bash(git commit*)"`, `Stop` and `Notification` sounds). The always-on hooks invoke scripts in `.claude/scripts/`; confirm those scripts exist (Step 6) before wiring the hooks, since a hook pointing at a missing script fails on every session start. Wire each one as `bash "$CLAUDE_PROJECT_DIR"/.claude/scripts/<name>.sh`, never by a cwd-relative path, which stops resolving once the shell leaves the repo root.
 
@@ -183,7 +183,7 @@ Copy the template's `REVIEW.md` to the repo root, then tailor it to this project
 
 Copy the template's `scripts/sync-codex.mjs`, `scripts/sync-antigravity.mjs`, `scripts/sync-codex.test.mjs`, and `scripts/antigravity-hooks.test.mjs` (plus `.claude/scripts/_antigravity-hook.sh`), add `"sync:codex": "node scripts/sync-codex.mjs"` and `"check:codex": "node scripts/sync-codex.mjs --check"` to `package.json`, and prefix `check:claude` with `node scripts/sync-codex.mjs --check && `. Then run `npm run sync:codex`. It generates `AGENTS.md`, `.agents/` (skills, agents, rules, `hooks.json`), and `.codex/` from `CLAUDE.md` and `.claude/`; never hand-edit those. Diff any pre-existing files there first and move project-specific rules into the Claude source.
 
-Verify before moving on (`npm run check:claude && npm test` — both must pass).
+Verify before moving on (`npm run check:claude && npm test` -- both must pass).
 
 ## Step 13: Create instructions.md
 

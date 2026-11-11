@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.29.2] - 2026-11-11
+
+### Changed
+- **Split pure Antigravity renderers into `scripts/antigravity-format.mjs` and hardened org-wide edge cases.** Separates pure Antigravity schema mappings/renderers (`scripts/antigravity-format.mjs`, 291 lines) from the standalone CLI driver (`scripts/sync-antigravity.mjs`, 227 lines) so every module stays comfortably below the 500-line file-size cap under Biome/ESLint formatting, caps oversized `.agents/rules/*.md` files under 24,000 bytes, and normalizes ASCII `--` dashes and retired `Zendesk` → `SupportForge` MCP references across bootstrap skills.
+- **Expanded `_antigravity-hook.sh` payload and advisory handling.** Translates lazy `call_mcp_tool` invocations (including single-tool `MULTI_EXECUTE_TOOL` wrappers) into `mcp__<server>__<tool>` payloads for `PreToolUse` `*` gates, captures plain-text stdout advisories alongside JSON `additionalContext`, falls back to stdout when `exit 2` hooks omit stderr, and adds fallback stubs in `scripts/antigravity-hooks.test.mjs` for downstream repositories that ship a subset of `.claude/scripts/*.sh`.
+
 ## [0.29.1] - 2026-11-11
 
 ### Added

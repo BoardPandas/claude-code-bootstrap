@@ -8,7 +8,7 @@ Remember: write the literal `<DATE>` (YYYY-MM-DD) into every subagent prompt, pa
 
 ### Wave 1: Platform Profile Subagent (runs whenever a backend is in scope)
 
-Read `.claude/references/infrastructure.md` before writing this prompt and carry its constraints into the comparison — particularly that Cloudflare has no Redis, D1 caps at 10 GB, and Workers cannot run long-lived processes or native npm bindings.
+Read `.claude/references/infrastructure.md` before writing this prompt and carry its constraints into the comparison -- particularly that Cloudflare has no Redis, D1 caps at 10 GB, and Workers cannot run long-lived processes or native npm bindings.
 
 Prompt:
 "Compare two hosting profiles for [one-line project description] as of <DATE>: (A) Cloudflare -- Workers for frontend and API, D1 or Hyperdrive-fronted external Postgres, Workers KV and Durable Objects, Cloudflare Queues, Cron Triggers, native CDN/WAF; (B) Railway -- long-running container services for frontend and API, managed Railway Postgres and Redis, cron service type, persistent volumes, private networking, with a Cloudflare proxy in front for CDN/WAF. Both profiles use Cloudflare R2 for object storage, Resend for email, and Better Auth inside the API. The project's requirements are: [paste the Step 2 answers -- scale, data, real-time needs, integrations, and for desktop projects what the server is actually for]. Compare on: fit for these specific workloads, database semantics needed (SQLite via D1 versus real Postgres with extensions), background and long-running work, websocket support, cost shape at this traffic level, operational complexity, and Better Auth support on each. Report a recommendation, the single strongest argument against it, and any requirement that rules one profile out. WHY: we deploy on exactly one of these two profiles and need the one that fits this workload; the choice then constrains the language, framework, and ORM picks that follow."
@@ -22,7 +22,7 @@ Seed candidates:
 - **Web-tech shells:** Tauri (Rust core, system webview) vs Electron (bundled Chromium/Node) vs Wails (Go core, system webview) vs Neutralino
 - **Own-renderer toolkits:** Flutter desktop (Dart/Skia) vs Compose Multiplatform (Kotlin) vs Avalonia or .NET MAUI (C#) vs Qt (C++/Python)
 - **Rust-native UI:** egui vs Slint vs Dioxus desktop
-- **Fully native:** Swift/SwiftUI on macOS, WinUI 3 on Windows, GTK on Linux — worth recommending when only one OS matters and native feel is the product
+- **Fully native:** Swift/SwiftUI on macOS, WinUI 3 on Windows, GTK on Linux -- worth recommending when only one OS matters and native feel is the product
 - Key factors: system webview vs pixel-identical rendering across OSes; whether required capabilities (USB/serial, GPU, background daemon, bundled binaries) rule an option out; signing and notarization burden per target OS.
 
 ### Wave 2: Language & Runtime Subagent (runs whenever a backend is in scope)
